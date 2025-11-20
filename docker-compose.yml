@@ -1,0 +1,19 @@
+version: "3.8"
+
+services:
+  brc_site:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: brc_site
+    restart: unless-stopped
+    ports:
+      - "8081:80"   # Host:Container
+    volumes:
+      - ./:/var/www/html
+    environment:
+      # These should match your .env, but .env usually handles most of it.
+      APP_ENV: production
+      APP_DEBUG: "false"
+      # APP_KEY will be read from .env once you generate it
+
