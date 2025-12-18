@@ -1,6 +1,6 @@
-@extends('frontend.layouts.app')
+@extends('frontend.layouts.web')
 
-@section('title', __('Terms & Conditions'))
+@section('title', __('Drone Data Test Results'))
 
 @section('content')
     <div class="container py-4">
@@ -8,11 +8,16 @@
             <div class="col-md-12">
                 <x-frontend.card>
                     <x-slot name="header">
-                        @lang('Terms & Conditions')
+                        Drone Test Data Visualizations
                     </x-slot>
 
                     <x-slot name="body">
-                        <p>This is the Terms & Conditions page.</p>
+                        <iframe 
+                            src="{{ asset('assets/drone_test_data/drone_map.html') }}" 
+                            width="100%" 
+                            height="600" 
+                            style="border:none;">
+                        </iframe>
                     </x-slot>
                 </x-frontend.card>
             </div><!--col-md-10-->

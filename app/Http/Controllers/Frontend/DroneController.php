@@ -3,15 +3,15 @@
 namespace App\Http\Controllers\Frontend;
 
 /**
- * Class HomeController.
+ * Class DroneController.
  */
-class HomeController
+class DroneController
 {
     /**
      * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View
      */
     public function index()
     {
-        return view('frontend.pages.index');
+        return view('frontend.pages.drone');
     }
 }

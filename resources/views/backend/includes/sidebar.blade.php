@@ -95,6 +95,26 @@
                     </li>
                 </ul>
             </li>
+            <li class="c-sidebar-nav-title">Admin</li>
+
+            <li class="c-sidebar-nav-dropdown {{ activeClass(Route::is('admin.account.*'), 'c-open c-show') }}">
+                <x-utils.link
+                    href="#"
+                    icon="c-sidebar-nav-icon cil-user"
+                    class="c-sidebar-nav-dropdown-toggle"
+                    :text="$logged_in_user->name" />
+
+                <ul class="c-sidebar-nav-dropdown-items">
+                    <li class="c-sidebar-nav-item">
+                        <x-utils.link
+                            :href="route('admin.account.index')"
+                            class="c-sidebar-nav-link"
+                            :text="__('Account info')"
+                            :active="activeClass(Route::is('admin.account.*'), 'c-active')" />
+                    </li>
+                </ul>
+            </li>
+
         @endif
     </ul>
 
