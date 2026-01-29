@@ -19,7 +19,135 @@
                 :text="__('Dashboard')" />
         </li>
 
-        <li class="c-sidebar-nav-title">User</li>
+        <li class="c-sidebar-nav-title">DATA</li>
+        <li class="c-sidebar-nav-dropdown ">
+                <x-utils.link
+                    href="#"
+                    icon="c-sidebar-nav-icon cil-chart-line"
+                    class="c-sidebar-nav-dropdown-toggle"
+                    text="Emission trends" />
+
+                <ul class="c-sidebar-nav-dropdown-items">
+                        <li class="c-sidebar-nav-item">
+                            <x-utils.link
+                                :href="route('frontend.user.account')"
+                                class="c-sidebar-nav-link"
+                                text="Account info"
+                                :active="activeClass(Route::is('frontend.user.account.*'), 'c-active')" />
+                        </li>
+                </ul>
+        </li>
+
+        <li class="c-sidebar-nav-dropdown ">
+                <x-utils.link
+                    href="#"
+                    icon="c-sidebar-nav-icon cil-map"
+                    class="c-sidebar-nav-dropdown-toggle"
+                    text="Carbon mapper" />
+
+                <ul class="c-sidebar-nav-dropdown-items">
+                        <li class="c-sidebar-nav-item">
+                            <x-utils.link
+                                :href="route('frontend.user.account')"
+                                class="c-sidebar-nav-link"
+                                text="Account info"
+                                :active="activeClass(Route::is('frontend.user.account.*'), 'c-active')" />
+                        </li>
+                </ul>
+        </li>
+
+        <li class="c-sidebar-nav-dropdown ">
+                <x-utils.link
+                    href="#"
+                    icon="c-sidebar-nav-icon cil-drop"
+                    class="c-sidebar-nav-dropdown-toggle"
+                    text="Produced water" />
+
+                <ul class="c-sidebar-nav-dropdown-items">
+                        <li class="c-sidebar-nav-item">
+                            <x-utils.link
+                                :href="route('frontend.user.account')"
+                                class="c-sidebar-nav-link"
+                                text="Account info"
+                                :active="activeClass(Route::is('frontend.user.account.*'), 'c-active')" />
+                        </li>
+                </ul>
+        </li>
+
+        <li class="c-sidebar-nav-dropdown ">
+                <x-utils.link
+                    href="#"
+                    icon="c-sidebar-nav-icon cil-warning"
+                    class="c-sidebar-nav-dropdown-toggle"
+                    text="Natural gas leaks" />
+
+                <ul class="c-sidebar-nav-dropdown-items">
+                        <li class="c-sidebar-nav-item">
+                            <x-utils.link
+                                :href="route('frontend.user.account')"
+                                class="c-sidebar-nav-link"
+                                text="Account info"
+                                :active="activeClass(Route::is('frontend.user.account.*'), 'c-active')" />
+                        </li>
+                </ul>
+        </li>
+
+        <li class="c-sidebar-nav-dropdown ">
+                <x-utils.link
+                    href="#"
+                    icon="c-sidebar-nav-icon cil-industry"
+                    class="c-sidebar-nav-dropdown-toggle"
+                    text="Oil well pads emission" />
+
+                <ul class="c-sidebar-nav-dropdown-items">
+                        <li class="c-sidebar-nav-item">
+                            <x-utils.link
+                                :href="route('frontend.user.account')"
+                                class="c-sidebar-nav-link"
+                                text="Duchesne County"
+                                :active="activeClass(Route::is('frontend.user.account.*'), 'c-active')" />
+                        </li>
+                </ul>
+        </li>
+
+        <li class="c-sidebar-nav-dropdown ">
+                <x-utils.link
+                    href="#"
+                    icon="c-sidebar-nav-icon cil-camera"
+                    class="c-sidebar-nav-dropdown-toggle"
+                    text="Optical gas imaging survey" />
+
+                <ul class="c-sidebar-nav-dropdown-items">
+                        <li class="c-sidebar-nav-item">
+                            <x-utils.link
+                                :href="route('frontend.user.account')"
+                                class="c-sidebar-nav-link"
+                                text="Account info"
+                                :active="activeClass(Route::is('frontend.user.account.*'), 'c-active')" />
+                        </li>
+                </ul>
+        </li>
+
+        <li class="c-sidebar-nav-dropdown ">
+                <x-utils.link
+                    href="#"
+                    icon="c-sidebar-nav-icon cil-settings"
+                    class="c-sidebar-nav-dropdown-toggle"
+                    text="Pumpjack Engine Emissions" />
+
+                <ul class="c-sidebar-nav-dropdown-items">
+                        <li class="c-sidebar-nav-item">
+                            <x-utils.link
+                                :href="route('frontend.user.account')"
+                                class="c-sidebar-nav-link"
+                                text="Account info"
+                                :active="activeClass(Route::is('frontend.user.account.*'), 'c-active')" />
+                        </li>
+                </ul>
+        </li>
+            
+
+        <li class="c-sidebar-nav-title">USER</li>
         <li class="c-sidebar-nav-dropdown {{ activeClass(Route::is('frontend.user.account*'), 'c-open c-show') }}">
                 <x-utils.link
                     href="#"
