@@ -6,6 +6,7 @@
 
 require('../bootstrap');
 require('../plugins');
+require('./emission-trends');
 
 import Vue from 'vue';
 

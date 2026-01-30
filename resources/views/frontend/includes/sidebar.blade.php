@@ -30,10 +30,10 @@
                 <ul class="c-sidebar-nav-dropdown-items">
                         <li class="c-sidebar-nav-item">
                             <x-utils.link
-                                :href="route('frontend.user.account')"
+                                :href="route('frontend.user.data')"
                                 class="c-sidebar-nav-link"
-                                text="Account info"
-                                :active="activeClass(Route::is('frontend.user.account.*'), 'c-active')" />
+                                text="Explore data"
+                                :active="activeClass(Route::is('frontend.user.data'), 'c-active')" />
                         </li>
                 </ul>
         </li>

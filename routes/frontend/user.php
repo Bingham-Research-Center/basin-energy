@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Frontend\User\AccountController;
 use App\Http\Controllers\Frontend\User\DashboardController;
+use App\Http\Controllers\Frontend\User\DataController;
 use App\Http\Controllers\Frontend\User\ProfileController;
 use Tabuna\Breadcrumbs\Trail;
 
@@ -15,16 +16,25 @@ Route::group(['as' => 'user.', 'middleware' => ['auth', 'password.expires', conf
         ->middleware('is_user')
         ->name('dashboard')
         ->breadcrumbs(function (Trail $trail) {
-            $trail->parent('frontend.index')
-                ->push(__('Dashboard'), route('frontend.user.dashboard'));
+            $trail->parent('frontend.index')->push(__('Dashboard'), route('frontend.user.dashboard'));
         });
 
     Route::get('account', [AccountController::class, 'index'])
         ->name('account')
         ->breadcrumbs(function (Trail $trail) {
-            $trail->parent('frontend.index')
-                ->push(__('My Account'), route('frontend.user.account'));
+            $trail->parent('frontend.index')->push(__('My Account'), route('frontend.user.account'));
         });
+    
+    Route::get('data', [DataController::class, 'emission_trends'])
+        ->name('data')
+        ->breadcrumbs(function (Trail $trail) {
+            $trail->parent('frontend.index')->push(__('Data'), route('frontend.user.data'));
+        });
+    
+    Route::get('data/emission-trends/json', [DataController::class, 'emission_trends_json'])
+    ->name('data.emission_trends.json');
 
+
+    
     Route::patch('profile/update', [ProfileController::class, 'update'])->name('profile.update');
 });
