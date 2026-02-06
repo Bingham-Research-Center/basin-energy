@@ -7,7 +7,7 @@
 <div class="container-fluid px-4">
 
     <div class="card mb-4" id="emissionTrendsChartRoot"
-         data-json-url="{{ route('frontend.user.data.emission_trends.json') }}">
+         data-json-url="{{ route('frontend.user.data.emission-trends.json') }}">
 
         <div class="card-header bg-white border-bottom">
             <h5 class="h5 mb-0">{{ __('Emission Trends') }}</h5>

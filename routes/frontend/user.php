@@ -25,14 +25,36 @@ Route::group(['as' => 'user.', 'middleware' => ['auth', 'password.expires', conf
             $trail->parent('frontend.index')->push(__('My Account'), route('frontend.user.account'));
         });
     
-    Route::get('data', [DataController::class, 'emission_trends'])
-        ->name('data')
-        ->breadcrumbs(function (Trail $trail) {
-            $trail->parent('frontend.index')->push(__('Data'), route('frontend.user.data'));
+    Route::group([
+    'prefix' => 'data',
+    'as' => 'data.',
+    ], function () {
+
+        Route::get('/', function () {
+            return redirect()->route('frontend.user.data.emission-trends');
+        })->name('data');
+
+
+        Route::get('emission-trends', [DataController::class, 'emissionTrends'])
+            ->name('emission-trends');
+
+        Route::get('emission-trends/json', [DataController::class, 'emissionTrendsJson'])
+            ->name('emission-trends.json');
+
+        Route::get('produced-water', [DataController::class, 'producedWater'])
+            ->name('produced-water');
+
+        Route::prefix('produced-water')->group(function () {
+            Route::get('flux/columns', [DataController::class, 'producedWaterFluxColumns'])
+                ->name('produced-water.flux.columns');
+            Route::get('flux/json', [DataController::class, 'producedWaterFluxJson'])
+                ->name('produced-water.flux.json');
+            Route::get('chemistry/json', [DataController::class, 'producedWaterChemistryJson'])
+                ->name('produced-water.chemistry.json');
+            Route::get('relationships/json', [DataController::class, 'producedWaterRelationshipsJson'])
+                ->name('produced-water.relationships.json');
         });
-    
-    Route::get('data/emission-trends/json', [DataController::class, 'emission_trends_json'])
-    ->name('data.emission_trends.json');
+    });
 
 
     

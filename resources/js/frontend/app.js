@@ -7,6 +7,7 @@
 require('../bootstrap');
 require('../plugins');
 require('./emission-trends');
+require('./produced-water');
 
 import Vue from 'vue';
 

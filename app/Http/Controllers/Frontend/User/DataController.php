@@ -4,18 +4,20 @@ namespace App\Http\Controllers\Frontend\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\EmissionTrend;
+use App\Models\ProducedWaterFlux;
 use Illuminate\Http\Request;
+
 
 class DataController extends Controller
 {
-    public function emission_trends()
+    public function emissionTrends()
     {
         $rows = EmissionTrend::orderBy('year', 'asc')->paginate(25);
 
         return view('frontend.user.data.emission_trends', compact('rows'));
     }
 
-    public function emission_trends_json(Request $request)
+    public function emissionTrendsJson(Request $request)
     {
         // Allowed columns user can plot (prevents arbitrary column access)
         $columns = [
@@ -59,4 +61,94 @@ class DataController extends Controller
             ])->values(),
         ]);
     }
+
+    public function producedWater()
+    {
+        return view('frontend.user.data.produced-water');
+    }
+
+    public function producedWaterFluxColumns()
+    {
+        return response()->json([
+            'columns' => [
+                'ch4_flux'   => 'Methane (CH₄)',
+                'co2_flux'   => 'Carbon Dioxide (CO₂)',
+                'tnmhc'      => 'Total NMHC',
+                'alkanes'    => 'Alkanes',
+                'alkenes'    => 'Alkenes',
+                'aromatics'  => 'Aromatics',
+                'alcohols'   => 'Alcohols',
+                'carbonyls'  => 'Carbonyls',
+            ],
+            'units' => 'mg/m²/hr',
+        ]);
+    }
+
+    public function producedWaterFluxJson(Request $request)
+    {
+        $y = $request->get('y', 'ch4_flux');
+        $windCorrected = filter_var(
+            $request->get('wind_corrected', false),
+            FILTER_VALIDATE_BOOLEAN
+        );
+
+        $query = ProducedWaterFlux::query()
+            ->whereNotNull($y)
+            ->where('wind_corrected', $windCorrected);
+
+        // Optional filters
+        if ($request->filled('state')) {
+            $query->where('state', $request->state);
+        }
+
+        if ($request->filled('facility_id')) {
+            $query->where('facility_id', $request->facility_id);
+        }
+
+        $rows = $query
+            ->orderByRaw('COALESCE(datetime_start, created_at)')
+            ->get();
+
+        $series = [];
+        $index = 0;
+
+        foreach ($rows as $row) {
+            $series[] = [
+                'x' => $index,
+                'y' => (float) $row->{$y},
+                'time' => optional($row->datetime_start)->toIso8601String(),
+                'duration' => $row->duration_min, // minutes
+            ];
+            $index++;
+        }
+
+        return response()->json([
+            'meta' => [
+                'y' => $y,
+                'wind_corrected' => $windCorrected,
+                'count' => count($series),
+                'units' => 'mg/m²/hr',
+            ],
+            'series' => $series,
+        ]);
+    }
+
+
+    public function producedWaterChemistryJson()
+    {
+        return response()->json([
+            'message' => 'Not implemented yet',
+        ]);
+    }
+
+    public function producedWaterRelationshipsJson()
+    {
+        return response()->json([
+            'message' => 'Not implemented yet',
+        ]);
+    }
+
+
+
+
 }

@@ -30,10 +30,10 @@
                 <ul class="c-sidebar-nav-dropdown-items">
                         <li class="c-sidebar-nav-item">
                             <x-utils.link
-                                :href="route('frontend.user.data')"
+                                :href="route('frontend.user.data.emission-trends')"
                                 class="c-sidebar-nav-link"
                                 text="Explore data"
-                                :active="activeClass(Route::is('frontend.user.data'), 'c-active')" />
+                                :active="activeClass(Route::is('frontend.user.data.emission-trends*'), 'c-active')" />
                         </li>
                 </ul>
         </li>
@@ -50,7 +50,7 @@
                             <x-utils.link
                                 :href="route('frontend.user.account')"
                                 class="c-sidebar-nav-link"
-                                text="Account info"
+                                text="TBD"
                                 :active="activeClass(Route::is('frontend.user.account.*'), 'c-active')" />
                         </li>
                 </ul>
@@ -66,10 +66,10 @@
                 <ul class="c-sidebar-nav-dropdown-items">
                         <li class="c-sidebar-nav-item">
                             <x-utils.link
-                                :href="route('frontend.user.account')"
+                                :href="route('frontend.user.data.produced-water')"
                                 class="c-sidebar-nav-link"
-                                text="Account info"
-                                :active="activeClass(Route::is('frontend.user.account.*'), 'c-active')" />
+                                text="Produced Water"
+                                :active="activeClass(Route::is('frontend.user.data.produced-water*'), 'c-active')" />
                         </li>
                 </ul>
         </li>
