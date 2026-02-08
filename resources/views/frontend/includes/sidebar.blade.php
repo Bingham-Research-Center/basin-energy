@@ -38,23 +38,24 @@
                 </ul>
         </li>
 
-        <li class="c-sidebar-nav-dropdown ">
-                <x-utils.link
-                    href="#"
-                    icon="c-sidebar-nav-icon cil-map"
-                    class="c-sidebar-nav-dropdown-toggle"
-                    text="Carbon mapper" />
+        <li class="c-sidebar-nav-dropdown">
+            <x-utils.link
+                href="#"
+                icon="c-sidebar-nav-icon cil-map"
+                class="c-sidebar-nav-dropdown-toggle"
+                text="Carbon Mapper" />
 
-                <ul class="c-sidebar-nav-dropdown-items">
-                        <li class="c-sidebar-nav-item">
-                            <x-utils.link
-                                :href="route('frontend.user.account')"
-                                class="c-sidebar-nav-link"
-                                text="TBD"
-                                :active="activeClass(Route::is('frontend.user.account.*'), 'c-active')" />
-                        </li>
-                </ul>
+            <ul class="c-sidebar-nav-dropdown-items">
+                <li class="c-sidebar-nav-item">
+                    <x-utils.link
+                        :href="route('frontend.user.carbon-mapper.utah')"
+                        class="c-sidebar-nav-link"
+                        text="Utah Super-Emitters"
+                        :active="activeClass(Route::is('frontend.user.carbon-mapper.*'), 'c-active')" />
+                </li>
+            </ul>
         </li>
+
 
         <li class="c-sidebar-nav-dropdown ">
                 <x-utils.link

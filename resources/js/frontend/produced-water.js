@@ -33,6 +33,29 @@ document.addEventListener('DOMContentLoaded', () => {
         return 'hsl(210 70% 45%)';
     }
 
+    function formatDate(iso) {
+      if (!iso) return null;
+
+      const d = new Date(iso);
+
+      return d.toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+      });
+    }
+
+    function formatTime(iso) {
+      if (!iso) return null;
+
+      const d = new Date(iso);
+
+      return d.toLocaleTimeString(undefined, {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    }
+
     async function fetchColumns() {
         const res = await fetch(columnsUrl);
         return await res.json();
@@ -126,11 +149,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         const lines = [];
 
                         if (p.time) {
-                          lines.push(`Time: ${p.time}`);
+                          const date = formatDate(p.time);
+                          const time = formatTime(p.time);
+
+                          if (date) lines.push(`Date: ${date}`);
+                          if (time) lines.push(`Time: ${time}`);
                         }
 
                         if (p.duration !== null && p.duration !== undefined) {
-                          lines.push(`Duration: ${p.duration} min`);
+                          lines.push(`Duration: ${Math.round(p.duration)} min`);
                         }
 
                         return lines;
@@ -147,8 +174,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     pan: { enabled: true, mode: 'x' },
                   },
                 },
-
-
 
             },
         });

@@ -207,12 +207,31 @@ class ImportProducedWaterData extends Command
             return null;
         }
 
+        $value = trim($value);
+
+        $formats = [
+            'n/j/y H:i',
+            'n/j/Y H:i',
+            'm/d/y H:i',
+            'm/d/Y H:i',
+            'Y-m-d H:i:s',
+        ];
+
+        foreach ($formats as $format) {
+            try {
+                return \Carbon\Carbon::createFromFormat($format, $value);
+            } catch (\Exception $e) {
+                // try next format
+            }
+        }
+
         try {
-            return Carbon::parse($value);
+            return \Carbon\Carbon::parse($value);
         } catch (\Exception $e) {
             return null;
         }
     }
+
 
     protected function extractSpecies(array $row): array
     {

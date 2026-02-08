@@ -116,7 +116,9 @@ class DataController extends Controller
             $series[] = [
                 'x' => $index,
                 'y' => (float) $row->{$y},
-                'time' => optional($row->datetime_start)->toIso8601String(),
+                'time' => $row->datetime_start
+                    ? $row->datetime_start->toIso8601String()
+                    : $row->created_at->toIso8601String(),
                 'duration' => $row->duration_min, // minutes
             ];
             $index++;

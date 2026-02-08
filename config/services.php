@@ -79,4 +79,11 @@ return [
         'client_secret' => env('TWITTER_CLIENT_SECRET'),
         'redirect' => env('TWITTER_REDIRECT'),
     ],
+
+    'carbon_mapper' => [
+        'base_url' => 'https://api.carbonmapper.org/api/v1',
+        'token'    => env('CARBON_MAPPER_TOKEN'),
+    ],
+
+
 ];

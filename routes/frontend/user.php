@@ -4,6 +4,7 @@ use App\Http\Controllers\Frontend\User\AccountController;
 use App\Http\Controllers\Frontend\User\DashboardController;
 use App\Http\Controllers\Frontend\User\DataController;
 use App\Http\Controllers\Frontend\User\ProfileController;
+use App\Http\Controllers\Frontend\CarbonMapperController;
 use Tabuna\Breadcrumbs\Trail;
 
 /*
@@ -56,6 +57,23 @@ Route::group(['as' => 'user.', 'middleware' => ['auth', 'password.expires', conf
         });
     });
 
+    Route::group([
+        'prefix' => 'carbon-mapper',
+        'as' => 'carbon-mapper.',
+    ], function () {
+
+        Route::get('/utah', [CarbonMapperController::class, 'utah'])
+            ->name('utah');
+
+        Route::get('/utah/json', [CarbonMapperController::class, 'utahJson'])
+            ->name('utah.json');
+
+        Route::get('/utah/detections', [CarbonMapperController::class, 'utahDetections'])
+            ->name('utah.detections');
+
+        Route::get('/utah/sources', [CarbonMapperController::class, 'utahSources'])
+            ->name('utah.sources');
+    });
 
     
     Route::patch('profile/update', [ProfileController::class, 'update'])->name('profile.update');
