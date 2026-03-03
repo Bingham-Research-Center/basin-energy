@@ -8,6 +8,7 @@ use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use LangleyFoxall\LaravelNISTPasswordRules\PasswordRules;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Class LoginController.
@@ -100,8 +101,8 @@ class LoginController
     {
         if (! $user->isActive()) {
             auth()->logout();
-
-            return redirect()->route('frontend.auth.login')->withFlashDanger(__('Your account has been deactivated.'));
+            throw ValidationException::withMessages([$this->username() => [__('Your account has been deactivated.')]]);
+            #return redirect()->route('frontend.auth.login')->withFlashDanger(__('Your account has been deactivated.'));
         }
 
         event(new UserLoggedIn($user));
@@ -109,5 +110,17 @@ class LoginController
         if (config('boilerplate.access.user.single_login')) {
             auth()->logoutOtherDevices($request->password);
         }
+    }
+
+    protected function sendLoginResponse(Request $request)
+    {
+        $request->session()->regenerate();
+        $this->clearLoginAttempts($request);
+
+        $this->authenticated($request, $this->guard()->user());
+
+        return response()->json([
+            'redirect' => $this->redirectPath(),
+        ], 200);
     }
 }

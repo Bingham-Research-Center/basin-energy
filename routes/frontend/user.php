@@ -68,11 +68,10 @@ Route::group(['as' => 'user.', 'middleware' => ['auth', 'password.expires', conf
         Route::get('/utah/json', [CarbonMapperController::class, 'utahJson'])
             ->name('utah.json');
 
-        Route::get('/utah/detections', [CarbonMapperController::class, 'utahDetections'])
-            ->name('utah.detections');
+        Route::get('/utah/detections', [CarbonMapperController::class, 'utahDetections']);
+        Route::get('/utah/sources', [CarbonMapperController::class, 'utahSources']);
 
-        Route::get('/utah/sources', [CarbonMapperController::class, 'utahSources'])
-            ->name('utah.sources');
+
     });
 
     

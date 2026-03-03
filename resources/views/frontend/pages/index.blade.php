@@ -1,63 +1,35 @@
 @extends('frontend.layouts.web')
 
-@section('title', __('Home'))
+@section('title', 'Home')
 
 @section('content')
-        <main>
-            <div class="container py-4">
-
-                <div class="row justify-content-center">
-                    <div class="col-md-12">
-
-                        <div class="card">
-                            <div class="card-header">
-                                Bingham Research Center | Emission Website
-                            </div>
-
-                            <div class="card-body">
-
-                                <div class="row">
-
-                                    {{-- Left small column --}}
-                                    <div class="col-md-2 mb-3">
-                                        <div class="border rounded p-3 h-100">
-                                            <h6>Left Menu</h6>
-                                            <p class="small text-muted">
-                                                Add info, stats, or filters here.
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {{-- Center large column --}}
-                                    <div class="col-md-8 mb-3">
-                                        <div class="border rounded p-3 h-100">
-                                            <h5>Main Content Area</h5>
-                                            <p>Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a, venenatis vitae, justo. Nullam dictum felis eu pede mollis pretium. Integer tincidunt. </p>
-                                        </div>
-                                    </div>
-
-                                    {{-- Right small column --}}
-                                    <div class="col-md-2 mb-3">
-                                        <div class="border rounded p-3 h-100 d-flex flex-column">
-                                            <h6>Tools</h6>
-                                            <p class="small text-muted">View drone emissions map.</p>
-
-                                            <a href="{{ route('frontend.pages.drone') }}"
-                                            class="btn btn-primary btn-sm mt-auto"
-                                            target="_blank">
-                                                View drone emissions map.
-                                            </a>
-                                        </div>
-                                    </div>
-
-                                </div><!-- row -->
-
-                            </div><!-- card-body -->
-                        </div><!-- card -->
-
-                    </div><!-- col -->
-                </div><!-- row -->
-
-            </div><!-- container -->
-        </main>
+<!-- Slider Start -->
+<section class="slider">
+   <div class="container">
+      <div class="columns is-justify-content-center">
+         <div class="column is-9-widescreen is-12-desktop">
+            <div class="has-text-centered">
+               <span class="is-block mb-4 is-uppercase">Prepare for new future</span>
+               <h1 class="animated fadeInUp mb-6 has-text-white">Helping customers be their best in the moments that matter.</h1>
+               <a href="#!" class="btn btn-main animated fadeInUp m-1" >Get started<i class="btn-icon fa fa-angle-right ml-2"></i></a>
+               <a href="#!" class="btn btn-solid-border animated fadeInUp m-1" >Basin Weather Now</a>
+            </div>
+         </div>
+      </div>
+   </div>
+</section>
+<section class="mt--6 is-relative slider-cta">
+   <div class="container">
+      <div class="columns is-desktop is-align-items-center bg-primary rounded">
+         <div class="column is-8-desktop">
+            <h3 class="mb-4 has-text-white">We are crafting visually stunning memorable experiences and numquam for the web.</h3>
+            <p class="text-white-50">Scientists, technical staff, and students at the Bingham Research Center are dedicated to energy and environmental research in Utah and around the world. We specialize in the areas of air quality, energy, and environmental science.</p>
+         </div>
+         <div class="column is-4-desktop has-text-right">
+            <a _tar href="https://www.usu.edu/binghamresearch/" class="btn btn-white mb-0">Bingham Research Center</a>
+         </div>
+      </div>
+   </div>
+</section>
+</br>
 @endsection

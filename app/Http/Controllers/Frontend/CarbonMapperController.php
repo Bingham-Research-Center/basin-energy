@@ -24,7 +24,6 @@ class CarbonMapperController extends Controller
         $query = CarbonMapperObservation::query()
             ->where('gas', 'CH4')
             ->select([
-                'id',
                 'latitude',
                 'longitude',
                 'observed_at',
@@ -32,16 +31,24 @@ class CarbonMapperController extends Controller
 
         if ($request->filled('bbox')) {
             [$minLon, $minLat, $maxLon, $maxLat] = explode(',', $request->bbox);
-
             $query
                 ->whereBetween('longitude', [$minLon, $maxLon])
                 ->whereBetween('latitude', [$minLat, $maxLat]);
         }
 
+        if ($request->filled('from')) {
+            $query->where('observed_at', '>=', $request->from);
+        }
+
+        if ($request->filled('to')) {
+            $query->where('observed_at', '<=', $request->to);
+        }
+
         return response()->json(
-            $query->limit(10000)->get()
+            $query->limit(20000)->get()
         );
     }
+
 
     public function utahDetections()
     {
@@ -62,21 +69,19 @@ class CarbonMapperController extends Controller
 
     public function utahSources()
     {
-        $sources = CarbonMapperObservation::query()
-            ->where('gas', 'CH4')
+        return CarbonMapperObservation::where('gas','CH4')
             ->whereBetween('longitude', [-114.05, -109.05])
-            ->whereBetween('latitude', [36.99, 42.00])
+            ->whereBetween('latitude', [36.99, 42])
             ->selectRaw('
                 ROUND(latitude, 3) as latitude,
                 ROUND(longitude, 3) as longitude,
                 COUNT(*) as observations,
                 MAX(observed_at) as last_seen
             ')
-            ->groupBy('latitude', 'longitude')
-            ->having('observations', '>=', 3)
+            ->groupBy('latitude','longitude')
+            ->having('observations', '>=', 5)
             ->get();
-
-        return response()->json($sources);
     }
+
 
 }

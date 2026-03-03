@@ -31,3 +31,5 @@ output.txt
 Thumbs.db
 yarn-error.log
 *txt
+*.zip
+*.log

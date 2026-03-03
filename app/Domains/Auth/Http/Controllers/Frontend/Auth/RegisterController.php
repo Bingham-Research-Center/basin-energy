@@ -8,7 +8,7 @@ use Illuminate\Foundation\Auth\RegistersUsers;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use LangleyFoxall\LaravelNISTPasswordRules\PasswordRules;
-
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 /**
  * Class RegisterController.
  */
@@ -97,5 +97,25 @@ class RegisterController
         abort_unless(config('boilerplate.access.user.registration'), 404);
 
         return $this->userService->registerUser($data);
+    }
+
+    protected function registered(\Illuminate\Http\Request $request, $user)
+    {
+        if ($request->expectsJson()) {
+            if ($user instanceof MustVerifyEmail && ! $user->hasVerifiedEmail()) {
+                return response()->json([
+                    'verify'  => true,
+                    'email'   => $user->email,
+                    'message' => __('We’ve sent a verification link to your email. Please verify to continue.'),
+                ], 200);
+            }
+
+            // Otherwise normal success
+            return response()->json([
+                'redirect' => $this->redirectPath(),
+            ], 200);
+        }
+
+        // Non-AJAX: let the trait do its normal redirect behavior
     }
 }
