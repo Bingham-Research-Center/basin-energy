@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Frontend;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\AboutPageContent;
+use App\Models\ServicesPageContent;
+use App\Models\PortfolioPageContent;
+use App\Models\PortfolioItem;
 
 class PageController extends Controller
 {
@@ -31,19 +34,37 @@ class PageController extends Controller
 
     public function service()
     {
-        return view('frontend.pages.service');
-    }
+        $hero = ServicesPageContent::getSectionItem('hero', 'title');
 
-    public function pricing()
-    {
-        return view('frontend.pages.pricing');
+        $serviceItems = ServicesPageContent::where('section', 'service_items')
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
+
+        return view('frontend.pages.service', compact(
+            'hero',
+            'serviceItems'
+        ));
     }
 
     public function portfolio()
     {
-        return view('frontend.pages.portfolio');
-    }
+        $hero = PortfolioPageContent::getSectionItem('hero', 'title');
+        $portfolioHeader = PortfolioPageContent::getSectionItem('portfolio_header', 'main');
+        $cta = PortfolioPageContent::getSectionItem('cta', 'main');
 
+        $portfolioItems = PortfolioItem::where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
+
+        return view('frontend.pages.portfolio', compact(
+            'hero',
+            'portfolioHeader',
+            'cta',
+            'portfolioItems'
+        ));
+    }
+    
     public function blog()
     {
         return view('frontend.pages.blog-grid');

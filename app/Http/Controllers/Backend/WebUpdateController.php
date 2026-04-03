@@ -7,6 +7,9 @@ use Illuminate\Http\Request;
 use App\Models\AboutPageContent;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Models\ServicesPageContent;
+use App\Models\PortfolioPageContent;
+use App\Models\PortfolioItem;
 
 class WebUpdateController extends Controller
 {
@@ -22,9 +25,6 @@ class WebUpdateController extends Controller
 
     public function updateHome(Request $request)
     {
-        // validate fields
-        // upload image if present
-        // save to DB/settings
         return back()->withFlashSuccess('Home page updated successfully.');
     }
 
@@ -192,29 +192,220 @@ class WebUpdateController extends Controller
         return back()->withFlashSuccess('Team member deleted successfully.');
     }
 
-
-
-
-
-
     public function service()
     {
-        return view('backend.webupdate.service');
+        $hero = ServicesPageContent::getSectionItem('hero', 'title');
+
+        $serviceItems = ServicesPageContent::where('section', 'service_items')
+            ->orderBy('sort_order')
+            ->get();
+
+        return view('backend.webupdate.service', compact(
+            'hero',
+            'serviceItems'
+        ));
     }
 
     public function updateService(Request $request)
     {
+        $request->validate([
+            'hero_title' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        ServicesPageContent::updateOrCreate(
+            ['section' => 'hero', 'item_key' => 'title'],
+            ['title' => $request->hero_title]
+        );
+
         return back()->withFlashSuccess('Service page updated successfully.');
+    }
+
+    public function storeServiceItem(Request $request)
+    {
+        $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'icon' => ['nullable', 'string', 'max:255'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+            'is_active' => ['nullable', 'boolean'],
+        ]);
+
+        ServicesPageContent::create([
+            'section' => 'service_items',
+            'item_key' => 'service_item_' . Str::uuid(),
+            'title' => $request->title,
+            'description' => $request->description,
+            'icon' => $request->icon,
+            'sort_order' => $request->sort_order ?? 0,
+            'is_active' => $request->boolean('is_active'),
+        ]);
+
+        return back()->withFlashSuccess('Service item added successfully.');
+    }
+
+    public function updateServiceItem(Request $request, ServicesPageContent $serviceItem)
+    {
+        abort_unless($serviceItem->section === 'service_items', 404);
+
+        $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'icon' => ['nullable', 'string', 'max:255'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+            'is_active' => ['nullable', 'boolean'],
+        ]);
+
+        $serviceItem->update([
+            'title' => $request->title,
+            'description' => $request->description,
+            'icon' => $request->icon,
+            'sort_order' => $request->sort_order ?? 0,
+            'is_active' => $request->boolean('is_active'),
+        ]);
+
+        return back()->withFlashSuccess('Service item updated successfully.');
+    }
+
+    public function deleteServiceItem(ServicesPageContent $serviceItem)
+    {
+        abort_unless($serviceItem->section === 'service_items', 404);
+
+        $serviceItem->delete();
+
+        return back()->withFlashSuccess('Service item deleted successfully.');
     }
 
     public function portfolio()
     {
-        return view('backend.webupdate.portfolio');
+        $hero = PortfolioPageContent::getSectionItem('hero', 'title');
+        $portfolioHeader = PortfolioPageContent::getSectionItem('portfolio_header', 'main');
+        $cta = PortfolioPageContent::getSectionItem('cta', 'main');
+
+        $portfolioItems = PortfolioItem::orderBy('sort_order')->get();
+
+        return view('backend.webupdate.portfolio', compact(
+            'hero',
+            'portfolioHeader',
+            'cta',
+            'portfolioItems'
+        ));
     }
 
     public function updatePortfolio(Request $request)
     {
+        $request->validate([
+            'hero_title' => ['nullable', 'string', 'max:255'],
+            'portfolio_title' => ['nullable', 'string', 'max:255'],
+            'portfolio_description' => ['nullable', 'string'],
+            'cta_subtitle' => ['nullable', 'string', 'max:255'],
+            'cta_title' => ['nullable', 'string'],
+            'cta_button_text' => ['nullable', 'string', 'max:255'],
+            'cta_button_link' => ['nullable', 'string', 'max:255'],
+            'cta_secondary_button_text' => ['nullable', 'string', 'max:255'],
+            'cta_secondary_button_link' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        PortfolioPageContent::updateOrCreate(
+            ['section' => 'hero', 'item_key' => 'title'],
+            ['title' => $request->hero_title]
+        );
+
+        PortfolioPageContent::updateOrCreate(
+            ['section' => 'portfolio_header', 'item_key' => 'main'],
+            [
+                'title' => $request->portfolio_title,
+                'description' => $request->portfolio_description,
+            ]
+        );
+
+        PortfolioPageContent::updateOrCreate(
+            ['section' => 'cta', 'item_key' => 'main'],
+            [
+                'subtitle' => $request->cta_subtitle,
+                'title' => $request->cta_title,
+                'button_text' => $request->cta_button_text,
+                'button_link' => $request->cta_button_link,
+                'value' => [
+                    'secondary_button_text' => $request->cta_secondary_button_text,
+                    'secondary_button_link' => $request->cta_secondary_button_link,
+                ],
+            ]
+        );
+
         return back()->withFlashSuccess('Portfolio page updated successfully.');
+    }
+
+    public function storePortfolioItem(Request $request)
+    {
+        $request->validate([
+            'title' => ['nullable', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'categories' => ['nullable', 'array'],
+            'categories.*' => ['string'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+            'is_active' => ['nullable', 'boolean'],
+        ]);
+
+        $data = [
+            'title' => $request->title,
+            'description' => $request->description,
+            'categories' => $request->categories ?? [],
+            'sort_order' => $request->sort_order ?? 0,
+            'is_active' => $request->boolean('is_active'),
+        ];
+
+        if ($request->hasFile('image')) {
+            $data['image'] = $request->file('image')->store('website/portfolio', 'public');
+        }
+
+        PortfolioItem::create($data);
+
+        return back()->withFlashSuccess('Portfolio item added successfully.');
+    }
+
+    public function updatePortfolioItem(Request $request, PortfolioItem $portfolioItem)
+    {
+        $request->validate([
+            'title' => ['nullable', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'categories' => ['nullable', 'array'],
+            'categories.*' => ['string'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+            'is_active' => ['nullable', 'boolean'],
+        ]);
+
+        $data = [
+            'title' => $request->title,
+            'description' => $request->description,
+            'categories' => $request->categories ?? [],
+            'sort_order' => $request->sort_order ?? 0,
+            'is_active' => $request->boolean('is_active'),
+        ];
+
+        if ($request->hasFile('image')) {
+            if ($portfolioItem->image) {
+                Storage::disk('public')->delete($portfolioItem->image);
+            }
+
+            $data['image'] = $request->file('image')->store('website/portfolio', 'public');
+        }
+
+        $portfolioItem->update($data);
+
+        return back()->withFlashSuccess('Portfolio item updated successfully.');
+    }
+
+    public function deletePortfolioItem(PortfolioItem $portfolioItem)
+    {
+        if ($portfolioItem->image) {
+            Storage::disk('public')->delete($portfolioItem->image);
+        }
+
+        $portfolioItem->delete();
+
+        return back()->withFlashSuccess('Portfolio item deleted successfully.');
     }
 
     public function blog()

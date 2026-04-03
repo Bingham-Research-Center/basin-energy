@@ -20,16 +20,21 @@ Route::prefix('website-update')->as('website-update.')->group(function () {
 
     Route::get('/about', [WebUpdateController::class, 'about'])->name('about');
     Route::post('/about', [WebUpdateController::class, 'updateAbout'])->name('about.update');
-
     Route::post('/about/team-members', [WebUpdateController::class, 'storeTeamMember'])->name('about.team-members.store');
     Route::put('/about/team-members/{teamMember}', [WebUpdateController::class, 'updateTeamMember'])->name('about.team-members.update');
     Route::delete('/about/team-members/{teamMember}', [WebUpdateController::class, 'deleteTeamMember'])->name('about.team-members.delete');
 
     Route::get('/service', [WebUpdateController::class, 'service'])->name('service');
     Route::post('/service', [WebUpdateController::class, 'updateService'])->name('service.update');
+    Route::post('/service/items', [WebUpdateController::class, 'storeServiceItem'])->name('service.items.store');
+    Route::put('/service/items/{serviceItem}', [WebUpdateController::class, 'updateServiceItem'])->name('service.items.update');
+    Route::delete('/service/items/{serviceItem}', [WebUpdateController::class, 'deleteServiceItem'])->name('service.items.delete');
 
     Route::get('/portfolio', [WebUpdateController::class, 'portfolio'])->name('portfolio');
     Route::post('/portfolio', [WebUpdateController::class, 'updatePortfolio'])->name('portfolio.update');
+    Route::post('/portfolio/items', [WebUpdateController::class, 'storePortfolioItem'])->name('portfolio.items.store');
+    Route::put('/portfolio/items/{portfolioItem}', [WebUpdateController::class, 'updatePortfolioItem'])->name('portfolio.items.update');
+    Route::delete('/portfolio/items/{portfolioItem}', [WebUpdateController::class, 'deletePortfolioItem'])->name('portfolio.items.delete');
 
     Route::get('/blog', [WebUpdateController::class, 'blog'])->name('blog');
     Route::post('/blog', [WebUpdateController::class, 'updateBlog'])->name('blog.update');
