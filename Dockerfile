@@ -1,16 +1,20 @@
 FROM php:8.2-apache
 
-# Install system dependencies
+# system packages if you already have them
 RUN apt-get update && apt-get install -y \
-    git \
-    vim \
-    unzip \
-    libzip-dev \
     libpng-dev \
+    libjpeg62-turbo-dev \
+    libfreetype6-dev \
     libonig-dev \
     libxml2-dev \
-    && docker-php-ext-install pdo_mysql mbstring zip gd \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    zip \
+    unzip \
+    git \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# PHP extensions
+RUN docker-php-ext-install pdo pdo_mysql pcntl
 
 # Enable Apache modules
 RUN a2enmod rewrite

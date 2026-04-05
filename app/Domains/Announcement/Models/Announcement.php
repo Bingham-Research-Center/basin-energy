@@ -6,6 +6,7 @@ use App\Domains\Announcement\Models\Traits\Scope\AnnouncementScope;
 use Database\Factories\AnnouncementFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
 /**
@@ -19,9 +20,6 @@ class Announcement extends Model
 
     public const TYPE_FRONTEND = 'frontend';
     public const TYPE_BACKEND = 'backend';
-
-    protected static $logFillable = true;
-    protected static $logOnlyDirty = true;
 
     /**
      * @var string[]
@@ -58,5 +56,13 @@ class Announcement extends Model
     protected static function newFactory()
     {
         return AnnouncementFactory::new();
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logFillable()
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
 }
