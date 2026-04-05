@@ -54,4 +54,33 @@ class TestSensorReadingController extends Controller
             'data' => $readings,
         ]);
     }
+    public function devices()
+    {
+        $devices = \App\Models\TestSensorReading::query()
+            ->select('device_id')
+            ->distinct()
+            ->orderBy('device_id')
+            ->pluck('device_id');
+
+        return response()->json([
+            'status' => true,
+            'data' => $devices,
+        ]);
+    }
+
+    public function latestByDevice($deviceId)
+    {
+        $readings = \App\Models\TestSensorReading::query()
+            ->where('device_id', $deviceId)
+            ->latest('recorded_at')
+            ->take(30)
+            ->get()
+            ->reverse()
+            ->values();
+
+        return response()->json([
+            'status' => true,
+            'data' => $readings,
+        ]);
+    }
 }

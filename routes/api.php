@@ -21,3 +21,5 @@ use App\Http\Controllers\Api\TestSensorReadingController;
 
 Route::post('/sensor-data', [TestSensorReadingController::class, 'store']);
 Route::get('/sensor-data/latest', [TestSensorReadingController::class, 'latest']);
+Route::get('/sensor-data/devices', [TestSensorReadingController::class, 'devices']);
+Route::get('/sensor-data/latest/{deviceId}', [TestSensorReadingController::class, 'latestByDevice']);

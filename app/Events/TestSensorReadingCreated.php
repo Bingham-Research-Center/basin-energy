@@ -5,11 +5,11 @@ namespace App\Events;
 use App\Models\TestSensorReading;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Queue\SerializesModels;
 use Illuminate\Foundation\Events\Dispatchable;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 
-class TestSensorReadingCreated implements ShouldBroadcast
+class TestSensorReadingCreated implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -22,7 +22,7 @@ class TestSensorReadingCreated implements ShouldBroadcast
 
     public function broadcastOn(): Channel
     {
-        return new Channel('sensor-readings');
+        return new Channel('sensor-readings.' . $this->reading->device_id);
     }
 
     public function broadcastAs(): string
