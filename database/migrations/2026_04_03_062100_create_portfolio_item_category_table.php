@@ -8,26 +8,20 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('portfolio_items', function (Blueprint $table) {
-            $table->id();
-            $table->string('title')->nullable();
-            $table->text('description')->nullable();
-            $table->string('image')->nullable();
-            $table->unsignedInteger('sort_order')->default(0);
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
-        });
-
         Schema::create('portfolio_item_category', function (Blueprint $table) {
             $table->id();
             $table->foreignId('portfolio_item_id')->constrained()->cascadeOnDelete();
             $table->foreignId('portfolio_category_id')->constrained()->cascadeOnDelete();
-            $table->unique(['portfolio_item_id', 'portfolio_category_id']);
+
+            $table->unique(
+                ['portfolio_item_id', 'portfolio_category_id'],
+                'pic_item_cat_unique'
+            );
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('portfolio_items');
+        Schema::dropIfExists('portfolio_item_category');
     }
 };

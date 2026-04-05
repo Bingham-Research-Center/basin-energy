@@ -45,8 +45,10 @@ Route::get('portfolio', [PageController::class, 'portfolio'])
 Route::get('blog', [PageController::class, 'blog'])
     ->name('pages.blog');
 
-Route::get('blog-single', [PageController::class, 'blogSingle'])
+Route::get('blog/{slug}', [PageController::class, 'blogSingle'])
     ->name('pages.blogSingle');
 
 Route::get('contact', [PageController::class, 'contact'])
     ->name('pages.contact');
+Route::post('contact', [PageController::class, 'submitContact'])
+    ->name('pages.contact.submit');

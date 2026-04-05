@@ -193,7 +193,10 @@ AOS.init({
   var Shuffle = window.Shuffle;
   var jQuery = window.jQuery;
 
-  var myShuffle = new Shuffle(document.querySelector(".shuffle-wrapper"), {
+var shuffleElement = document.querySelector(".shuffle-wrapper");
+
+if (shuffleElement) {
+  var myShuffle = new Shuffle(shuffleElement, {
     itemSelector: ".shuffle-item",
     buffer: 1,
   });
@@ -204,4 +207,6 @@ AOS.init({
       myShuffle.filter(input.value);
     }
   });
+}
+
 })(jQuery);

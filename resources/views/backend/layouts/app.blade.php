@@ -11,6 +11,7 @@
 
     @stack('before-styles')
     <link rel="stylesheet" href="{{ asset('frontend/plugins/themify/css/themify-icons.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-bs4.min.css" rel="stylesheet">
     <link href="{{ mix('css/backend.css') }}" rel="stylesheet">
     <livewire:styles />
     @stack('after-styles')
@@ -42,6 +43,7 @@
     <script src="{{ mix('js/manifest.js') }}"></script>
     <script src="{{ mix('js/vendor.js') }}"></script>
     <script src="{{ mix('js/backend.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-bs4.min.js"></script>
     <livewire:scripts />
     @stack('after-scripts')
 </body>

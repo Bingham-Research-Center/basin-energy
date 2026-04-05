@@ -26,6 +26,7 @@ return [
             ],
             'login' => env('LOGIN_CAPTCHA_STATUS', false),
             'registration' => env('REGISTRATION_CAPTCHA_STATUS', false),
+            'contact' => env('CONTACT_CAPTCHA_STATUS', true),
         ],
 
         'middleware' => [

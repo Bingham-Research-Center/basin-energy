@@ -1,39 +1,35 @@
-/**
- * WEBSITE: https://themefisher.com
- * TWITTER: https://twitter.com/themefisher
- * FACEBOOK: https://www.facebook.com/themefisher
- * GITHUB: https://github.com/themefisher/
- */
-
 (function ($) {
     'use strict';
 
-    var form = $('.contact__form'),
+    var form = $('.contact__form.ajax-contact-form'),
         message = $('.contact__msg'),
         form_data;
 
-    // Success function
+    if (!form.length) {
+        return;
+    }
+
     function done_func(response) {
         message.fadeIn().removeClass('alert-danger').addClass('alert-success');
-        message.text(response);
+        message.text(response.message || response);
         setTimeout(function () {
             message.fadeOut();
         }, 2000);
         form.find('input:not([type="submit"]), textarea').val('');
     }
 
-    // fail function
     function fail_func(data) {
-        message.fadeIn().removeClass('alert-success').addClass('alert-success');
-        message.text(data.responseText);
+        message.fadeIn().removeClass('alert-success').addClass('alert-danger');
+        message.text(data.responseText || 'Something went wrong.');
         setTimeout(function () {
             message.fadeOut();
         }, 2000);
     }
-    
+
     form.submit(function (e) {
         e.preventDefault();
         form_data = $(this).serialize();
+
         $.ajax({
             type: 'POST',
             url: form.attr('action'),
@@ -42,5 +38,5 @@
         .done(done_func)
         .fail(fail_func);
     });
-    
+
 })(jQuery);

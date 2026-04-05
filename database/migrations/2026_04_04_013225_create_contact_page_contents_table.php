@@ -8,26 +8,27 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('portfolio_items', function (Blueprint $table) {
+        Schema::create('contact_page_contents', function (Blueprint $table) {
             $table->id();
+            $table->string('section');
+            $table->string('item_key')->nullable();
             $table->string('title')->nullable();
+            $table->string('subtitle')->nullable();
             $table->text('description')->nullable();
             $table->string('image')->nullable();
+            $table->string('button_text')->nullable();
+            $table->string('button_link')->nullable();
+            $table->json('value')->nullable();
             $table->unsignedInteger('sort_order')->default(0);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
-        });
 
-        Schema::create('portfolio_item_category', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('portfolio_item_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('portfolio_category_id')->constrained()->cascadeOnDelete();
-            $table->unique(['portfolio_item_id', 'portfolio_category_id']);
+            $table->unique(['section', 'item_key'], 'cpc_section_item_unique');
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('portfolio_items');
+        Schema::dropIfExists('contact_page_contents');
     }
 };

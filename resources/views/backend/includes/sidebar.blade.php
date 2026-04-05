@@ -146,6 +146,24 @@
             </ul>
         </li>
 
+        <li class="c-sidebar-nav-dropdown {{ activeClass(Route::is('admin.sensors.*'), 'c-open c-show') }}">
+            <x-utils.link
+                href="#"
+                icon="c-sidebar-nav-icon cil-chart-line"
+                class="c-sidebar-nav-dropdown-toggle"
+                :text="__('Sensors')" />
+
+            <ul class="c-sidebar-nav-dropdown-items">
+                <li class="c-sidebar-nav-item">
+                    <x-utils.link
+                        :href="route('admin.sensors.dashboard')"
+                        class="c-sidebar-nav-link"
+                        :text="__('Sensor Dashboard')"
+                        :active="activeClass(Route::is('admin.sensors.dashboard'), 'c-active')" />
+                </li>
+            </ul>
+        </li>
+
         @endif
     </ul>
 

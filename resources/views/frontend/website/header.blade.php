@@ -52,10 +52,16 @@
 					</li>
 
 					<li class="navbar-item has-dropdown is-hoverable">
-						<a class="navbar-link is-arrowless">Blog +</a>
+						<a class="navbar-link is-arrowless" href="{{ route('frontend.pages.blog') }}">Blog</a>
 						<div class="navbar-dropdown">
-							<a class="navbar-item" href="{{ route('frontend.pages.blog') }}">Blog Grid</a>
-							<a class="navbar-item" href="{{ route('frontend.pages.blogSingle') }}">Blog Single</a>
+							<a class="navbar-item" href="{{ route('frontend.pages.blog') }}">All Posts</a>
+
+							@foreach(($headerBlogCategories ?? []) as $category)
+								<a class="navbar-item"
+								href="{{ route('frontend.pages.blog', ['category' => $category->slug]) }}">
+									{{ $category->name }}
+								</a>
+							@endforeach
 						</div>
 					</li>
 					

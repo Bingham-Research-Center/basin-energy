@@ -1,15 +1,15 @@
 @extends('backend.layouts.app')
 
-@section('title', 'Update Portfolio Page')
+@section('title', 'Update Blog Page')
 
 @section('content')
     <x-backend.card>
         <x-slot name="header">
-            Update Portfolio Page
+            Update Blog Page
         </x-slot>
 
         <x-slot name="body">
-            <form action="{{ route('admin.website-update.portfolio.update') }}" method="POST">
+            <form action="{{ route('admin.website-update.blog.update') }}" method="POST" enctype="multipart/form-data">
                 @csrf
 
                 <div class="form-group mb-3">
@@ -18,67 +18,42 @@
                         value="{{ old('hero_title', $hero->title ?? '') }}">
                 </div>
 
-                <div class="form-group mb-3">
-                    <label>Portfolio Section Title</label>
-                    <input type="text" name="portfolio_title" class="form-control"
-                        value="{{ old('portfolio_title', $portfolioHeader->title ?? '') }}">
-                </div>
-
-                <div class="form-group mb-3">
-                    <label>Portfolio Section Description</label>
-                    <textarea name="portfolio_description" class="form-control" rows="4">{{ old('portfolio_description', $portfolioHeader->description ?? '') }}</textarea>
-                </div>
-
                 <hr>
 
                 <div class="form-group mb-3">
-                    <label>CTA Small Text</label>
-                    <input type="text" name="cta_subtitle" class="form-control"
-                        value="{{ old('cta_subtitle', $cta->subtitle ?? '') }}">
+                    <label>Sidebar Author Name</label>
+                    <input type="text" name="sidebar_author_name" class="form-control"
+                        value="{{ old('sidebar_author_name', $sidebarAuthor->title ?? '') }}">
                 </div>
 
                 <div class="form-group mb-3">
-                    <label>CTA Title</label>
-                    <input type="text" name="cta_title" class="form-control"
-                        value="{{ old('cta_title', $cta->title ?? '') }}">
+                    <label>Sidebar Author Description</label>
+                    <textarea name="sidebar_author_description" class="form-control" rows="4">{{ old('sidebar_author_description', $sidebarAuthor->description ?? '') }}</textarea>
                 </div>
 
                 <div class="form-group mb-3">
-                    <label>CTA Primary Button Text</label>
-                    <input type="text" name="cta_button_text" class="form-control"
-                        value="{{ old('cta_button_text', $cta->button_text ?? '') }}">
+                    <label>Sidebar Author Image</label>
+                    <input type="file" name="sidebar_author_image" class="form-control">
+                    @if(!empty($sidebarAuthor?->image))
+                        <div class="mt-2">
+                            <img src="{{ asset('storage/' . $sidebarAuthor->image) }}" alt="Sidebar Author"
+                                style="max-width: 120px; border-radius: 6px;">
+                        </div>
+                    @endif
                 </div>
 
-                <div class="form-group mb-3">
-                    <label>CTA Primary Button Link</label>
-                    <input type="text" name="cta_button_link" class="form-control"
-                        value="{{ old('cta_button_link', $cta->button_link ?? '') }}">
-                </div>
-
-                <div class="form-group mb-3">
-                    <label>CTA Secondary Button Text</label>
-                    <input type="text" name="cta_secondary_button_text" class="form-control"
-                        value="{{ old('cta_secondary_button_text', $cta->value['secondary_button_text'] ?? '') }}">
-                </div>
-
-                <div class="form-group mb-3">
-                    <label>CTA Secondary Button Link</label>
-                    <input type="text" name="cta_secondary_button_link" class="form-control"
-                        value="{{ old('cta_secondary_button_link', $cta->value['secondary_button_link'] ?? '') }}">
-                </div>
-
-                <button type="submit" class="btn btn-primary">Save Portfolio Page</button>
+                <button type="submit" class="btn btn-primary">Save Blog Page</button>
             </form>
         </x-slot>
     </x-backend.card>
 
     <x-backend.card class="mt-3">
         <x-slot name="header">
-            Portfolio Categories
+            Blog Categories
         </x-slot>
 
         <x-slot name="headerActions">
-            <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#createPortfolioCategoryModal">
+            <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#createBlogCategoryModal">
                 Add Category
             </button>
         </x-slot>
@@ -97,7 +72,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($portfolioCategories as $category)
+                        @forelse($blogCategories as $category)
                             <tr>
                                 <td>{{ $loop->iteration }}</td>
                                 <td>{{ $category->name }}</td>
@@ -112,23 +87,21 @@
                                 </td>
                                 <td>
                                     <button type="button" class="btn btn-sm btn-info"
-                                        data-toggle="modal" data-target="#viewPortfolioCategoryModal{{ $category->id }}">
+                                        data-toggle="modal" data-target="#viewBlogCategoryModal{{ $category->id }}">
                                         View
                                     </button>
 
                                     <button type="button" class="btn btn-sm btn-warning"
-                                        data-toggle="modal" data-target="#editPortfolioCategoryModal{{ $category->id }}">
+                                        data-toggle="modal" data-target="#editBlogCategoryModal{{ $category->id }}">
                                         Edit
                                     </button>
 
-                                    <form action="{{ route('admin.website-update.portfolio.categories.delete', $category->id) }}"
+                                    <form action="{{ route('admin.website-update.blog.categories.delete', $category->id) }}"
                                         method="POST"
-                                        class="d-inline delete-portfolio-category-form">
+                                        class="d-inline delete-blog-category-form">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-danger">
-                                            Delete
-                                        </button>
+                                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
                                     </form>
                                 </td>
                             </tr>
@@ -145,12 +118,12 @@
 
     <x-backend.card class="mt-3">
         <x-slot name="header">
-            Portfolio Gallery Items
+            Blog Posts
         </x-slot>
 
         <x-slot name="headerActions">
-            <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#createPortfolioItemModal">
-                Add Portfolio Item
+            <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#createBlogPostModal">
+                Add Blog Post
             </button>
         </x-slot>
 
@@ -162,37 +135,33 @@
                             <th>#</th>
                             <th>Image</th>
                             <th>Title</th>
-                            <th>Description</th>
+                            <th>Slug</th>
+                            <th>Author</th>
+                            <th>Published</th>
                             <th>Categories</th>
-                            <th>Order</th>
                             <th>Status</th>
                             <th width="180">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($portfolioItems as $item)
+                        @forelse($blogPosts as $post)
                             <tr>
                                 <td>{{ $loop->iteration }}</td>
                                 <td>
-                                    @if($item->image)
-                                        <img src="{{ asset('storage/' . $item->image) }}" alt="{{ $item->title }}"
+                                    @if($post->featured_image)
+                                        <img src="{{ asset('storage/' . $post->featured_image) }}" alt="{{ $post->title }}"
                                             style="width: 60px; height: 60px; object-fit: cover; border-radius: 6px;">
                                     @else
                                         -
                                     @endif
                                 </td>
-                                <td>{{ $item->title }}</td>
-                                <td>{{ $item->description }}</td>
+                                <td>{{ $post->title }}</td>
+                                <td>{{ $post->slug }}</td>
+                                <td>{{ $post->author_name }}</td>
+                                <td>{{ optional($post->published_at)->format('Y-m-d') }}</td>
+                                <td>{{ $post->categories->isNotEmpty() ? $post->categories->pluck('name')->implode(', ') : '-' }}</td>
                                 <td>
-                                @if($item->categories && $item->categories->isNotEmpty())
-                                    {{ $item->categories->pluck('name')->implode(', ') }}
-                                @else
-                                    -
-                                @endif
-                                </td>
-                                <td>{{ $item->sort_order }}</td>
-                                <td>
-                                    @if($item->is_active)
+                                    @if($post->is_active)
                                         <span class="badge badge-success">Active</span>
                                     @else
                                         <span class="badge badge-secondary">Inactive</span>
@@ -200,29 +169,27 @@
                                 </td>
                                 <td>
                                     <button type="button" class="btn btn-sm btn-info"
-                                        data-toggle="modal" data-target="#viewPortfolioItemModal{{ $item->id }}">
+                                        data-toggle="modal" data-target="#viewBlogPostModal{{ $post->id }}">
                                         View
                                     </button>
 
                                     <button type="button" class="btn btn-sm btn-warning"
-                                        data-toggle="modal" data-target="#editPortfolioItemModal{{ $item->id }}">
+                                        data-toggle="modal" data-target="#editBlogPostModal{{ $post->id }}">
                                         Edit
                                     </button>
 
-                                    <form action="{{ route('admin.website-update.portfolio.items.delete', $item->id) }}"
+                                    <form action="{{ route('admin.website-update.blog.posts.delete', $post->id) }}"
                                         method="POST"
-                                        class="d-inline delete-portfolio-item-form">
+                                        class="d-inline delete-blog-post-form">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-danger">
-                                            Delete
-                                        </button>
+                                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
                                     </form>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center">No portfolio items found.</td>
+                                <td colspan="9" class="text-center">No blog posts found.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -231,18 +198,14 @@
         </x-slot>
     </x-backend.card>
 
-    <div class="modal fade" id="createPortfolioCategoryModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal fade" id="createBlogCategoryModal" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog" role="document">
-            <form action="{{ route('admin.website-update.portfolio.categories.store') }}"
-                method="POST"
-                class="modal-content">
+            <form action="{{ route('admin.website-update.blog.categories.store') }}" method="POST" class="modal-content">
                 @csrf
 
                 <div class="modal-header">
-                    <h5 class="modal-title">Add Portfolio Category</h5>
-                    <button type="button" class="close" data-dismiss="modal">
-                        <span>&times;</span>
-                    </button>
+                    <h5 class="modal-title">Add Blog Category</h5>
+                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
                 </div>
 
                 <div class="modal-body">
@@ -254,7 +217,6 @@
                     <div class="form-group">
                         <label>Slug</label>
                         <input type="text" name="slug" class="form-control">
-                        <small class="text-muted">Leave blank to auto-generate from name.</small>
                     </div>
 
                     <div class="form-group">
@@ -263,8 +225,8 @@
                     </div>
 
                     <div class="form-group form-check">
-                        <input type="checkbox" name="is_active" value="1" class="form-check-input" id="createPortfolioCategoryActive" checked>
-                        <label class="form-check-label" for="createPortfolioCategoryActive">Active</label>
+                        <input type="checkbox" name="is_active" value="1" class="form-check-input" id="createBlogCategoryActive" checked>
+                        <label class="form-check-label" for="createBlogCategoryActive">Active</label>
                     </div>
                 </div>
 
@@ -275,17 +237,14 @@
         </div>
     </div>
 
-    @foreach($portfolioCategories as $category)
-        <div class="modal fade" id="viewPortfolioCategoryModal{{ $category->id }}" tabindex="-1" role="dialog" aria-hidden="true">
+    @foreach($blogCategories as $category)
+        <div class="modal fade" id="viewBlogCategoryModal{{ $category->id }}" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">View Portfolio Category</h5>
-                        <button type="button" class="close" data-dismiss="modal">
-                            <span>&times;</span>
-                        </button>
+                        <h5 class="modal-title">View Blog Category</h5>
+                        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
                     </div>
-
                     <div class="modal-body">
                         <p><strong>Name:</strong> {{ $category->name }}</p>
                         <p><strong>Slug:</strong> {{ $category->slug }}</p>
@@ -296,19 +255,16 @@
             </div>
         </div>
 
-        <div class="modal fade" id="editPortfolioCategoryModal{{ $category->id }}" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal fade" id="editBlogCategoryModal{{ $category->id }}" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog" role="document">
-                <form action="{{ route('admin.website-update.portfolio.categories.update', $category->id) }}"
-                    method="POST"
-                    class="modal-content">
+                <form action="{{ route('admin.website-update.blog.categories.update', $category->id) }}"
+                    method="POST" class="modal-content">
                     @csrf
                     @method('PUT')
 
                     <div class="modal-header">
-                        <h5 class="modal-title">Edit Portfolio Category</h5>
-                        <button type="button" class="close" data-dismiss="modal">
-                            <span>&times;</span>
-                        </button>
+                        <h5 class="modal-title">Edit Blog Category</h5>
+                        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
                     </div>
 
                     <div class="modal-body">
@@ -329,8 +285,8 @@
 
                         <div class="form-group form-check">
                             <input type="checkbox" name="is_active" value="1" class="form-check-input"
-                                id="portfolioCategoryActive{{ $category->id }}" {{ $category->is_active ? 'checked' : '' }}>
-                            <label class="form-check-label" for="portfolioCategoryActive{{ $category->id }}">Active</label>
+                                id="blogCategoryActive{{ $category->id }}" {{ $category->is_active ? 'checked' : '' }}>
+                            <label class="form-check-label" for="blogCategoryActive{{ $category->id }}">Active</label>
                         </div>
                     </div>
 
@@ -342,53 +298,71 @@
         </div>
     @endforeach
 
-    <div class="modal fade" id="createPortfolioItemModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal fade" id="createBlogPostModal" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
-            <form action="{{ route('admin.website-update.portfolio.items.store') }}"
+            <form action="{{ route('admin.website-update.blog.posts.store') }}"
                 method="POST"
                 enctype="multipart/form-data"
                 class="modal-content">
                 @csrf
 
                 <div class="modal-header">
-                    <h5 class="modal-title">Add Portfolio Item</h5>
-                    <button type="button" class="close" data-dismiss="modal">
-                        <span>&times;</span>
-                    </button>
+                    <h5 class="modal-title">Add Blog Post</h5>
+                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
                 </div>
 
                 <div class="modal-body">
                     <div class="form-group">
                         <label>Title</label>
-                        <input type="text" name="title" class="form-control">
+                        <input type="text" name="title" class="form-control" required>
                     </div>
 
                     <div class="form-group">
-                        <label>Description</label>
-                        <textarea name="description" class="form-control" rows="4"></textarea>
+                        <label>Slug</label>
+                        <input type="text" name="slug" class="form-control">
                     </div>
 
                     <div class="form-group">
-                        <label>Image</label>
-                        <input type="file" name="image" class="form-control" required>
+                        <label>Excerpt</label>
+                        <textarea name="excerpt" class="form-control summernote" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Content</label>
+                        <textarea name="content" class="form-control summernote" rows="8"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Featured Image</label>
+                        <input type="file" name="featured_image" class="form-control">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Author Name</label>
+                        <input type="text" name="author_name" class="form-control">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Published At</label>
+                        <input type="datetime-local" name="published_at" class="form-control">
                     </div>
 
                     <div class="form-group">
                         <label>Categories</label>
                         <div>
-                            @forelse($portfolioCategories as $category)
+                            @forelse($blogCategories as $category)
                                 <div class="form-check">
                                     <input type="checkbox"
                                         name="category_ids[]"
                                         value="{{ $category->id }}"
                                         class="form-check-input"
-                                        id="createPortfolioCategory{{ $category->id }}">
-                                    <label class="form-check-label" for="createPortfolioCategory{{ $category->id }}">
+                                        id="createBlogCategory{{ $category->id }}">
+                                    <label class="form-check-label" for="createBlogCategory{{ $category->id }}">
                                         {{ $category->name }}
                                     </label>
                                 </div>
                             @empty
-                                <p class="text-muted mb-0">No categories available. Please create a category first.</p>
+                                <p class="text-muted mb-0">No categories available. Please create one first.</p>
                             @endforelse
                         </div>
                     </div>
@@ -399,50 +373,57 @@
                     </div>
 
                     <div class="form-group form-check">
-                        <input type="checkbox" name="is_active" value="1" class="form-check-input" id="createPortfolioActive" checked>
-                        <label class="form-check-label" for="createPortfolioActive">Active</label>
+                        <input type="checkbox" name="is_active" value="1" class="form-check-input" id="createBlogPostActive" checked>
+                        <label class="form-check-label" for="createBlogPostActive">Active</label>
                     </div>
                 </div>
 
                 <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">Save Portfolio Item</button>
+                    <button type="submit" class="btn btn-primary">Save Blog Post</button>
                 </div>
             </form>
         </div>
     </div>
 
-    @foreach($portfolioItems as $item)
-        <div class="modal fade" id="viewPortfolioItemModal{{ $item->id }}" tabindex="-1" role="dialog" aria-hidden="true">
+    @foreach($blogPosts as $post)
+        <div class="modal fade" id="viewBlogPostModal{{ $post->id }}" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog modal-lg" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">View Portfolio Item</h5>
-                        <button type="button" class="close" data-dismiss="modal">
-                            <span>&times;</span>
-                        </button>
+                        <h5 class="modal-title">View Blog Post</h5>
+                        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
                     </div>
 
                     <div class="modal-body">
-                        @if($item->image)
+                        @if($post->featured_image)
                             <div class="mb-3">
-                                <img src="{{ asset('storage/' . $item->image) }}" alt="{{ $item->title }}"
+                                <img src="{{ asset('storage/' . $post->featured_image) }}" alt="{{ $post->title }}"
                                     style="max-width: 200px; border-radius: 6px;">
                             </div>
                         @endif
 
-                        <p><strong>Title:</strong> {{ $item->title }}</p>
-                        <p><strong>Description:</strong> {{ $item->description }}</p>
-                        <p><strong>Categories:</strong> {{ ($item->categories && $item->categories->isNotEmpty()) ? $item->categories->pluck('name')->implode(', ') : '-' }}</p>
-                        <p><strong>Sort Order:</strong> {{ $item->sort_order }}</p>
-                        <p><strong>Status:</strong> {{ $item->is_active ? 'Active' : 'Inactive' }}</p>
+                        <p><strong>Title:</strong> {{ $post->title }}</p>
+                        <p><strong>Slug:</strong> {{ $post->slug }}</p>
+                        <p><strong>Author:</strong> {{ $post->author_name }}</p>
+                        <p><strong>Published:</strong> {{ optional($post->published_at)->format('Y-m-d H:i') }}</p>
+                        <p><strong>Categories:</strong> {{ $post->categories->isNotEmpty() ? $post->categories->pluck('name')->implode(', ') : '-' }}</p>
+                        <p><strong>Excerpt:</strong></p>
+                        <div class="border rounded p-3 mb-3">
+                            {!! $post->excerpt !!}
+                        </div>
+
+                        <p><strong>Content:</strong></p>
+                        <div class="border rounded p-3">
+                            {!! $post->content !!}
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="modal fade" id="editPortfolioItemModal{{ $item->id }}" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal fade" id="editBlogPostModal{{ $post->id }}" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog modal-lg" role="document">
-                <form action="{{ route('admin.website-update.portfolio.items.update', $item->id) }}"
+                <form action="{{ route('admin.website-update.blog.posts.update', $post->id) }}"
                     method="POST"
                     enctype="multipart/form-data"
                     class="modal-content">
@@ -450,46 +431,65 @@
                     @method('PUT')
 
                     <div class="modal-header">
-                        <h5 class="modal-title">Edit Portfolio Item</h5>
-                        <button type="button" class="close" data-dismiss="modal">
-                            <span>&times;</span>
-                        </button>
+                        <h5 class="modal-title">Edit Blog Post</h5>
+                        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
                     </div>
 
                     <div class="modal-body">
                         <div class="form-group">
                             <label>Title</label>
-                            <input type="text" name="title" class="form-control" value="{{ $item->title }}">
+                            <input type="text" name="title" class="form-control" value="{{ $post->title }}" required>
                         </div>
 
                         <div class="form-group">
-                            <label>Description</label>
-                            <textarea name="description" class="form-control" rows="4">{{ $item->description }}</textarea>
+                            <label>Slug</label>
+                            <input type="text" name="slug" class="form-control" value="{{ $post->slug }}">
                         </div>
 
                         <div class="form-group">
-                            <label>Image</label>
-                            <input type="file" name="image" class="form-control">
-                            @if($item->image)
+                            <label>Excerpt</label>
+                            <textarea name="excerpt" class="form-control summernote" rows="3">{{ $post->excerpt }}</textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Content</label>
+                            <textarea name="content" class="form-control summernote" rows="8">{{ $post->content }}</textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Featured Image</label>
+                            <input type="file" name="featured_image" class="form-control">
+                            @if($post->featured_image)
                                 <div class="mt-2">
-                                    <img src="{{ asset('storage/' . $item->image) }}" alt="{{ $item->title }}"
+                                    <img src="{{ asset('storage/' . $post->featured_image) }}" alt="{{ $post->title }}"
                                         style="max-width: 120px; border-radius: 6px;">
                                 </div>
                             @endif
                         </div>
 
                         <div class="form-group">
+                            <label>Author Name</label>
+                            <input type="text" name="author_name" class="form-control" value="{{ $post->author_name }}">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Published At</label>
+                            <input type="datetime-local" name="published_at" class="form-control"
+                                value="{{ $post->published_at ? $post->published_at->format('Y-m-d\TH:i') : '' }}">
+                        </div>
+
+                        <div class="form-group">
                             <label>Categories</label>
                             <div>
-                                @forelse($portfolioCategories as $category)
+                                @forelse($blogCategories as $category)
                                     <div class="form-check">
                                         <input type="checkbox"
                                             name="category_ids[]"
                                             value="{{ $category->id }}"
                                             class="form-check-input"
-                                            id="editPortfolioItemCategory{{ $item->id }}_{{ $category->id }}"
-                                            {{ ($item->categories && $item->categories->contains('id', $category->id)) ? 'checked' : '' }}>
-                                        <label class="form-check-label" for="editPortfolioItemCategory{{ $item->id }}_{{ $category->id }}">
+                                            id="editBlogPostCategory{{ $post->id }}_{{ $category->id }}"
+                                            {{ $post->categories->contains('id', $category->id) ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="editBlogPostCategory{{ $post->id }}_{{ $category->id }}">
                                             {{ $category->name }}
                                         </label>
                                     </div>
@@ -501,18 +501,18 @@
 
                         <div class="form-group">
                             <label>Sort Order</label>
-                            <input type="number" name="sort_order" class="form-control" value="{{ $item->sort_order }}">
+                            <input type="number" name="sort_order" class="form-control" value="{{ $post->sort_order }}">
                         </div>
 
                         <div class="form-group form-check">
                             <input type="checkbox" name="is_active" value="1" class="form-check-input"
-                                id="portfolioActive{{ $item->id }}" {{ $item->is_active ? 'checked' : '' }}>
-                            <label class="form-check-label" for="portfolioActive{{ $item->id }}">Active</label>
+                                id="blogPostActive{{ $post->id }}" {{ $post->is_active ? 'checked' : '' }}>
+                            <label class="form-check-label" for="blogPostActive{{ $post->id }}">Active</label>
                         </div>
                     </div>
 
                     <div class="modal-footer">
-                        <button type="submit" class="btn btn-primary">Update Portfolio Item</button>
+                        <button type="submit" class="btn btn-primary">Update Blog Post</button>
                     </div>
                 </form>
             </div>
@@ -522,14 +522,29 @@
 
 @push('after-scripts')
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        document.querySelectorAll('.delete-portfolio-category-form').forEach(function(form) {
+    $(document).ready(function () {
+        $('.summernote').summernote({
+            height: 250,
+            placeholder: 'Write here...',
+            toolbar: [
+                ['style', ['style']],
+                ['font', ['bold', 'underline', 'clear']],
+                ['fontname', ['fontname']],
+                ['color', ['color']],
+                ['para', ['ul', 'ol', 'paragraph']],
+                ['table', ['table']],
+                ['insert', ['link', 'picture', 'video']],
+                ['view', ['fullscreen', 'codeview', 'help']]
+            ]
+        });
+
+        document.querySelectorAll('.delete-blog-category-form').forEach(function(form) {
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
 
                 Swal.fire({
                     title: 'Are you sure?',
-                    text: 'This portfolio category will be deleted permanently.',
+                    text: 'This blog category will be deleted permanently.',
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonText: 'Yes, delete it',
@@ -542,13 +557,13 @@
             });
         });
 
-        document.querySelectorAll('.delete-portfolio-item-form').forEach(function(form) {
+        document.querySelectorAll('.delete-blog-post-form').forEach(function(form) {
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
 
                 Swal.fire({
                     title: 'Are you sure?',
-                    text: 'This portfolio item will be deleted permanently.',
+                    text: 'This blog post will be deleted permanently.',
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonText: 'Yes, delete it',

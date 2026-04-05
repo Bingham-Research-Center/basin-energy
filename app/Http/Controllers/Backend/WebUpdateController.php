@@ -10,6 +10,12 @@ use Illuminate\Support\Str;
 use App\Models\ServicesPageContent;
 use App\Models\PortfolioPageContent;
 use App\Models\PortfolioItem;
+use App\Models\PortfolioCategory;
+use App\Models\BlogPageContent;
+use App\Models\BlogCategory;
+use App\Models\BlogPost;
+use App\Models\ContactPageContent;
+use App\Models\ContactMessage;
 
 class WebUpdateController extends Controller
 {
@@ -281,14 +287,61 @@ class WebUpdateController extends Controller
         $portfolioHeader = PortfolioPageContent::getSectionItem('portfolio_header', 'main');
         $cta = PortfolioPageContent::getSectionItem('cta', 'main');
 
-        $portfolioItems = PortfolioItem::orderBy('sort_order')->get();
+        $portfolioCategories = PortfolioCategory::orderBy('sort_order')->get();
+        $portfolioItems = PortfolioItem::with('categories')->orderBy('sort_order')->get();
 
         return view('backend.webupdate.portfolio', compact(
             'hero',
             'portfolioHeader',
             'cta',
+            'portfolioCategories',
             'portfolioItems'
         ));
+    }
+
+    public function storePortfolioCategory(Request $request)
+    {
+        $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'slug' => ['nullable', 'string', 'max:255', 'unique:portfolio_categories,slug'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+            'is_active' => ['nullable', 'boolean'],
+        ]);
+
+        PortfolioCategory::create([
+            'name' => $request->name,
+            'slug' => $request->slug ?: Str::slug($request->name),
+            'sort_order' => $request->sort_order ?? 0,
+            'is_active' => $request->boolean('is_active'),
+        ]);
+
+        return back()->withFlashSuccess('Portfolio category added successfully.');
+    }
+
+    public function updatePortfolioCategory(Request $request, PortfolioCategory $portfolioCategory)
+    {
+        $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'slug' => ['nullable', 'string', 'max:255', 'unique:portfolio_categories,slug,' . $portfolioCategory->id],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+            'is_active' => ['nullable', 'boolean'],
+        ]);
+
+        $portfolioCategory->update([
+            'name' => $request->name,
+            'slug' => $request->slug ?: Str::slug($request->name),
+            'sort_order' => $request->sort_order ?? 0,
+            'is_active' => $request->boolean('is_active'),
+        ]);
+
+        return back()->withFlashSuccess('Portfolio category updated successfully.');
+    }
+
+    public function deletePortfolioCategory(PortfolioCategory $portfolioCategory)
+    {
+        $portfolioCategory->delete();
+
+        return back()->withFlashSuccess('Portfolio category deleted successfully.');
     }
 
     public function updatePortfolio(Request $request)
@@ -341,8 +394,8 @@ class WebUpdateController extends Controller
             'title' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
-            'categories' => ['nullable', 'array'],
-            'categories.*' => ['string'],
+            'category_ids' => ['nullable', 'array'],
+            'category_ids.*' => ['integer', 'exists:portfolio_categories,id'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
             'is_active' => ['nullable', 'boolean'],
         ]);
@@ -350,7 +403,6 @@ class WebUpdateController extends Controller
         $data = [
             'title' => $request->title,
             'description' => $request->description,
-            'categories' => $request->categories ?? [],
             'sort_order' => $request->sort_order ?? 0,
             'is_active' => $request->boolean('is_active'),
         ];
@@ -359,7 +411,9 @@ class WebUpdateController extends Controller
             $data['image'] = $request->file('image')->store('website/portfolio', 'public');
         }
 
-        PortfolioItem::create($data);
+        $item = PortfolioItem::create($data);
+
+        $item->categories()->sync($request->input('category_ids', []));
 
         return back()->withFlashSuccess('Portfolio item added successfully.');
     }
@@ -370,8 +424,8 @@ class WebUpdateController extends Controller
             'title' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
-            'categories' => ['nullable', 'array'],
-            'categories.*' => ['string'],
+            'category_ids' => ['nullable', 'array'],
+            'category_ids.*' => ['integer', 'exists:portfolio_categories,id'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
             'is_active' => ['nullable', 'boolean'],
         ]);
@@ -379,14 +433,13 @@ class WebUpdateController extends Controller
         $data = [
             'title' => $request->title,
             'description' => $request->description,
-            'categories' => $request->categories ?? [],
             'sort_order' => $request->sort_order ?? 0,
             'is_active' => $request->boolean('is_active'),
         ];
 
         if ($request->hasFile('image')) {
             if ($portfolioItem->image) {
-                Storage::disk('public')->delete($portfolioItem->image);
+                \Storage::disk('public')->delete($portfolioItem->image);
             }
 
             $data['image'] = $request->file('image')->store('website/portfolio', 'public');
@@ -394,8 +447,11 @@ class WebUpdateController extends Controller
 
         $portfolioItem->update($data);
 
+        $portfolioItem->categories()->sync($request->input('category_ids', []));
+
         return back()->withFlashSuccess('Portfolio item updated successfully.');
     }
+
 
     public function deletePortfolioItem(PortfolioItem $portfolioItem)
     {
@@ -410,21 +466,278 @@ class WebUpdateController extends Controller
 
     public function blog()
     {
-        return view('backend.webupdate.blog');
-    }
+        $hero = BlogPageContent::getSectionItem('hero', 'title');
+        $sidebarAuthor = BlogPageContent::getSectionItem('sidebar_author', 'main');
 
+        $blogCategories = BlogCategory::orderBy('sort_order')->get();
+        $blogPosts = BlogPost::with('categories')->orderByDesc('published_at')->get();
+
+        return view('backend.webupdate.blog', compact(
+            'hero',
+            'sidebarAuthor',
+            'blogCategories',
+            'blogPosts'
+        ));
+    }
     public function updateBlog(Request $request)
     {
+        $request->validate([
+            'hero_title' => ['nullable', 'string', 'max:255'],
+            'sidebar_author_name' => ['nullable', 'string', 'max:255'],
+            'sidebar_author_description' => ['nullable', 'string'],
+            'sidebar_author_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+        ]);
+
+        BlogPageContent::updateOrCreate(
+            ['section' => 'hero', 'item_key' => 'title'],
+            ['title' => $request->hero_title]
+        );
+
+        $authorData = [
+            'title' => $request->sidebar_author_name,
+            'description' => $request->sidebar_author_description,
+        ];
+
+        $existingAuthor = BlogPageContent::getSectionItem('sidebar_author', 'main');
+
+        if ($request->hasFile('sidebar_author_image')) {
+            if ($existingAuthor && $existingAuthor->image) {
+                Storage::disk('public')->delete($existingAuthor->image);
+            }
+
+            $authorData['image'] = $request->file('sidebar_author_image')->store('website/blog', 'public');
+        }
+
+        BlogPageContent::updateOrCreate(
+            ['section' => 'sidebar_author', 'item_key' => 'main'],
+            $authorData
+        );
+
         return back()->withFlashSuccess('Blog page updated successfully.');
+    }
+
+    public function storeBlogCategory(Request $request)
+    {
+        $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'slug' => ['nullable', 'string', 'max:255', 'unique:blog_categories,slug'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+            'is_active' => ['nullable', 'boolean'],
+        ]);
+
+        BlogCategory::create([
+            'name' => $request->name,
+            'slug' => $request->slug ?: Str::slug($request->name),
+            'sort_order' => $request->sort_order ?? 0,
+            'is_active' => $request->boolean('is_active'),
+        ]);
+
+        return back()->withFlashSuccess('Blog category added successfully.');
+    }
+
+    public function updateBlogCategory(Request $request, BlogCategory $blogCategory)
+    {
+        $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'slug' => ['nullable', 'string', 'max:255', 'unique:blog_categories,slug,' . $blogCategory->id],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+            'is_active' => ['nullable', 'boolean'],
+        ]);
+
+        $blogCategory->update([
+            'name' => $request->name,
+            'slug' => $request->slug ?: Str::slug($request->name),
+            'sort_order' => $request->sort_order ?? 0,
+            'is_active' => $request->boolean('is_active'),
+        ]);
+
+        return back()->withFlashSuccess('Blog category updated successfully.');
+    }
+
+    public function deleteBlogCategory(BlogCategory $blogCategory)
+    {
+        $blogCategory->delete();
+
+        return back()->withFlashSuccess('Blog category deleted successfully.');
+    }
+
+    public function storeBlogPost(Request $request)
+    {
+        $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'slug' => ['nullable', 'string', 'max:255', 'unique:blog_posts,slug'],
+            'excerpt' => ['nullable', 'string'],
+            'content' => ['nullable', 'string'],
+            'featured_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'author_name' => ['nullable', 'string', 'max:255'],
+            'published_at' => ['nullable', 'date'],
+            'category_ids' => ['nullable', 'array'],
+            'category_ids.*' => ['integer', 'exists:blog_categories,id'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+            'is_active' => ['nullable', 'boolean'],
+        ]);
+
+        $data = [
+            'title' => $request->title,
+            'slug' => $request->slug ?: Str::slug($request->title),
+            'excerpt' => $request->excerpt,
+            'content' => $request->content,
+            'author_name' => $request->author_name,
+            'published_at' => $request->published_at,
+            'sort_order' => $request->sort_order ?? 0,
+            'is_active' => $request->boolean('is_active'),
+        ];
+
+        if ($request->hasFile('featured_image')) {
+            $data['featured_image'] = $request->file('featured_image')->store('website/blog/posts', 'public');
+        }
+
+        $post = BlogPost::create($data);
+        $post->categories()->sync($request->input('category_ids', []));
+
+        return back()->withFlashSuccess('Blog post added successfully.');
+    }
+
+    public function updateBlogPost(Request $request, BlogPost $blogPost)
+    {
+        $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'slug' => ['nullable', 'string', 'max:255', 'unique:blog_posts,slug,' . $blogPost->id],
+            'excerpt' => ['nullable', 'string'],
+            'content' => ['nullable', 'string'],
+            'featured_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'author_name' => ['nullable', 'string', 'max:255'],
+            'published_at' => ['nullable', 'date'],
+            'category_ids' => ['nullable', 'array'],
+            'category_ids.*' => ['integer', 'exists:blog_categories,id'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+            'is_active' => ['nullable', 'boolean'],
+        ]);
+
+        $data = [
+            'title' => $request->title,
+            'slug' => $request->slug ?: Str::slug($request->title),
+            'excerpt' => $request->excerpt,
+            'content' => $request->content,
+            'author_name' => $request->author_name,
+            'published_at' => $request->published_at,
+            'sort_order' => $request->sort_order ?? 0,
+            'is_active' => $request->boolean('is_active'),
+        ];
+
+        if ($request->hasFile('featured_image')) {
+            if ($blogPost->featured_image) {
+                Storage::disk('public')->delete($blogPost->featured_image);
+            }
+
+            $data['featured_image'] = $request->file('featured_image')->store('website/blog/posts', 'public');
+        }
+
+        $blogPost->update($data);
+        $blogPost->categories()->sync($request->input('category_ids', []));
+
+        return back()->withFlashSuccess('Blog post updated successfully.');
+    }
+
+    public function deleteBlogPost(BlogPost $blogPost)
+    {
+        if ($blogPost->featured_image) {
+            Storage::disk('public')->delete($blogPost->featured_image);
+        }
+
+        $blogPost->delete();
+
+        return back()->withFlashSuccess('Blog post deleted successfully.');
     }
 
     public function contact()
     {
-        return view('backend.webupdate.contact');
+        $hero = ContactPageContent::getSectionItem('hero', 'title');
+        $contactInfo = ContactPageContent::getSectionItem('contact_info', 'main');
+        $socialLinks = ContactPageContent::getSectionItem('social_links', 'main');
+        $contactForm = ContactPageContent::getSectionItem('contact_form', 'main');
+        $map = ContactPageContent::getSectionItem('map', 'main');
+
+        $contactMessages = ContactMessage::latest()->get();
+
+        return view('backend.webupdate.contact', compact(
+            'hero',
+            'contactInfo',
+            'socialLinks',
+            'contactForm',
+            'map',
+            'contactMessages'
+        ));
     }
 
     public function updateContact(Request $request)
     {
+        $request->validate([
+            'hero_title' => ['nullable', 'string', 'max:255'],
+
+            'contact_lead' => ['nullable', 'string'],
+            'contact_phone' => ['nullable', 'string', 'max:255'],
+            'contact_description' => ['nullable', 'string'],
+
+            'facebook_url' => ['nullable', 'url'],
+            'twitter_url' => ['nullable', 'url'],
+            'linkedin_url' => ['nullable', 'url'],
+
+            'form_title' => ['nullable', 'string', 'max:255'],
+            'form_description' => ['nullable', 'string'],
+
+            'map_embed_url' => ['nullable', 'string'],
+        ]);
+
+        ContactPageContent::updateOrCreate(
+            ['section' => 'hero', 'item_key' => 'title'],
+            ['title' => $request->hero_title]
+        );
+
+        ContactPageContent::updateOrCreate(
+            ['section' => 'contact_info', 'item_key' => 'main'],
+            [
+                'subtitle' => $request->contact_lead,
+                'title' => $request->contact_phone,
+                'description' => $request->contact_description,
+            ]
+        );
+
+        ContactPageContent::updateOrCreate(
+            ['section' => 'social_links', 'item_key' => 'main'],
+            [
+                'value' => [
+                    'facebook' => $request->facebook_url,
+                    'twitter' => $request->twitter_url,
+                    'linkedin' => $request->linkedin_url,
+                ],
+            ]
+        );
+
+        ContactPageContent::updateOrCreate(
+            ['section' => 'contact_form', 'item_key' => 'main'],
+            [
+                'title' => $request->form_title,
+                'description' => $request->form_description,
+            ]
+        );
+
+        ContactPageContent::updateOrCreate(
+            ['section' => 'map', 'item_key' => 'main'],
+            [
+                'value' => [
+                    'embed_url' => $request->map_embed_url,
+                ],
+            ]
+        );
+
         return back()->withFlashSuccess('Contact page updated successfully.');
+    }
+
+    public function deleteContactMessage(ContactMessage $contactMessage)
+    {
+        $contactMessage->delete();
+
+        return back()->withFlashSuccess('Contact message deleted successfully.');
     }
 }

@@ -5,14 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class PortfolioItem extends Model
+class PortfolioCategory extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'title',
-        'description',
-        'image',
+        'name',
+        'slug',
         'sort_order',
         'is_active',
     ];
@@ -21,8 +20,8 @@ class PortfolioItem extends Model
         'is_active' => 'boolean',
     ];
 
-    public function categories()
+    public function items()
     {
-        return $this->belongsToMany(PortfolioCategory::class, 'portfolio_item_category');
+        return $this->belongsToMany(PortfolioItem::class, 'portfolio_item_category');
     }
 }

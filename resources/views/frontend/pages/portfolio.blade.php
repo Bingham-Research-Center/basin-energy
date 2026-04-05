@@ -31,22 +31,20 @@
             <label class="btn active">
                <input type="radio" name="shuffle-filter" value="all" checked="checked">All
             </label>
-            <label class="btn">
-               <input type="radio" name="shuffle-filter" value="design">UI/UX Design
-            </label>
-            <label class="btn">
-               <input type="radio" name="shuffle-filter" value="branding">BRANDING
-            </label>
-            <label class="btn">
-               <input type="radio" name="shuffle-filter" value="illustration">ILLUSTRATION
-            </label>
+
+            @foreach($portfolioCategories as $category)
+               <label class="btn">
+                  <input type="radio" name="shuffle-filter" value="{{ $category->slug }}">
+                  {{ $category->name }}
+               </label>
+            @endforeach
          </div>
       </div>
 
       <div class="columns shuffle-wrapper portfolio-gallery">
          @forelse($portfolioItems as $item)
             <div class="column is-4-desktop is-6-tablet shuffle-item"
-                 data-groups='@json($item->categories ?? [])'>
+                 data-groups='@json(($item->categories ?? collect())->pluck("slug")->values())'>
                <div class="position-relative rounded inner-box">
                   <div class="image position-relative">
                      <img

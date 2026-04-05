@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Backend\DashboardController;
 use App\Http\Controllers\Backend\WebUpdateController;
+use App\Http\Controllers\Backend\SensorController;
 use Tabuna\Breadcrumbs\Trail;
 
 Route::redirect('/', '/admin/dashboard', 301);
@@ -11,6 +12,14 @@ Route::get('dashboard', [DashboardController::class, 'index'])
     ->breadcrumbs(function (Trail $trail) {
         $trail->push(__('Home'), route('admin.dashboard'));
     });
+
+Route::get('sensors/dashboard', [SensorController::class, 'index'])
+    ->name('sensors.dashboard')
+    ->breadcrumbs(function (Trail $trail) {
+        $trail->parent('admin.dashboard')
+            ->push(__('Sensor Dashboard'), route('admin.sensors.dashboard'));
+    });
+
 
 Route::prefix('website-update')->as('website-update.')->group(function () {
     Route::get('/', [WebUpdateController::class, 'index'])->name('index');
@@ -35,10 +44,20 @@ Route::prefix('website-update')->as('website-update.')->group(function () {
     Route::post('/portfolio/items', [WebUpdateController::class, 'storePortfolioItem'])->name('portfolio.items.store');
     Route::put('/portfolio/items/{portfolioItem}', [WebUpdateController::class, 'updatePortfolioItem'])->name('portfolio.items.update');
     Route::delete('/portfolio/items/{portfolioItem}', [WebUpdateController::class, 'deletePortfolioItem'])->name('portfolio.items.delete');
+    Route::post('/portfolio/categories', [WebUpdateController::class, 'storePortfolioCategory'])->name('portfolio.categories.store');
+    Route::put('/portfolio/categories/{portfolioCategory}', [WebUpdateController::class, 'updatePortfolioCategory'])->name('portfolio.categories.update');
+    Route::delete('/portfolio/categories/{portfolioCategory}', [WebUpdateController::class, 'deletePortfolioCategory'])->name('portfolio.categories.delete');
 
     Route::get('/blog', [WebUpdateController::class, 'blog'])->name('blog');
     Route::post('/blog', [WebUpdateController::class, 'updateBlog'])->name('blog.update');
+    Route::post('/blog/categories', [WebUpdateController::class, 'storeBlogCategory'])->name('blog.categories.store');
+    Route::put('/blog/categories/{blogCategory}', [WebUpdateController::class, 'updateBlogCategory'])->name('blog.categories.update');
+    Route::delete('/blog/categories/{blogCategory}', [WebUpdateController::class, 'deleteBlogCategory'])->name('blog.categories.delete');
+    Route::post('/blog/posts', [WebUpdateController::class, 'storeBlogPost'])->name('blog.posts.store');
+    Route::put('/blog/posts/{blogPost}', [WebUpdateController::class, 'updateBlogPost'])->name('blog.posts.update');
+    Route::delete('/blog/posts/{blogPost}', [WebUpdateController::class, 'deleteBlogPost'])->name('blog.posts.delete');
 
     Route::get('/contact', [WebUpdateController::class, 'contact'])->name('contact');
     Route::post('/contact', [WebUpdateController::class, 'updateContact'])->name('contact.update');
+    Route::delete('/contact/messages/{contactMessage}', [WebUpdateController::class, 'deleteContactMessage'])->name('contact.messages.delete');
 });
