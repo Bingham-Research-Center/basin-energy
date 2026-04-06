@@ -32,6 +32,46 @@
     </ul>
 
     <ul class="c-header-nav ml-auto mr-4">
+        @php
+            $unreadContactMessages = \App\Models\ContactMessage::where('is_read', false)
+                ->latest()
+                ->take(5)
+                ->get();
+
+            $unreadContactCount = \App\Models\ContactMessage::where('is_read', false)->count();
+        @endphp
+
+        <li class="c-header-nav-item dropdown">
+            <a class="c-header-nav-link" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
+                <i class="c-icon c-icon-lg cil-bell"></i>
+                <span id="contactNotificationBadge"
+                    class="badge badge-danger"
+                    style="{{ $unreadContactCount ? '' : 'display:none;' }}">
+                    {{ $unreadContactCount }}
+                </span>
+            </a>
+
+            <div class="dropdown-menu dropdown-menu-right pt-0" style="min-width: 360px;">
+                <div class="dropdown-header bg-light py-2 d-flex justify-content-between align-items-center">
+                    <strong>Notifications</strong>
+                    <a href="{{ route('admin.website-update.contact') }}" class="small">View all</a>
+                </div>
+
+                <div id="contactNotificationList">
+                    @forelse($unreadContactMessages as $message)
+                        <a href="{{ route('admin.website-update.contact') }}" class="dropdown-item border-bottom">
+                            <div class="font-weight-bold">{{ $message->name }}</div>
+                            <div class="small">&nbsp;:&nbsp;{{ \Illuminate\Support\Str::limit($message->message, 20) }}</div>
+                            <div class="small text-muted">{{ optional($message->created_at)->format('Y-m-d H:i') }}</div>
+                        </a>
+                    @empty
+                        <div id="noContactNotifications" class="dropdown-item text-muted">
+                            No new contact messages
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+        </li>
         <li class="c-header-nav-item dropdown">
             <x-utils.link class="c-header-nav-link" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
                 <x-slot name="text">
@@ -67,3 +107,46 @@
         </div>
     </div><!--c-subheader-->
 </header>
+@push('after-scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        if (!window.Echo) {
+            console.error('Echo is not loaded in backend header.');
+            return;
+        }
+
+        const badge = document.getElementById('contactNotificationBadge');
+        const list = document.getElementById('contactNotificationList');
+
+        window.Echo.channel('admin.notifications.contacts')
+            .listen('.contact.message.submitted', function (e) {
+                console.log('New contact notification received:', e);
+
+                const emptyState = document.getElementById('noContactNotifications');
+                if (emptyState) {
+                    emptyState.remove();
+                }
+
+                let count = parseInt(badge.textContent || '0', 10);
+                count += 1;
+                badge.textContent = count;
+                badge.style.display = 'inline-block';
+
+                const item = document.createElement('a');
+                item.href = e.url;
+                item.className = 'dropdown-item border-bottom';
+                item.innerHTML = `
+                    <div class="font-weight-bold">${e.name}</div>
+                    <div class="small">&nbsp;:&nbsp; ${e.message}</div>
+                    <div class="small text-muted">${e.created_at}</div>
+                `;
+
+                list.prepend(item);
+
+                while (list.children.length > 5) {
+                    list.removeChild(list.lastElementChild);
+                }
+            });
+    });
+</script>
+@endpush

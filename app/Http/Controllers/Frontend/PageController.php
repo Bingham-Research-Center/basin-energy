@@ -176,11 +176,13 @@ class PageController extends Controller
 
         $request->validate($rules);
 
-        ContactMessage::create([
+        $contactMessage = ContactMessage::create([
             'name' => $request->name,
             'email' => $request->email,
             'message' => $request->message,
+            'is_read' => false,
         ]);
+        broadcast(new \App\Events\ContactMessageSubmitted($contactMessage));
 
         return back()->withFlashSuccess('Your message was sent successfully.');
     }

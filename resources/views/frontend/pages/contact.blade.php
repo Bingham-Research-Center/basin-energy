@@ -39,7 +39,7 @@
          <div class="column is-6-desktop is-12-tablet">
             <div class="contact-content">
                <p class="mb-4 mt-2 lead h4">
-                  {!! nl2br(e($contactInfo->subtitle ?? 'Don’t Hesitate to contact with us for any kind of information')) !!}
+                  {!! nl2br(e($contactInfo->subtitle ?? 'Dont Hesitate to contact with us for any kind of information')) !!}
                </p>
 
                <h2 class="mb-3">{{ $contactInfo->title ?? '(+00) 123 567990' }}</h2>

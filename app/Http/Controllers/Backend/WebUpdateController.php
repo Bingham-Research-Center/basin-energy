@@ -659,6 +659,8 @@ class WebUpdateController extends Controller
         $map = ContactPageContent::getSectionItem('map', 'main');
 
         $contactMessages = ContactMessage::latest()->get();
+        
+        \App\Models\ContactMessage::where('is_read', false)->update(['is_read' => true]);
 
         return view('backend.webupdate.contact', compact(
             'hero',
