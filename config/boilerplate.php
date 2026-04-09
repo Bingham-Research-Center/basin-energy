@@ -71,7 +71,7 @@ return [
              * The regular delete button will still exist, and will soft delete the user
              * but the permanently deleted button on the 'deleted users' screen will be hidden.
              */
-            'permanently_delete' => false,
+            'permanently_delete' => true,
 
             /*
              * Whether or not the register route and view are active
