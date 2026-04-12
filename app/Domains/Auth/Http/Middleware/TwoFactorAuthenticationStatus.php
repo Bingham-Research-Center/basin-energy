@@ -21,17 +21,27 @@ class TwoFactorAuthenticationStatus
             abort(404);
         }
 
-        // If the backend does not require 2FA than continue
+        // If the backend does not require 2FA then continue
         if ($status === 'enabled' && $request->is('admin*') && ! config('boilerplate.access.user.admin_requires_2fa')) {
             return $next($request);
         }
 
-        // Page requires 2fa, but user is not enabled or page does not require 2fa, but it is enabled
+        $user = $request->user();
+
+        if (! $user) {
+            return redirect()->route('frontend.auth.login');
+        }
+
+        $twoFactor = $user->twoFactorAuth;
+        $hasTwoFactorEnabled = $twoFactor && $twoFactor->enabled_at !== null;
+
         if (
-            ($status === 'enabled' && ! $request->user()->hasTwoFactorEnabled()) ||
-            ($status === 'disabled' && $request->user()->hasTwoFactorEnabled())
+            ($status === 'enabled' && ! $hasTwoFactorEnabled) ||
+            ($status === 'disabled' && $hasTwoFactorEnabled)
         ) {
-            return redirect()->route('frontend.auth.account.2fa.create')->withFlashDanger(__('Two-factor Authentication must be :status to view this page.', ['status' => $status]));
+            return redirect()
+                ->route('frontend.user.account')
+                ->withFlashDanger(__('Two-factor Authentication must be :status to view this page.', ['status' => $status]));
         }
 
         return $next($request);

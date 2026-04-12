@@ -9,16 +9,16 @@ document.addEventListener("DOMContentLoaded", function () {
   const verifyTrigger = document.getElementById("verify-trigger");
   const closeBtn = popup.querySelector(".close-btn");
 
-  /* ==============================
-     reCAPTCHA (explicit render)
-  ============================== */
   const recaptcha = {
     login: { id: "recaptcha-login", widgetId: null, rendered: false },
     signup: { id: "recaptcha-register", widgetId: null, rendered: false },
   };
 
   function currentView() {
+    if (popup.classList.contains("show-two-factor")) return "two-factor";
     if (popup.classList.contains("show-signup")) return "signup";
+    if (popup.classList.contains("show-reset")) return "reset";
+    if (popup.classList.contains("show-verify")) return "verify";
     return "login";
   }
 
@@ -52,9 +52,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  /* ==============================
-     HELPERS
-  ============================== */
   function clearAllErrors() {
     popup.querySelectorAll(".field-error, .form-error").forEach((el) => el.remove());
     popup.querySelectorAll(".is-invalid").forEach((el) => el.classList.remove("is-invalid"));
@@ -77,8 +74,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function showErrors(form, errors) {
     if (!form || !errors) return;
+
     form.querySelectorAll(".field-error, .form-error").forEach((el) => el.remove());
     form.querySelectorAll(".is-invalid").forEach((el) => el.classList.remove("is-invalid"));
+
     const showTopError = (msg) => {
       let top = form.querySelector(".form-error");
       if (!top) {
@@ -91,6 +90,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     Object.keys(errors).forEach((field) => {
       const message = errors[field]?.[0] || "Invalid value.";
+
       if (field === "g-recaptcha-response") {
         const captchaBox =
           form.querySelector("#recaptcha-login") ||
@@ -130,19 +130,36 @@ document.addEventListener("DOMContentLoaded", function () {
     form.querySelectorAll(".is-invalid").forEach((el) => el.classList.remove("is-invalid"));
   }
 
-  function setView(view) {
-    popup.classList.remove("show-signup", "show-reset", "show-verify");
-    if (view === "signup") popup.classList.add("show-signup");
-    if (view === "reset") popup.classList.add("show-reset");
-    if (view === "verify") popup.classList.add("show-verify");
-    if (view === "login" || view === "signup") {
-      setTimeout(() => ensureRecaptcha(view), 0);
+  function focusFirstInput(view) {
+    let selector = "";
+
+    if (view === "login") selector = '.form-box.login input[name="email"]';
+    if (view === "signup") selector = '.form-box.signup input[name="name"]';
+    if (view === "reset") selector = '.form-box.reset input[name="email"]';
+    if (view === "verify") selector = "#verify-email";
+    if (view === "two-factor") selector = '.form-box.two-factor input[name="code"]';
+
+    const input = popup.querySelector(selector);
+    if (input) {
+      setTimeout(() => input.focus(), 30);
     }
   }
 
-  /* ==============================
-     OPEN POPUP
-  ============================== */
+  function setView(view) {
+    popup.classList.remove("show-signup", "show-reset", "show-verify", "show-two-factor");
+
+    if (view === "signup") popup.classList.add("show-signup");
+    if (view === "reset") popup.classList.add("show-reset");
+    if (view === "verify") popup.classList.add("show-verify");
+    if (view === "two-factor") popup.classList.add("show-two-factor");
+
+    if (view === "login" || view === "signup") {
+      setTimeout(() => ensureRecaptcha(view), 0);
+    }
+
+    focusFirstInput(view);
+  }
+
   if (loginTrigger) {
     loginTrigger.addEventListener("click", function (e) {
       e.preventDefault();
@@ -153,6 +170,7 @@ document.addEventListener("DOMContentLoaded", function () {
       setTimeout(() => ensureRecaptcha("login"), 0);
     });
   }
+
   if (verifyTrigger) {
     verifyTrigger.addEventListener("click", function (e) {
       e.preventDefault();
@@ -163,14 +181,15 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  /* ==============================
-     CLOSE POPUP
-  ============================== */
   function closePopup() {
     body.classList.remove("show-popup");
     setView("login");
     clearAllErrors();
     resetButtons();
+
+    popup.querySelectorAll("form").forEach((form) => {
+      form.reset();
+    });
   }
 
   if (closeBtn) closeBtn.addEventListener("click", closePopup);
@@ -180,9 +199,6 @@ document.addEventListener("DOMContentLoaded", function () {
     if (e.key === "Escape") closePopup();
   });
 
-  /* ==============================
-     FORM SWITCHING (Delegated)
-  ============================== */
   document.addEventListener("click", function (e) {
     if (e.target.matches("#signup-link")) {
       e.preventDefault();
@@ -223,11 +239,16 @@ document.addEventListener("DOMContentLoaded", function () {
       setView("login");
       return;
     }
+
+    if (e.target.matches("#back-to-login-from-2fa")) {
+      e.preventDefault();
+      clearAllErrors();
+      resetButtons();
+      setView("login");
+      return;
+    }
   });
 
-  /* ==============================
-     AJAX AUTH FORMS (Delegated)
-  ============================== */
   popup.addEventListener("submit", async function (e) {
     const form = e.target.closest("form");
     if (!form) return;
@@ -255,7 +276,7 @@ document.addEventListener("DOMContentLoaded", function () {
         method: (form.method || "POST").toUpperCase(),
         headers: {
           "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
-          Accept: "application/json",
+          "Accept": "application/json",
           "X-Requested-With": "XMLHttpRequest",
         },
         body: formData,
@@ -266,6 +287,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (response.status === 422) {
         showErrors(form, data.errors || {});
         resetButton(btn);
+
         const view = currentView();
         if (view === "login" || view === "signup") ensureRecaptcha(view);
         return;
@@ -287,8 +309,32 @@ document.addEventListener("DOMContentLoaded", function () {
         if (emailInput && data.email) emailInput.value = data.email;
 
         const msg = document.getElementById("verify-message");
-        if (msg) msg.textContent = data.message || "Please check your email for a verification link.";
+        if (msg) {
+          msg.textContent = data.message || "Please check your email for a verification link.";
+        }
 
+        resetButton(btn);
+        return;
+      }
+
+      if (data.requires_two_factor) {
+        const loginPassword = popup.querySelector('.form-box.login input[name="password"]');
+        if (loginPassword) loginPassword.value = "";
+
+        if (data.csrf_token) {
+          const metaCsrf = document.querySelector('meta[name="csrf-token"]');
+          if (metaCsrf) {
+            metaCsrf.setAttribute('content', data.csrf_token);
+          }
+
+          const twoFactorTokenInput = popup.querySelector('.form-box.two-factor input[name="_token"]');
+          if (twoFactorTokenInput) {
+            twoFactorTokenInput.value = data.csrf_token;
+          }
+        }
+
+        body.classList.add("show-popup");
+        setView("two-factor");
         resetButton(btn);
         return;
       }
@@ -310,9 +356,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
-  /* ==============================
-     RESEND VERIFICATION (Delegated)
-  ============================== */
   document.addEventListener("click", async function (e) {
     if (!e.target.matches("#resend-verification")) return;
 
@@ -330,7 +373,7 @@ document.addEventListener("DOMContentLoaded", function () {
         method: "POST",
         headers: {
           "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
-          Accept: "application/json",
+          "Accept": "application/json",
           "X-Requested-With": "XMLHttpRequest",
           "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
         },
@@ -355,4 +398,14 @@ document.addEventListener("DOMContentLoaded", function () {
       resendBtn.disabled = false;
     }
   });
+
+  if (popup.querySelector(".form-box.verify .form-error, .form-box.verify .field-error")) {
+    body.classList.add("show-popup");
+    setView("verify");
+  }
+
+  if (popup.querySelector(".form-box.two-factor .form-error, .form-box.two-factor .field-error")) {
+    body.classList.add("show-popup");
+    setView("two-factor");
+  }
 });

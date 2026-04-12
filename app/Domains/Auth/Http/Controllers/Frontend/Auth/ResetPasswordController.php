@@ -51,13 +51,17 @@ class ResetPasswordController
         return [
             'token' => ['required'],
             'email' => ['required', 'max:255', 'email'],
-            'password' => array_merge(
-                [
-                    'max:100',
-                    new UnusedPassword(request('email')),
-                ],
-                //PasswordRules::changePassword(request('email'))
-                Password::min(8)->mixedCase()->letters()->numbers()->symbols()),
+            'password' => [
+                'required',
+                'confirmed',
+                'max:100',
+                new UnusedPassword(request('email')),
+                Password::min(8)
+                    ->mixedCase()
+                    ->letters()
+                    ->numbers()
+                    ->symbols(),
+            ],
         ];
     }
 

@@ -24,7 +24,9 @@ class DisableTwoFactorAuthenticationController
     public function destroy(DisableTwoFactorAuthenticationRequest $request)
     {
         $request->user()->disableTwoFactorAuth();
+        $request->session()->forget('auth.2fa_passed');
 
-        return redirect()->route('frontend.user.account', ['#two-factor-authentication'])->withFlashSuccess(__('Two Factor Authentication Successfully Disabled'));
+        return redirect()->to(route('frontend.user.account') . '#two-factor-authentication')
+            ->withFlashSuccess(__('Two Factor Authentication Successfully Disabled'));
     }
 }

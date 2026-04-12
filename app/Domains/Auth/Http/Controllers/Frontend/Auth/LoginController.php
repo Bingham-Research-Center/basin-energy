@@ -7,7 +7,6 @@ use App\Rules\Captcha;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -15,52 +14,22 @@ use Illuminate\Validation\ValidationException;
  */
 class LoginController
 {
-    /*
-    |--------------------------------------------------------------------------
-    | Login Controller
-    |--------------------------------------------------------------------------
-    |
-    | This controller handles authenticating users for the application and
-    | redirecting them to your home screen. The controller uses a trait
-    | to conveniently provide its functionality to your applications.
-    |
-    */
-
     use AuthenticatesUsers;
 
-    /**
-     * Where to redirect users after login.
-     *
-     * @return string
-     */
     public function redirectPath()
     {
         return route(homeRoute());
     }
 
-    /**
-     * Show the application's login form.
-     *
-     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
-     */
     public function showLoginForm()
     {
         return view('frontend.auth.login');
     }
 
-    /**
-     * Validate the user login request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return void
-     *
-     * @throws \Illuminate\Validation\ValidationException
-     */
     protected function validateLogin(Request $request)
     {
         $request->validate([
             $this->username() => ['required', 'max:255', 'string'],
-            //'password' => array_merge(['max:100'], PasswordRules::login()),
             'password' => ['required', 'string', 'max:100'],
             'g-recaptcha-response' => ['required_if:captcha_status,true', new Captcha],
         ], [
@@ -68,15 +37,6 @@ class LoginController
         ]);
     }
 
-    /**
-     * Overidden for 2FA
-     * https://github.com/DarkGhostHunter/Laraguard#protecting-the-login.
-     *
-     * Attempt to log the user into the application.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return bool
-     */
     protected function attemptLogin(Request $request)
     {
         try {
@@ -86,39 +46,74 @@ class LoginController
             );
         } catch (HttpResponseException $exception) {
             $this->incrementLoginAttempts($request);
-
             throw $exception;
         }
     }
 
-    /**
-     * The user has been authenticated.
-     *
-     * @param  Request  $request
-     * @param $user
-     * @return mixed
-     */
     protected function authenticated(Request $request, $user)
     {
         if (! $user->isActive()) {
             auth()->logout();
-            throw ValidationException::withMessages([$this->username() => [__('Your account has been deactivated.')]]);
-            #return redirect()->route('frontend.auth.login')->withFlashDanger(__('Your account has been deactivated.'));
-        }
 
+            throw ValidationException::withMessages([
+                $this->username() => [__('Your account has been deactivated.')],
+            ]);
+        }
+    }
+
+    protected function finalizeSuccessfulLogin(Request $request, $user, bool $canLogoutOtherDevices = true)
+    {
         event(new UserLoggedIn($user));
 
-        if (config('boilerplate.access.user.single_login')) {
+        if ($canLogoutOtherDevices && config('boilerplate.access.user.single_login')) {
             auth()->logoutOtherDevices($request->password);
         }
     }
 
     protected function sendLoginResponse(Request $request)
     {
-        $request->session()->regenerate();
         $this->clearLoginAttempts($request);
 
-        $this->authenticated($request, $this->guard()->user());
+        $user = $this->guard()->user();
+
+        $this->authenticated($request, $user);
+
+        $hasTwoFactor = method_exists($user, 'hasTwoFactorEnabled') && $user->hasTwoFactorEnabled();
+
+        if ($hasTwoFactor) {
+            if ($user->isSafeDevice($request)) {
+                $request->session()->regenerate();
+                $request->session()->put('auth.2fa_passed', true);
+
+                $user->setTwoFactorBypassedBySafeDevice(true);
+
+                $this->finalizeSuccessfulLogin($request, $user);
+
+                return response()->json([
+                    'redirect' => $this->redirectPath(),
+                ], 200);
+            }
+
+            $remember = $request->boolean('remember');
+
+            $request->session()->put('auth.pending_2fa.user_id', $user->id);
+            $request->session()->put('auth.pending_2fa.remember', $remember);
+            $request->session()->forget('auth.2fa_passed');
+
+            $this->guard()->logout();
+            $request->session()->regenerate();
+
+            return response()->json([
+                'requires_two_factor' => true,
+                'redirect' => route('frontend.auth.2fa.challenge'),
+                'csrf_token' => csrf_token(),
+            ], 200);
+        }
+
+        $request->session()->regenerate();
+        $request->session()->put('auth.2fa_passed', true);
+
+        $this->finalizeSuccessfulLogin($request, $user);
 
         return response()->json([
             'redirect' => $this->redirectPath(),

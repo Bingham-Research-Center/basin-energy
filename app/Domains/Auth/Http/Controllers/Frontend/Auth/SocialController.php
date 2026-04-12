@@ -41,6 +41,14 @@ class SocialController
 
         event(new UserLoggedIn($user));
 
+        $hasTwoFactor = method_exists($user, 'hasTwoFactorEnabled') && $user->hasTwoFactorEnabled();
+
+        session(['auth.2fa_passed' => ! $hasTwoFactor]);
+
+        if ($hasTwoFactor) {
+            return redirect()->route('frontend.auth.2fa.challenge');
+        }
+
         return redirect()->route(homeRoute());
     }
 }

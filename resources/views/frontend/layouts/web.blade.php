@@ -42,6 +42,10 @@
             <div class="form-box verify">
                 @include('frontend.auth.partials.verify')
             </div>
+
+            <div class="form-box two-factor">
+                @include('frontend.auth.partials.two-factor-popup')
+            </div>
         </div>
     @endif
 

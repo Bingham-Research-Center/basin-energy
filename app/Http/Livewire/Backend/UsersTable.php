@@ -143,12 +143,12 @@ class UsersTable extends DataTableComponent
 
                 if (config('boilerplate.access.user.permanently_delete')) {
                     $buttons[] = '
-                        <form method="POST" action="' . e(route('admin.auth.user.permanently-delete', ['deletedUser' => $id])) . '" class="d-inline mr-1">
-                            ' . csrf_field() . '
-                            ' . method_field('DELETE') . '
-                            <button type="submit" class="btn btn-danger btn-sm">Permanent Delete</button>
-                        </form>
-                    ';
+                    <form method="POST" action="' . e(route('admin.auth.user.permanently-delete', ['deletedUser' => $id])) . '" class="d-inline mr-1" name="confirm-item">
+                        ' . csrf_field() . '
+                        ' . method_field('DELETE') . '
+                        <button type="submit" class="btn btn-danger btn-sm">Permanent Delete</button>
+                    </form>
+                ';
                 }
             }
 
@@ -167,7 +167,7 @@ class UsersTable extends DataTableComponent
             $loggedInUser->hasAllAccess()
         ) {
             $buttons[] = '
-                <form method="POST" action="' . e(route('admin.auth.user.destroy', ['user' => $id])) . '" class="d-inline mr-1">
+                <form method="POST" action="' . e(route('admin.auth.user.destroy', ['user' => $id])) . '" class="d-inline mr-1" name="confirm-item">
                     ' . csrf_field() . '
                     ' . method_field('DELETE') . '
                     <button type="submit" class="btn btn-danger btn-sm">Delete</button>
