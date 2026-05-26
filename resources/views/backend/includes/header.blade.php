@@ -32,6 +32,36 @@
     </ul>
 
     <ul class="c-header-nav ml-auto mr-4">
+        <li class="c-header-nav-item dropdown px-2">
+            <button
+                class="btn btn-link c-header-nav-link dropdown-toggle d-flex align-items-center"
+                type="button"
+                id="themeDropdown"
+                data-toggle="dropdown"
+                aria-haspopup="true"
+                aria-expanded="false"
+                title="@lang('Theme')"
+            >
+                <i data-dashboard-theme-icon class="c-icon cil-sun mr-2"></i>
+            </button>
+
+            <div class="dropdown-menu dropdown-menu-right brc-theme-menu" aria-labelledby="themeDropdown">
+                <button class="dropdown-item d-flex align-items-center" type="button" data-dashboard-theme-value="light">
+                    <i class="c-icon cil-sun mr-3"></i>
+                    <span>Light</span>
+                </button>
+
+                <button class="dropdown-item d-flex align-items-center" type="button" data-dashboard-theme-value="dark">
+                    <i class="c-icon cil-moon mr-3"></i>
+                    <span>Dark</span>
+                </button>
+
+                <button class="dropdown-item d-flex align-items-center" type="button" data-dashboard-theme-value="auto">
+                    <i class="c-icon cil-screen-desktop mr-3"></i>
+                    <span>Auto</span>
+                </button>
+            </div>
+        </li>
         @php
             $unreadContactMessages = \App\Models\ContactMessage::where('is_read', false)
                 ->latest()

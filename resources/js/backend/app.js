@@ -18,3 +18,9 @@ window.Swal = require('sweetalert2');
 
 require('@coreui/coreui');
 require('../plugins');
+
+import '../dashboard/theme';
+import '../dashboard/charts';
+import '../dashboard/admin-overview';
+import '../dashboard/horsepool';
+import '../dashboard/realtime-ozone';

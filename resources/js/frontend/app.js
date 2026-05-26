@@ -11,3 +11,9 @@ Vue.component('example-component', require('./components/ExampleComponent.vue').
 const app = new Vue({
     el: '#app',
 });
+
+import '../dashboard/theme';
+import '../dashboard/charts';
+import '../dashboard/admin-overview';
+import '../dashboard/horsepool';
+import '../dashboard/realtime-ozone';

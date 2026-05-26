@@ -85,5 +85,9 @@ return [
         'token'    => env('CARBON_MAPPER_TOKEN'),
     ],
 
+    'synoptic' => [
+        'token' => env('SYNOPTIC_TOKEN'),
+    ],
+
 
 ];

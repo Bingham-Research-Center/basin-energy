@@ -8,7 +8,21 @@
     <meta name="description" content="@yield('meta_description', appName())">
     <meta name="author" content="@yield('meta_author', 'Arjun Kula')">
     @yield('meta')
+    <script>
+        (function () {
+            var theme = localStorage.getItem('brc-theme');
 
+            if (!theme) {
+                theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            }
+
+            if (theme === 'dark') {
+                document.addEventListener('DOMContentLoaded', function () {
+                    document.body.classList.add('c-dark-theme');
+                });
+            }
+        })();
+    </script>
     @stack('before-styles')
     <link href="{{ mix('css/backend.css') }}" rel="stylesheet">
     <livewire:styles />
@@ -44,5 +58,65 @@
     <script src="{{ mix('js/backend.js') }}"></script>
     <livewire:scripts />
     @stack('after-scripts')
+
+   <script>
+    (function () {
+        var themeKey = 'brc-theme';
+
+        function getTheme() {
+            return localStorage.getItem(themeKey) || (
+                window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+            );
+        }
+
+        function setTheme(theme) {
+            localStorage.setItem(themeKey, theme);
+
+            if (theme === 'dark') {
+                document.body.classList.add('c-dark-theme');
+                document.querySelector('.c-header')?.classList.remove('c-header-light');
+                document.querySelector('.c-header')?.classList.add('c-header-dark');
+            } else {
+                document.body.classList.remove('c-dark-theme');
+                document.querySelector('.c-header')?.classList.remove('c-header-dark');
+                document.querySelector('.c-header')?.classList.add('c-header-light');
+            }
+
+            updateThemeButton(theme);
+        }
+
+        function updateThemeButton(theme) {
+            var label = document.getElementById('theme-toggle-label');
+            var icon = document.getElementById('theme-toggle-icon');
+
+            if (!label || !icon) {
+                return;
+            }
+
+            if (theme === 'dark') {
+                label.innerText = 'Dark';
+                icon.className = 'c-icon cil-moon mr-1';
+            } else {
+                label.innerText = 'Light';
+                icon.className = 'c-icon cil-sun mr-1';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var currentTheme = getTheme();
+
+            setTheme(currentTheme);
+
+            var toggle = document.getElementById('theme-toggle');
+
+            if (toggle) {
+                toggle.addEventListener('click', function () {
+                    var nextTheme = document.body.classList.contains('c-dark-theme') ? 'light' : 'dark';
+                    setTheme(nextTheme);
+                });
+            }
+        });
+    })();
+</script>
 </body>
 </html>

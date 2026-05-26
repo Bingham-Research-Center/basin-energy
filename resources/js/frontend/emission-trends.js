@@ -4,346 +4,492 @@ import zoomPlugin from 'chartjs-plugin-zoom';
 Chart.register(zoomPlugin);
 
 const root = document.getElementById('emissionTrendsChartRoot');
-if (!root) {
-  // Not on this page
-} else {
-  const jsonUrl = root.dataset.jsonUrl;
 
-  let chart;
-  let availableCols = [];
-  let currentData = null;      // raw data from server
-  let axisByKey = {};          // { seriesKey: 'y' | 'y1' }
+if (root) {
+    const jsonUrl = root.dataset.jsonUrl;
 
-  // Controls
-  const canvas = document.getElementById('emissionsChart');
-  const picker = document.getElementById('colPicker');
-  const smooth = document.getElementById('smooth');
-  const smoothVal = document.getElementById('smoothVal');
-  const toggleNormalize = document.getElementById('toggleNormalize');
-  const toggleLog = document.getElementById('toggleLog');
-  const logWarning = document.getElementById('logWarning');
+    let chart;
+    let availableCols = [];
+    let currentData = null;
+    let axisByKey = {};
 
-  const yearMin = document.getElementById('yearMin');
-  const yearMax = document.getElementById('yearMax');
-  const yearMinLabel = document.getElementById('yearMinLabel');
-  const yearMaxLabel = document.getElementById('yearMaxLabel');
+    const canvas = document.getElementById('emissionsChart');
+    const picker = document.getElementById('colPicker');
+    const smooth = document.getElementById('smooth');
+    const smoothVal = document.getElementById('smoothVal');
+    const toggleNormalize = document.getElementById('toggleNormalize');
+    const toggleLog = document.getElementById('toggleLog');
+    const logWarning = document.getElementById('logWarning');
 
-  function randColor(i) {
-    const hue = (i * 67) % 360;
-    return `hsl(${hue} 70% 45%)`;
-  }
+    const yearMin = document.getElementById('yearMin');
+    const yearMax = document.getElementById('yearMax');
+    const yearMinLabel = document.getElementById('yearMinLabel');
+    const yearMaxLabel = document.getElementById('yearMaxLabel');
 
-  function defaultAxisForKey(key) {
-    // heuristic: prices on right axis by default
-    const k = key.toLowerCase();
-    if (k.includes('price') || k.includes('doll')) return 'y1';
-    return 'y';
-  }
-
-  function buildPicker(selectedKeys) {
-    picker.innerHTML = '';
-
-    const wrap = document.createElement('div');
-    wrap.className = 'd-flex flex-column gap-2';
-
-    availableCols.forEach((c) => {
-      const id = `col_${c.key}`;
-      const row = document.createElement('div');
-      row.className = 'row align-items-center gx-2 mb-1';
-
-      row.innerHTML = `
-        <div class="col-8">
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" id="${id}" value="${c.key}">
-            <label class="form-check-label" for="${id}">
-              ${c.label}
-            </label>
-          </div>
-        </div>
-
-        <div class="col-4">
-          <select class="form-select form-select-sm axis-select" data-key="${c.key}">
-            <option value="y">Left</option>
-            <option value="y1">Right</option>
-          </select>
-        </div>
-      `;
-
-
-      wrap.appendChild(row);
-
-      const cb = row.querySelector(`#${CSS.escape(id)}`);
-      cb.checked = selectedKeys.includes(c.key);
-
-      // default axis
-      if (!axisByKey[c.key]) axisByKey[c.key] = defaultAxisForKey(c.key);
-
-      const axisSelect = row.querySelector('.axis-select');
-      axisSelect.value = axisByKey[c.key];
-
-      cb.addEventListener('change', () => loadAndRender(getSelectedCols()));
-      axisSelect.addEventListener('change', (e) => {
-        axisByKey[c.key] = e.target.value;
-        // re-render without fetching
-        if (currentData) render(currentData);
-      });
-    });
-
-    picker.appendChild(wrap);
-  }
-
-  function getSelectedCols() {
-    return Array.from(picker.querySelectorAll('input[type="checkbox"]'))
-      .filter(cb => cb.checked)
-      .map(cb => cb.value);
-  }
-
-  function toCsv(labels, series) {
-    const header = ['year', ...series.map(s => s.label)];
-    const rows = labels.map((year, idx) => {
-      const vals = series.map(s => (s.data[idx] ?? ''));
-      return [year, ...vals];
-    });
-    return [header, ...rows].map(r => r.join(',')).join('\n');
-  }
-
-  async function fetchData(cols) {
-    const params = new URLSearchParams();
-    cols.forEach(c => params.append('cols[]', c));
-    const res = await fetch(`${jsonUrl}?${params.toString()}`, {
-      headers: { Accept: 'application/json' }
-    });
-    return await res.json();
-  }
-
-  function clampRange() {
-    let minV = parseInt(yearMin.value, 10);
-    let maxV = parseInt(yearMax.value, 10);
-    if (minV > maxV) {
-      // swap
-      const t = minV; minV = maxV; maxV = t;
-      yearMin.value = minV;
-      yearMax.value = maxV;
+    function randColor(i) {
+        const hue = (i * 67) % 360;
+        return `hsl(${hue} 70% 45%)`;
     }
-    yearMinLabel.textContent = String(minV);
-    yearMaxLabel.textContent = String(maxV);
-    return { minV, maxV };
-  }
 
-  function applyYearFilter(labels, seriesArr) {
-    const { minV, maxV } = clampRange();
-    const idxs = labels
-      .map((y, i) => ({ y, i }))
-      .filter(o => o.y >= minV && o.y <= maxV)
-      .map(o => o.i);
+    function isDarkTheme() {
+        return document.body.classList.contains('c-dark-theme');
+    }
 
-    const outLabels = idxs.map(i => labels[i]);
-    const outSeries = seriesArr.map(s => ({
-      ...s,
-      data: idxs.map(i => s.data[i])
-    }));
+    function chartTextColor() {
+        return isDarkTheme() ? '#cbd5e1' : '#374151';
+    }
 
-    return { outLabels, outSeries };
-  }
+    function chartMutedColor() {
+        return isDarkTheme() ? '#94a3b8' : '#6b7280';
+    }
 
-  function normalizeSeries(labels, seriesArr) {
-    // Index each series so first non-null in range becomes 100
-    return seriesArr.map(s => {
-      let base = null;
-      for (let i = 0; i < s.data.length; i++) {
-        const v = s.data[i];
-        if (v !== null && v !== undefined && v !== '') {
-          base = Number(v);
-          if (!Number.isNaN(base)) break;
+    function chartGridColor() {
+        return isDarkTheme()
+            ? 'rgba(148, 163, 184, 0.14)'
+            : 'rgba(107, 114, 128, 0.18)';
+    }
+
+    function defaultAxisForKey(key) {
+        const k = key.toLowerCase();
+
+        if (k.includes('price') || k.includes('doll')) {
+            return 'y1';
         }
-      }
-      if (base === null || base === 0 || Number.isNaN(base)) {
-        return s; // can't normalize
-      }
-      return {
-        ...s,
-        data: s.data.map(v => {
-          if (v === null || v === undefined || v === '') return null;
-          const n = Number(v);
-          if (Number.isNaN(n)) return null;
-          return (n / base) * 100;
-        })
-      };
-    });
-  }
 
-  function applyLogFilter(seriesArr) {
-    // For log scale, values must be > 0
-    return seriesArr.map(s => ({
-      ...s,
-      data: s.data.map(v => {
-        if (v === null || v === undefined || v === '') return null;
-        const n = Number(v);
-        if (!Number.isFinite(n) || n <= 0) return null;
-        return n;
-      })
-    }));
-  }
-
-  function render(data) {
-    currentData = data;
-
-    // controls
-    const tension = parseFloat(smooth.value);
-    smoothVal.textContent = tension.toFixed(2);
-
-    // Start from raw server data
-    let labels = [...data.labels];
-    let seriesArr = data.series.map(s => ({ ...s, data: [...s.data] }));
-
-    // Year range filter
-    ({ outLabels: labels, outSeries: seriesArr } = applyYearFilter(labels, seriesArr));
-
-    // Normalize (trend compare)
-    if (toggleNormalize.checked) {
-      seriesArr = normalizeSeries(labels, seriesArr);
+        return 'y';
     }
 
-    // Log scale
-    const useLog = toggleLog.checked;
-    logWarning.classList.toggle('d-none', !useLog);
-    if (useLog) {
-      seriesArr = applyLogFilter(seriesArr);
+    function buildPicker(selectedKeys) {
+        picker.innerHTML = '';
+
+        const wrap = document.createElement('div');
+        wrap.className = 'd-flex flex-column';
+
+        availableCols.forEach((c) => {
+            const id = `col_${c.key}`;
+            const row = document.createElement('div');
+
+            row.className = 'row align-items-center mb-1';
+
+            row.innerHTML = `
+                <div class="col-8">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="${id}" value="${c.key}">
+                        <label class="form-check-label" for="${id}">
+                            ${c.label}
+                        </label>
+                    </div>
+                </div>
+
+                <div class="col-4">
+                    <select class="form-control form-control-sm axis-select" data-key="${c.key}">
+                        <option value="y">Left</option>
+                        <option value="y1">Right</option>
+                    </select>
+                </div>
+            `;
+
+            wrap.appendChild(row);
+
+            const cb = row.querySelector(`#${CSS.escape(id)}`);
+            cb.checked = selectedKeys.includes(c.key);
+
+            if (!axisByKey[c.key]) {
+                axisByKey[c.key] = defaultAxisForKey(c.key);
+            }
+
+            const axisSelect = row.querySelector('.axis-select');
+            axisSelect.value = axisByKey[c.key];
+
+            cb.addEventListener('change', () => loadAndRender(getSelectedCols()));
+
+            axisSelect.addEventListener('change', (event) => {
+                axisByKey[c.key] = event.target.value;
+
+                if (currentData) {
+                    render(currentData);
+                }
+            });
+        });
+
+        picker.appendChild(wrap);
     }
 
-    // Dual axis + datasets
-    const datasets = seriesArr.map((s, i) => ({
-      label: s.label,
-      yAxisID: axisByKey[s.key] || defaultAxisForKey(s.key),
-      data: labels.map((x, idx) => ({ x, y: s.data[idx] })),
-      parsing: false,
-      borderColor: randColor(i),
-      backgroundColor: 'transparent',
-      tension,
-      cubicInterpolationMode: 'monotone',
-      spanGaps: true,
-      pointRadius: 2,
-      pointHoverRadius: 4,
-    }));
+    function getSelectedCols() {
+        return Array.from(picker.querySelectorAll('input[type="checkbox"]'))
+            .filter((cb) => cb.checked)
+            .map((cb) => cb.value);
+    }
 
-    if (chart) chart.destroy();
+    function toCsv(labels, series) {
+        const header = ['year', ...series.map((s) => s.label)];
 
-    chart = new Chart(canvas, {
-      type: 'line',
-      data: { datasets },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: { mode: 'nearest', intersect: false },
-        scales: {
-          x: {
-            type: 'linear',
-            title: { display: true, text: 'Year' },
-            ticks: { precision: 0 }
-          },
-          y: {
-            type: useLog ? 'logarithmic' : 'linear',
-            position: 'left',
-            title: { display: true, text: 'Left axis' }
-          },
-          y1: {
-            type: useLog ? 'logarithmic' : 'linear',
-            position: 'right',
-            title: { display: true, text: 'Right axis' },
-            grid: { drawOnChartArea: false }
-          }
-        },
-        plugins: {
-          legend: { display: true },
-          zoom: {
-            zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' },
-            pan: { enabled: true, mode: 'x' },
-          }
+        const rows = labels.map((year, idx) => {
+            const vals = series.map((s) => s.data[idx] ?? '');
+            return [year, ...vals];
+        });
+
+        return [header, ...rows].map((row) => row.join(',')).join('\n');
+    }
+
+    async function fetchData(cols) {
+        const params = new URLSearchParams();
+
+        cols.forEach((col) => params.append('cols[]', col));
+
+        const response = await fetch(`${jsonUrl}?${params.toString()}`, {
+            headers: {
+                Accept: 'application/json',
+            },
+        });
+
+        return await response.json();
+    }
+
+    function clampRange() {
+        let minV = parseInt(yearMin.value, 10);
+        let maxV = parseInt(yearMax.value, 10);
+
+        if (minV > maxV) {
+            const tmp = minV;
+            minV = maxV;
+            maxV = tmp;
+
+            yearMin.value = minV;
+            yearMax.value = maxV;
         }
-      }
-    });
-  }
 
-  async function loadAndRender(cols) {
-    const data = await fetchData(cols);
+        yearMinLabel.textContent = String(minV);
+        yearMaxLabel.textContent = String(maxV);
 
-    if (availableCols.length === 0) {
-      availableCols = data.available;
-
-      // init year sliders from full dataset
-      const years = data.labels.map(y => Number(y)).filter(y => Number.isFinite(y));
-      const minY = Math.min(...years);
-      const maxY = Math.max(...years);
-
-      yearMin.min = String(minY);
-      yearMin.max = String(maxY);
-      yearMax.min = String(minY);
-      yearMax.max = String(maxY);
-
-      yearMin.value = String(minY);
-      yearMax.value = String(maxY);
-
-      yearMinLabel.textContent = String(minY);
-      yearMaxLabel.textContent = String(maxY);
-
-      // picker + default selection from server
-      buildPicker(data.series.map(s => s.key));
+        return { minV, maxV };
     }
 
-    render(data);
-  }
+    function applyYearFilter(labels, seriesArr) {
+        const { minV, maxV } = clampRange();
 
-  // Events
-  document.getElementById('btnResetZoom').addEventListener('click', () => chart?.resetZoom());
-  smooth.addEventListener('input', () => {
-    const tension = parseFloat(smooth.value);
-    smoothVal.textContent = tension.toFixed(2);
+        const indexes = labels
+            .map((year, index) => ({ year, index }))
+            .filter((item) => item.year >= minV && item.year <= maxV)
+            .map((item) => item.index);
 
-    if (!chart) return;
+        const outLabels = indexes.map((index) => labels[index]);
 
-    chart.data.datasets.forEach(ds => {
-      ds.tension = tension;
-      // make sure monotone isn't locking the curve
-      delete ds.cubicInterpolationMode;
+        const outSeries = seriesArr.map((series) => ({
+            ...series,
+            data: indexes.map((index) => series.data[index]),
+        }));
+
+        return { outLabels, outSeries };
+    }
+
+    function normalizeSeries(labels, seriesArr) {
+        return seriesArr.map((series) => {
+            let base = null;
+
+            for (let i = 0; i < series.data.length; i += 1) {
+                const value = series.data[i];
+
+                if (value !== null && value !== undefined && value !== '') {
+                    base = Number(value);
+
+                    if (!Number.isNaN(base)) {
+                        break;
+                    }
+                }
+            }
+
+            if (base === null || base === 0 || Number.isNaN(base)) {
+                return series;
+            }
+
+            return {
+                ...series,
+                data: series.data.map((value) => {
+                    if (value === null || value === undefined || value === '') {
+                        return null;
+                    }
+
+                    const numberValue = Number(value);
+
+                    if (Number.isNaN(numberValue)) {
+                        return null;
+                    }
+
+                    return (numberValue / base) * 100;
+                }),
+            };
+        });
+    }
+
+    function applyLogFilter(seriesArr) {
+        return seriesArr.map((series) => ({
+            ...series,
+            data: series.data.map((value) => {
+                if (value === null || value === undefined || value === '') {
+                    return null;
+                }
+
+                const numberValue = Number(value);
+
+                if (!Number.isFinite(numberValue) || numberValue <= 0) {
+                    return null;
+                }
+
+                return numberValue;
+            }),
+        }));
+    }
+
+    function render(data) {
+        currentData = data;
+
+        const tension = parseFloat(smooth.value);
+        smoothVal.textContent = tension.toFixed(2);
+
+        let labels = [...data.labels];
+        let seriesArr = data.series.map((series) => ({
+            ...series,
+            data: [...series.data],
+        }));
+
+        ({ outLabels: labels, outSeries: seriesArr } = applyYearFilter(labels, seriesArr));
+
+        if (toggleNormalize.checked) {
+            seriesArr = normalizeSeries(labels, seriesArr);
+        }
+
+        const useLog = toggleLog.checked;
+
+        logWarning.classList.toggle('d-none', !useLog);
+
+        if (useLog) {
+            seriesArr = applyLogFilter(seriesArr);
+        }
+
+        const datasets = seriesArr.map((series, index) => ({
+            label: series.label,
+            yAxisID: axisByKey[series.key] || defaultAxisForKey(series.key),
+            data: labels.map((year, itemIndex) => ({
+                x: year,
+                y: series.data[itemIndex],
+            })),
+            parsing: false,
+            borderColor: randColor(index),
+            backgroundColor: 'transparent',
+            tension,
+            cubicInterpolationMode: 'monotone',
+            spanGaps: true,
+            pointRadius: 2,
+            pointHoverRadius: 4,
+        }));
+
+        if (chart) {
+            chart.destroy();
+        }
+
+        chart = new Chart(canvas, {
+            type: 'line',
+            data: {
+                datasets,
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'nearest',
+                    intersect: false,
+                },
+                scales: {
+                    x: {
+                        type: 'linear',
+                        title: {
+                            display: true,
+                            text: 'Year',
+                            color: chartMutedColor(),
+                        },
+                        ticks: {
+                            precision: 0,
+                            color: chartTextColor(),
+                        },
+                        grid: {
+                            color: chartGridColor(),
+                        },
+                    },
+                    y: {
+                        type: useLog ? 'logarithmic' : 'linear',
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Left axis',
+                            color: chartMutedColor(),
+                        },
+                        ticks: {
+                            color: chartTextColor(),
+                        },
+                        grid: {
+                            color: chartGridColor(),
+                        },
+                    },
+                    y1: {
+                        type: useLog ? 'logarithmic' : 'linear',
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Right axis',
+                            color: chartMutedColor(),
+                        },
+                        ticks: {
+                            color: chartTextColor(),
+                        },
+                        grid: {
+                            drawOnChartArea: false,
+                        },
+                    },
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: {
+                            color: chartTextColor(),
+                        },
+                    },
+                    tooltip: {
+                        backgroundColor: isDarkTheme() ? '#111827' : '#ffffff',
+                        titleColor: chartTextColor(),
+                        bodyColor: chartTextColor(),
+                        borderColor: chartGridColor(),
+                        borderWidth: 1,
+                    },
+                    zoom: {
+                        zoom: {
+                            wheel: {
+                                enabled: true,
+                            },
+                            pinch: {
+                                enabled: true,
+                            },
+                            mode: 'x',
+                        },
+                        pan: {
+                            enabled: true,
+                            mode: 'x',
+                        },
+                    },
+                },
+            },
+        });
+    }
+
+    async function loadAndRender(cols) {
+        const data = await fetchData(cols);
+
+        if (availableCols.length === 0) {
+            availableCols = data.available;
+
+            const years = data.labels
+                .map((year) => Number(year))
+                .filter((year) => Number.isFinite(year));
+
+            const minY = Math.min(...years);
+            const maxY = Math.max(...years);
+
+            yearMin.min = String(minY);
+            yearMin.max = String(maxY);
+            yearMax.min = String(minY);
+            yearMax.max = String(maxY);
+
+            yearMin.value = String(minY);
+            yearMax.value = String(maxY);
+
+            yearMinLabel.textContent = String(minY);
+            yearMaxLabel.textContent = String(maxY);
+
+            buildPicker(data.series.map((series) => series.key));
+        }
+
+        render(data);
+    }
+
+    document.getElementById('btnResetZoom').addEventListener('click', () => {
+        chart?.resetZoom();
     });
 
-    chart.update();
-  });
+    smooth.addEventListener('input', () => {
+        const tension = parseFloat(smooth.value);
 
-  toggleNormalize.addEventListener('change', () => currentData && render(currentData));
-  toggleLog.addEventListener('change', () => currentData && render(currentData));
-  yearMin.addEventListener('input', () => currentData && render(currentData));
-  yearMax.addEventListener('input', () => currentData && render(currentData));
+        smoothVal.textContent = tension.toFixed(2);
 
-  document.getElementById('btnPng').addEventListener('click', () => {
-    if (!chart) return;
-    const a = document.createElement('a');
-    a.href = chart.toBase64Image('image/png', 1);
-    a.download = 'emission_trends.png';
-    a.click();
-  });
+        if (!chart) {
+            return;
+        }
 
-  document.getElementById('btnCsv').addEventListener('click', () => {
-    if (!currentData) return;
+        chart.data.datasets.forEach((dataset) => {
+            dataset.tension = tension;
+            delete dataset.cubicInterpolationMode;
+        });
 
-    // Use the SAME transformations as the chart (year filter, normalize, log filter)
-    let labels = [...currentData.labels];
-    let seriesArr = currentData.series.map(s => ({ ...s, data: [...s.data] }));
+        chart.update();
+    });
 
-    ({ outLabels: labels, outSeries: seriesArr } = applyYearFilter(labels, seriesArr));
-    if (toggleNormalize.checked) seriesArr = normalizeSeries(labels, seriesArr);
-    if (toggleLog.checked) seriesArr = applyLogFilter(seriesArr);
+    toggleNormalize.addEventListener('change', () => currentData && render(currentData));
+    toggleLog.addEventListener('change', () => currentData && render(currentData));
+    yearMin.addEventListener('input', () => currentData && render(currentData));
+    yearMax.addEventListener('input', () => currentData && render(currentData));
 
-    const csv = toCsv(labels, seriesArr);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'emission_trends.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-  });
+    document.getElementById('btnPng').addEventListener('click', () => {
+        if (!chart) {
+            return;
+        }
 
-  // Initial load
-  loadAndRender([]);
+        const anchor = document.createElement('a');
+        anchor.href = chart.toBase64Image('image/png', 1);
+        anchor.download = 'emission_trends.png';
+        anchor.click();
+    });
+
+    document.getElementById('btnCsv').addEventListener('click', () => {
+        if (!currentData) {
+            return;
+        }
+
+        let labels = [...currentData.labels];
+
+        let seriesArr = currentData.series.map((series) => ({
+            ...series,
+            data: [...series.data],
+        }));
+
+        ({ outLabels: labels, outSeries: seriesArr } = applyYearFilter(labels, seriesArr));
+
+        if (toggleNormalize.checked) {
+            seriesArr = normalizeSeries(labels, seriesArr);
+        }
+
+        if (toggleLog.checked) {
+            seriesArr = applyLogFilter(seriesArr);
+        }
+
+        const csv = toCsv(labels, seriesArr);
+        const blob = new Blob([csv], {
+            type: 'text/csv;charset=utf-8;',
+        });
+
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+
+        anchor.href = url;
+        anchor.download = 'emission_trends.csv';
+        anchor.click();
+
+        URL.revokeObjectURL(url);
+    });
+
+    window.addEventListener('brc:theme-changed', () => {
+        if (currentData) {
+            render(currentData);
+        }
+    });
+
+    loadAndRender([]);
 }

@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\EmissionTrend;
 use App\Models\ProducedWaterFlux;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
+use Carbon\Carbon;
 
 
 class DataController extends Controller
@@ -147,6 +150,130 @@ class DataController extends Controller
     {
         return response()->json([
             'message' => 'Not implemented yet',
+        ]);
+    }
+
+    public function realtimeOzone()
+    {
+        return view('frontend.user.data.realtime_ozone');
+    }
+
+    public function horsepool()
+    {
+        return view('frontend.user.data.horsepool');
+    }
+
+    public function realtimeOzoneJson(Request $request)
+    {
+        $token = config('services.synoptic.token', env('SYNOPTIC_TOKEN'));
+
+        $start = $request->get('start', now()->subDays(7)->format('YmdHi'));
+        $end = $request->get('end', now()->format('YmdHi'));
+
+        $bbox = '-110.5,39.4,-108.5,41.0';
+        $vars = 'ozone_concentration';
+
+        $metadata = Cache::remember('uinta_ozone_metadata', now()->addHours(6), function () use ($token, $bbox, $vars) {
+            return Http::timeout(20)->get('https://api.synopticdata.com/v2/stations/metadata', [
+                'token' => $token,
+                'bbox' => $bbox,
+                'vars' => $vars,
+                'sensorvars' => 1,
+                'output' => 'json',
+            ])->json();
+        });
+
+        $stations = collect($metadata['STATION'] ?? [])->pluck('STID')->values();
+
+        $series = [];
+
+        foreach ($stations as $station) {
+            $data = Cache::remember("uinta_ozone_{$station}_{$start}_{$end}", now()->addMinutes(15), function () use ($token, $station, $vars, $start, $end) {
+                return Http::timeout(30)->get('https://api.synopticdata.com/v2/stations/timeseries', [
+                    'token' => $token,
+                    'stid' => $station,
+                    'vars' => $vars,
+                    'start' => $start,
+                    'end' => $end,
+                ])->json();
+            });
+
+            $stationData = $data['STATION'][0] ?? null;
+
+            if (! $stationData) {
+                continue;
+            }
+
+            $observations = $stationData['OBSERVATIONS'] ?? [];
+            $ozoneKey = collect(array_keys($observations))
+                ->first(fn ($key) => str_starts_with($key, 'ozone_concentration_set_'));
+
+            if (! $ozoneKey) {
+                continue;
+            }
+
+            $times = $observations['date_time'] ?? [];
+            $values = $observations[$ozoneKey] ?? [];
+
+            $points = [];
+
+            foreach ($times as $i => $time) {
+                if (! isset($values[$i]) || $values[$i] === null) {
+                    continue;
+                }
+
+                $points[] = [
+                    'x' => $time,
+                    'y' => (float) $values[$i],
+                ];
+            }
+
+            $series[] = [
+                'station' => $station,
+                'name' => $stationData['NAME'] ?? $station,
+                'latitude' => $stationData['LATITUDE'] ?? null,
+                'longitude' => $stationData['LONGITUDE'] ?? null,
+                'data' => $points,
+            ];
+        }
+
+        return response()->json([
+            'meta' => [
+                'units' => 'ppb',
+                'count' => count($series),
+                'start' => $start,
+                'end' => $end,
+            ],
+            'series' => $series,
+        ]);
+    }
+
+    public function horsepoolJson()
+    {
+        $data = Cache::remember('horsepool_latest_synoptic', now()->addMinutes(2), function () {
+            $response = Http::timeout(10)->get('http://69.55.104.135/', [
+                'command' => 'DataQuery',
+                'uri' => 'dl:Synoptic',
+                'mode' => 'most-recent',
+                'p1' => 1,
+            ]);
+
+            return $response->body();
+        });
+
+        preg_match_all('/<th[^>]*>(.*?)<\/th>/i', $data, $headers);
+        preg_match_all('/<td[^>]*>(.*?)<\/td>/i', $data, $values);
+
+        $headers = array_map('trim', array_map('strip_tags', $headers[1] ?? []));
+        $values = array_map('trim', array_map('strip_tags', $values[1] ?? []));
+
+        return response()->json([
+            'meta' => [
+                'station' => 'Horsepool',
+                'source' => 'Campbell logger',
+                'fetched_at' => now()->toIso8601String(),
+            ],
+            'record' => array_combine($headers, array_slice($values, 0, count($headers))) ?: [],
         ]);
     }
 

@@ -55,6 +55,19 @@ Route::group(['as' => 'user.', 'middleware' => ['auth', 'password.expires', conf
             Route::get('relationships/json', [DataController::class, 'producedWaterRelationshipsJson'])
                 ->name('produced-water.relationships.json');
         });
+        
+        /* Realtime Data */
+        Route::get('realtime/ozone', [DataController::class, 'realtimeOzone'])
+            ->name('realtime.ozone');
+
+        Route::get('realtime/ozone/json', [DataController::class, 'realtimeOzoneJson'])
+            ->name('realtime.ozone.json');
+
+        Route::get('realtime/horsepool', [DataController::class, 'horsepool'])
+            ->name('realtime.horsepool');
+
+        Route::get('realtime/horsepool/json', [DataController::class, 'horsepoolJson'])
+            ->name('realtime.horsepool.json');
     });
 
     Route::group([
