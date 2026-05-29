@@ -90,4 +90,70 @@ return [
     ],
 
 
+    'campbell_sites' => [
+        'seven-sisters' => [
+            'name' => 'Seven Sisters',
+            'source' => 'Campbell CR1000 Logger',
+            'latitude' => 39.9826,
+            'longitude' => -109.3443,
+            'elevation_ft' => 5307,
+            'url' => env('CAMPBELL_SEVEN_SISTERS_URL', 'http://69.55.104.136/'),
+            'query' => [
+                'command' => 'DataQuery',
+                'uri' => 'dl:Synoptic',
+                'mode' => 'most-recent',
+                'p1' => 1,
+            ],
+            'timeout' => 12,
+        ],
+
+        'horsepool' => [
+            'name' => 'Horsepool',
+            'source' => 'Campbell CR1000 Logger',
+            'url' => env('CAMPBELL_HORSEPOOL_URL'),
+            'query' => [
+                'command' => 'DataQuery',
+                'uri' => 'dl:Synoptic',
+                'mode' => 'most-recent',
+                'p1' => 1,
+            ],
+            'timeout' => 12,
+        ],
+
+        'castle-peak' => [
+            'name' => 'Castle Peak',
+            'source' => 'Campbell CR1000 Logger',
+            'latitude' => 40.0509,
+            'longitude' => -110.0194,
+            'elevation_ft' => 5265,
+            'url' => env('CAMPBELL_CASTLE_PEAK_URL', 'http://69.55.104.137/'),
+            'query' => [
+                'command' => 'DataQuery',
+                'uri' => 'dl:Synoptic',
+                'mode' => 'most-recent',
+                'p1' => 1,
+            ],
+            'timeout' => 12,
+        ],
+
+        'roosevelt' => [
+            'name' => 'Roosevelt',
+            'source' => 'Campbell CR1000 Logger',
+            'latitude' => 40.2942,
+            'longitude' => -110.0090,
+            'elevation_ft' => 5207,
+            'url' => env('CAMPBELL_ROOSEVELT_URL', 'http://67.213.230.76:7003/'),
+            'query' => [
+                'command' => 'DataQuery',
+                'uri' => 'dl:Public',
+                'mode' => 'most-recent',
+                'p1' => 1,
+            ],
+            'timeout' => 20,
+        ],
+
+
+    ],
+
+
 ];

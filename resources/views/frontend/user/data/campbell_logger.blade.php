@@ -1,23 +1,37 @@
 @extends('frontend.layouts.app')
 
-@section('title', __('Horsepool Station'))
+@section('title', $site['name'] ?? __('Campbell Logger'))
 
 @section('content')
 <div
     class="dashboard-page dashboard-page-pro dashboard-fill-page"
     id="horsepoolRoot"
-    data-json-url="{{ route('frontend.user.data.realtime.horsepool.json') }}"
+    data-json-url="{{ route('frontend.user.data.realtime.logger.json', ['site' => $siteKey]) }}"
 >
     <div class="card dashboard-chart-card dashboard-fill-card mb-4">
         <div class="card-header">
             <div>
-                <h2 class="dashboard-chart-title mb-0">@lang('Horsepool Campbell Logger')</h2>
-                <div class="dashboard-chart-subtitle" id="horsepoolStatus">@lang('Loading realtime station packet...')</div>
+                <h1 class="dashboard-chart-title mb-0">
+                    {{ $site['name'] ?? __('Campbell Logger') }}
+                </h1>
+
+                <div class="dashboard-chart-subtitle">
+                    @lang('Realtime Campbell logger packet')
+                    @if(! empty($site['elevation_ft']))
+                        · {{ number_format($site['elevation_ft']) }} ft
+                    @endif
+                </div>
             </div>
 
-            <button id="btnRefreshHorsepool" type="button" class="btn btn-sm btn-outline-primary">
-                <i class="c-icon cil-reload mr-1"></i> @lang('Refresh data')
-            </button>
+            <div class="d-flex align-items-center">
+                <span id="horsepoolStatus" class="dashboard-chart-subtitle mr-3">
+                    @lang('Waiting for data...')
+                </span>
+
+                <button id="btnRefreshHorsepool" type="button" class="btn btn-sm btn-outline-primary">
+                    <i class="c-icon cil-reload mr-1"></i> @lang('Refresh data')
+                </button>
+            </div>
         </div>
 
         <div class="card-body dashboard-fill-card-body">

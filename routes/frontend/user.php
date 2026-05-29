@@ -63,11 +63,20 @@ Route::group(['as' => 'user.', 'middleware' => ['auth', 'password.expires', conf
         Route::get('realtime/ozone/json', [DataController::class, 'realtimeOzoneJson'])
             ->name('realtime.ozone.json');
 
-        Route::get('realtime/horsepool', [DataController::class, 'horsepool'])
-            ->name('realtime.horsepool');
+        Route::get('realtime/logger/{site}', [DataController::class, 'campbellLogger'])
+            ->name('realtime.logger');
 
-        Route::get('realtime/horsepool/json', [DataController::class, 'horsepoolJson'])
-            ->name('realtime.horsepool.json');
+        Route::get('realtime/logger/{site}/json', [DataController::class, 'campbellLoggerJson'])
+            ->name('realtime.logger.json');
+
+        /* Backward-compatible old Horsepool URL */
+        Route::get('realtime/horsepool', function () {
+            return redirect()->route('frontend.user.data.realtime.logger', ['site' => 'horsepool']);
+        })->name('realtime.horsepool');
+
+        Route::get('realtime/horsepool/json', function () {
+            return redirect()->route('frontend.user.data.realtime.logger.json', ['site' => 'horsepool']);
+        })->name('realtime.horsepool.json');
     });
 
     Route::group([

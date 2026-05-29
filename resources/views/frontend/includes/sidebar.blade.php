@@ -1,3 +1,4 @@
+@php use Illuminate\Support\Str; @endphp
 <div class="c-sidebar c-sidebar-dark c-sidebar-fixed c-sidebar-lg-show" id="sidebar">
     <div class="c-sidebar-brand d-lg-down-none">
         <svg class="c-sidebar-brand-full" width="118" height="46" alt="CoreUI Logo">
@@ -160,12 +161,46 @@
                             :active="activeClass(Route::is('frontend.user.data.realtime.ozone*'), 'c-active')" />
                     </li>
 
+                    <li class="c-sidebar-nav-title">@lang('Campbell Loggers')</li>
+
+                    @foreach(config('services.campbell_sites', []) as $key => $site)
+                        <li class="c-sidebar-nav-item">
+                            <x-utils.link
+                                :href="route('frontend.user.data.realtime.logger', ['site' => $key])"
+                                class="c-sidebar-nav-link"
+                                :text="$site['name'] ?? Str::headline($key)"
+                                :active="activeClass(Route::is('frontend.user.data.realtime.logger') && request()->route('site') === $key, 'c-active')" />
+                        </li>
+                    @endforeach
+
+                    <li class="c-sidebar-nav-title">@lang('Other Sites')</li>
+
                     <li class="c-sidebar-nav-item">
                         <x-utils.link
-                            :href="route('frontend.user.data.realtime.horsepool')"
+                            href="#"
                             class="c-sidebar-nav-link"
-                            :text="__('Horsepool Station')"
-                            :active="activeClass(Route::is('frontend.user.data.realtime.horsepool*'), 'c-active')" />
+                            :text="__('Dinosaur NM')" />
+                    </li>
+
+                    <li class="c-sidebar-nav-item">
+                        <x-utils.link
+                            href="#"
+                            class="c-sidebar-nav-link"
+                            :text="__('Little Mountain')" />
+                    </li>
+
+                    <li class="c-sidebar-nav-item">
+                        <x-utils.link
+                            href="#"
+                            class="c-sidebar-nav-link"
+                            :text="__('Ouray')" />
+                    </li>
+
+                    <li class="c-sidebar-nav-item">
+                        <x-utils.link
+                            href="#"
+                            class="c-sidebar-nav-link"
+                            :text="__('Whiterocks')" />
                     </li>
                 </ul>
             </li>
