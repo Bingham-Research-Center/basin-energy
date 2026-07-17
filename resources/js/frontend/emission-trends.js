@@ -115,6 +115,46 @@ if (root) {
         picker.appendChild(wrap);
     }
 
+    function updateEmissionAiSummary(labels, seriesArr) {
+        const el = document.getElementById('emissionAiSummary');
+
+        if (!el) {
+            return;
+        }
+
+        if (!labels.length || !seriesArr.length) {
+            el.textContent = 'No emission trend data is currently selected. Choose one or more columns to summarize the trend.';
+            return;
+        }
+
+        const summaries = seriesArr.slice(0, 3).map((series) => {
+            const clean = series.data
+                .map((value, index) => ({
+                    year: labels[index],
+                    value: Number(value),
+                }))
+                .filter((point) => Number.isFinite(point.value));
+
+            if (clean.length < 2) {
+                return `${series.label} does not have enough valid values for a trend estimate`;
+            }
+
+            const first = clean[0];
+            const last = clean[clean.length - 1];
+            const change = last.value - first.value;
+            const pct = first.value !== 0 ? (change / first.value) * 100 : null;
+            const direction = change > 0 ? 'increased' : change < 0 ? 'decreased' : 'remained nearly unchanged';
+
+            const pctText = pct === null
+                ? ''
+                : ` by about ${Math.abs(pct).toFixed(1)}%`;
+
+            return `${series.label} ${direction}${pctText} from ${first.year} to ${last.year}`;
+        });
+
+        el.textContent = `The selected emission trend view shows that ${summaries.join('; ')}. Use normalization to compare relative changes across variables with different units.`;
+    }
+
     function getSelectedCols() {
         return Array.from(picker.querySelectorAll('input[type="checkbox"]'))
             .filter((cb) => cb.checked)
@@ -248,6 +288,7 @@ if (root) {
         smoothVal.textContent = tension.toFixed(2);
 
         let labels = [...data.labels];
+
         let seriesArr = data.series.map((series) => ({
             ...series,
             data: [...series.data],
@@ -266,6 +307,8 @@ if (root) {
         if (useLog) {
             seriesArr = applyLogFilter(seriesArr);
         }
+
+        updateEmissionAiSummary(labels, seriesArr);
 
         const datasets = seriesArr.map((series, index) => ({
             label: series.label,
@@ -379,6 +422,84 @@ if (root) {
                 },
             },
         });
+    }
+
+    async function updateEmissionAiSummaryWithEngine(labels, seriesArr) {
+        const el = document.getElementById('emissionAiSummary');
+
+        if (!el) {
+            return;
+        }
+
+        const aiUrl = root.dataset.aiSummaryUrl;
+
+        if (!aiUrl) {
+            updateEmissionAiSummaryWithEngine(labels, seriesArr);
+            return;
+        }
+
+        const selected = seriesArr.map((series) => {
+            const clean = series.data
+                .map((value, index) => ({
+                    year: labels[index],
+                    value: Number(value),
+                }))
+                .filter((point) => Number.isFinite(point.value));
+
+            if (clean.length < 2) {
+                return {
+                    label: series.label,
+                };
+            }
+
+            const values = clean.map((point) => point.value);
+            const first = clean[0];
+            const last = clean[clean.length - 1];
+            const change = last.value - first.value;
+
+            return {
+                label: series.label,
+                first_year: first.year,
+                last_year: last.year,
+                first_value: first.value,
+                last_value: last.value,
+                percent_change: first.value !== 0 ? (change / first.value) * 100 : null,
+                min: Math.min(...values),
+                max: Math.max(...values),
+                avg: values.reduce((sum, value) => sum + value, 0) / values.length,
+            };
+        });
+
+        try {
+            el.textContent = 'Generating AI summary...';
+
+            const response = await fetch(aiUrl, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    selected,
+                    normalize: toggleNormalize.checked,
+                    log_scale: toggleLog.checked,
+                }),
+            });
+
+            const json = await response.json();
+
+            if (!response.ok || json.ok === false) {
+                throw new Error(json.summary || 'AI summary unavailable.');
+            }
+
+            el.textContent = json.summary;
+        } catch (error) {
+            console.warn(error);
+            updateEmissionAiSummary(labels, seriesArr);
+        }
     }
 
     async function loadAndRender(cols) {

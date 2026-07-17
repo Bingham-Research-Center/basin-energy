@@ -102,6 +102,17 @@
                 <canvas id="emissionsChart"></canvas>
             </div>
 
+            <div class="dashboard-ai-block mt-3">
+                <div class="dashboard-ai-block-title">
+                    <i class="c-icon cil-lightbulb"></i>
+                    @lang('AI data summary')
+                </div>
+
+                <p class="dashboard-ai-block-text" id="emissionAiSummary">
+                    @lang('Select one or more emission trend columns to generate a short interpretation of the selected trends.')
+                </p>
+            </div>
+
             <div class="dashboard-chart-help mt-3">
                 <i class="c-icon cil-info mr-1"></i>
                 @lang('Tip: use the mouse wheel or pinch to zoom; drag to pan the chart.')

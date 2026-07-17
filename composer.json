@@ -22,6 +22,8 @@
         "laravel/tinker": "^2.5",
         "laravel/ui": "^4.0",
         "livewire/livewire": "^3.0",
+        "maennchen/zipstream-php": "^3.1",
+        "phpoffice/phpspreadsheet": "^2.1",
         "rappasoft/laravel-livewire-tables": "^3.0",
         "rappasoft/lockout": "^5.0",
         "spatie/laravel-activitylog": "^4.4",
@@ -96,6 +98,9 @@
         "allow-plugins": {
             "php-http/discovery": true,
             "treeware/plant": true
+        },
+        "platform": {
+            "php": "8.2.30"
         }
     },
     "minimum-stability": "dev",

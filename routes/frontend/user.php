@@ -55,6 +55,36 @@ Route::group(['as' => 'user.', 'middleware' => ['auth', 'password.expires', conf
             Route::get('relationships/json', [DataController::class, 'producedWaterRelationshipsJson'])
                 ->name('produced-water.relationships.json');
         });
+
+        Route::get('subsurface-natural-gas-leaks', [DataController::class, 'subsurfaceNaturalGasLeaks'])
+            ->name('subsurface-natural-gas-leaks');
+
+        Route::get('subsurface-natural-gas-leaks/overview/json', [DataController::class, 'subsurfaceNaturalGasLeaksOverviewJson'])
+            ->name('subsurface-natural-gas-leaks.overview.json');
+
+        Route::get('subsurface-natural-gas-leaks/survey/json', [DataController::class, 'subsurfaceNaturalGasLeaksSurveyJson'])
+            ->name('subsurface-natural-gas-leaks.survey.json');
+
+        Route::get('subsurface-natural-gas-leaks/temporal/json', [DataController::class, 'subsurfaceNaturalGasLeaksTemporalJson'])
+            ->name('subsurface-natural-gas-leaks.temporal.json');
+
+        Route::get('subsurface-natural-gas-leaks/options/json', [DataController::class, 'subsurfaceNaturalGasLeaksOptionsJson'])
+            ->name('subsurface-natural-gas-leaks.options.json');
+
+        Route::get('oil-well-pad-emissions', [DataController::class, 'oilWellPadEmissions'])
+            ->name('oil-well-pad-emissions');
+
+        Route::get('oil-well-pad-emissions/overview/json', [DataController::class, 'oilWellPadEmissionsOverviewJson'])
+            ->name('oil-well-pad-emissions.overview.json');
+
+        Route::get('oil-well-pad-emissions/samples/json', [DataController::class, 'oilWellPadEmissionsSamplesJson'])
+            ->name('oil-well-pad-emissions.samples.json');
+
+        Route::get('oil-well-pad-emissions/composition/json', [DataController::class, 'oilWellPadEmissionsCompositionJson'])
+            ->name('oil-well-pad-emissions.composition.json');
+
+        Route::get('oil-well-pad-emissions/options/json', [DataController::class, 'oilWellPadEmissionsOptionsJson'])
+            ->name('oil-well-pad-emissions.options.json');
         
         /* Realtime Data */
         Route::get('realtime/ozone', [DataController::class, 'realtimeOzone'])
@@ -77,6 +107,10 @@ Route::group(['as' => 'user.', 'middleware' => ['auth', 'password.expires', conf
         Route::get('realtime/horsepool/json', function () {
             return redirect()->route('frontend.user.data.realtime.logger.json', ['site' => 'horsepool']);
         })->name('realtime.horsepool.json');
+
+        Route::post('ai-summary/emission-trends', [DataController::class, 'emissionTrendsAiSummary'])
+            ->name('ai-summary.emission-trends');
+
     });
 
     Route::group([

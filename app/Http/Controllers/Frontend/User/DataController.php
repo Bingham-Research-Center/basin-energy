@@ -5,11 +5,16 @@ namespace App\Http\Controllers\Frontend\User;
 use App\Http\Controllers\Controller;
 use App\Models\EmissionTrend;
 use App\Models\ProducedWaterFlux;
+use App\Models\SubsurfaceLeakSurvey;
+use App\Models\SubsurfaceLeakIntervalFlux;
+use App\Models\SubsurfaceLeakChamberReading;
+use App\Models\OilWellPadEmission;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use App\Services\AiSummaryService;
 
 class DataController extends Controller
 {
@@ -18,6 +23,28 @@ class DataController extends Controller
     | Emission Trends
     |--------------------------------------------------------------------------
     */
+
+    public function emissionTrendsAiSummary(Request $request, AiSummaryService $aiSummaryService)
+    {
+        $payload = $request->validate([
+            'selected' => ['required', 'array'],
+            'selected.*.label' => ['required', 'string'],
+            'selected.*.first_year' => ['nullable'],
+            'selected.*.last_year' => ['nullable'],
+            'selected.*.first_value' => ['nullable'],
+            'selected.*.last_value' => ['nullable'],
+            'selected.*.percent_change' => ['nullable'],
+            'selected.*.min' => ['nullable'],
+            'selected.*.max' => ['nullable'],
+            'selected.*.avg' => ['nullable'],
+            'normalize' => ['nullable', 'boolean'],
+            'log_scale' => ['nullable', 'boolean'],
+        ]);
+
+        return response()->json(
+            $aiSummaryService->summarizeEmissionTrends($payload)
+        );
+    }
 
     public function emissionTrends()
     {
@@ -174,6 +201,261 @@ class DataController extends Controller
             'aromatics' => 'Aromatics',
             'alcohols' => 'Alcohols',
             'carbonyls' => 'Carbonyls',
+        ];
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Surface leaks / Subsurface Natural Gas Leaks
+    |--------------------------------------------------------------------------
+    */
+
+    public function subsurfaceNaturalGasLeaks()
+    {
+        return view('frontend.user.data.subsurface_natural_gas_leaks');
+    }
+
+    public function subsurfaceNaturalGasLeaksOverviewJson()
+    {
+        return response()->json([
+            'survey_records' => SubsurfaceLeakSurvey::count(),
+            'interval_records' => SubsurfaceLeakIntervalFlux::count(),
+            'chamber_records' => SubsurfaceLeakChamberReading::count(),
+            'sites' => SubsurfaceLeakChamberReading::query()->distinct()->orderBy('site_code')->pluck('site_code'),
+            'survey_ch4' => [
+                'min' => SubsurfaceLeakSurvey::min('ch4_flux'),
+                'max' => SubsurfaceLeakSurvey::max('ch4_flux'),
+                'avg' => SubsurfaceLeakSurvey::avg('ch4_flux'),
+            ],
+        ]);
+    }
+
+    public function subsurfaceNaturalGasLeaksSurveyJson(Request $request)
+    {
+        $metric = $request->get('metric', 'ch4_flux');
+        $allowed = ['ch4_flux', 'co2_flux', 'tnmhc_flux', 'alkanes_flux', 'alkenes_flux', 'aromatics_flux'];
+        abort_unless(in_array($metric, $allowed, true), 422, 'Invalid metric.');
+
+        $query = SubsurfaceLeakSurvey::query()->whereNotNull($metric);
+        if ($request->filled('well_type')) $query->where('well_type', $request->well_type);
+        if ($request->filled('well_status')) $query->where('well_status', $request->well_status);
+        if ($request->filled('month')) $query->where('sample_month', $request->month);
+
+        $rows = $query->orderBy('flux_sample_date')->limit(5000)->get([
+            'id', 'flux_sample_date', 'sample_month', 'well_id', 'well_type', 'well_status',
+            'flux_distance_m', 'total_combustible_soil_gas', 'ch4_flux', 'co2_flux',
+            'tnmhc_flux', 'alkanes_flux', 'alkenes_flux', 'aromatics_flux',
+            'ambient_temp_c', 'soil_temp_c', 'soil_water_content',
+        ]);
+
+        return response()->json([
+            'metric' => $metric,
+            'rows' => $rows,
+            'options' => [
+                'well_types' => SubsurfaceLeakSurvey::whereNotNull('well_type')->distinct()->orderBy('well_type')->pluck('well_type'),
+                'well_statuses' => SubsurfaceLeakSurvey::whereNotNull('well_status')->distinct()->orderBy('well_status')->pluck('well_status'),
+                'months' => SubsurfaceLeakSurvey::whereNotNull('sample_month')->distinct()->orderBy('sample_month')->pluck('sample_month'),
+            ],
+        ]);
+    }
+
+    public function subsurfaceNaturalGasLeaksTemporalJson(Request $request)
+    {
+        $site = $request->get('site', 'UPW1');
+        $gas = strtolower($request->get('gas', 'ch4'));
+        $chamber = (int) $request->get('chamber', 1);
+        $aggregation = $request->get('aggregation', 'hourly');
+
+        abort_unless(in_array($gas, ['ch4', 'co2'], true), 422, 'Invalid gas.');
+        abort_unless($chamber >= 1 && $chamber <= 6, 422, 'Invalid chamber.');
+        abort_unless(in_array($aggregation, ['raw', 'hourly', 'daily'], true), 422, 'Invalid aggregation.');
+
+        $column = "chm{$chamber}_{$gas}";
+        $query = SubsurfaceLeakChamberReading::query()
+            ->where('site_code', $site)
+            ->whereNotNull($column);
+
+        if ($request->filled('start')) $query->where('measured_at', '>=', $request->start);
+        if ($request->filled('end')) $query->where('measured_at', '<=', $request->end);
+
+        if ($aggregation === 'raw') {
+            $rows = $query->orderBy('measured_at')->limit(10000)->get(['measured_at', $column, 'soil_temp_c', 'soil_water_pct']);
+        } else {
+            $format = $aggregation === 'daily' ? '%Y-%m-%d 00:00:00' : '%Y-%m-%d %H:00:00';
+            $rows = $query
+                ->selectRaw("DATE_FORMAT(measured_at, '{$format}') AS measured_at")
+                ->selectRaw("AVG({$column}) AS {$column}")
+                ->selectRaw('AVG(soil_temp_c) AS soil_temp_c, AVG(soil_water_pct) AS soil_water_pct')
+                ->groupByRaw("DATE_FORMAT(measured_at, '{$format}')")
+                ->orderBy('measured_at')
+                ->get();
+        }
+
+        return response()->json([
+            'site' => $site,
+            'gas' => $gas,
+            'chamber' => $chamber,
+            'aggregation' => $aggregation,
+            'column' => $column,
+            'rows' => $rows,
+        ]);
+    }
+
+    public function subsurfaceNaturalGasLeaksOptionsJson()
+    {
+        return response()->json([
+            'sites' => SubsurfaceLeakChamberReading::query()
+                ->select('site_code', 'site_type')
+                ->distinct()->orderBy('site_code')->get(),
+            'metrics' => [
+                ['key' => 'ch4_flux', 'label' => 'Methane (CH₄)'],
+                ['key' => 'co2_flux', 'label' => 'Carbon dioxide (CO₂)'],
+                ['key' => 'tnmhc_flux', 'label' => 'Total NMHC'],
+                ['key' => 'alkanes_flux', 'label' => 'Alkanes'],
+                ['key' => 'alkenes_flux', 'label' => 'Alkenes'],
+                ['key' => 'aromatics_flux', 'label' => 'Aromatics'],
+            ],
+        ]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Oil Well Pad Emissions
+    |--------------------------------------------------------------------------
+    */
+
+    public function oilWellPadEmissions()
+    {
+        return view('frontend.user.data.oil_well_pad_emissions');
+    }
+
+    public function oilWellPadEmissionsOverviewJson()
+    {
+        $query = OilWellPadEmission::query();
+
+        return response()->json([
+            'measurement_count' => (clone $query)->count(),
+            'source_type_count' => (clone $query)->distinct('sample_type')->count('sample_type'),
+            'max_total_organic_g_hr' => (float) ((clone $query)->max('total_organic_compounds_g_hr') ?? 0),
+            'max_methane_g_hr' => (float) ((clone $query)->max('methane_g_hr') ?? 0),
+            'source_summary' => (clone $query)
+                ->selectRaw('sample_type, COUNT(*) AS measurement_count')
+                ->selectRaw('AVG(total_organic_compounds_g_hr) AS avg_total_organic_g_hr')
+                ->selectRaw('AVG(methane_g_hr) AS avg_methane_g_hr')
+                ->selectRaw('AVG(tnmhc_g_hr) AS avg_tnmhc_g_hr')
+                ->groupBy('sample_type')
+                ->orderByDesc('avg_total_organic_g_hr')
+                ->get()
+                ->map(fn ($row) => [
+                    'sample_type' => $row->sample_type,
+                    'measurement_count' => (int) $row->measurement_count,
+                    'avg_total_organic_g_hr' => round((float) $row->avg_total_organic_g_hr, 4),
+                    'avg_methane_g_hr' => round((float) $row->avg_methane_g_hr, 4),
+                    'avg_tnmhc_g_hr' => round((float) $row->avg_tnmhc_g_hr, 4),
+                ]),
+        ]);
+    }
+
+    public function oilWellPadEmissionsSamplesJson(Request $request)
+    {
+        $metrics = $this->oilWellPadEmissionMetrics();
+        $metric = $request->get('metric', 'total_organic_compounds_g_hr');
+
+        abort_unless(array_key_exists($metric, $metrics), 422, 'Invalid emission metric.');
+
+        $query = OilWellPadEmission::query();
+
+        if ($request->filled('sample_type')) {
+            $query->where('sample_type', $request->string('sample_type'));
+        }
+
+        $rows = $query
+            ->orderBy('sample_number')
+            ->get([
+                'id',
+                'sample_number',
+                'sample_type',
+                $metric,
+                'methane_g_hr',
+                'tnmhc_g_hr',
+                'notes',
+            ]);
+
+        return response()->json([
+            'metric' => $metric,
+            'metric_label' => $metrics[$metric],
+            'rows' => $rows,
+        ]);
+    }
+
+    public function oilWellPadEmissionsCompositionJson(Request $request)
+    {
+        $query = OilWellPadEmission::query();
+
+        if ($request->filled('sample_type')) {
+            $query->where('sample_type', $request->string('sample_type'));
+        }
+
+        $rows = $query->get([
+            'methane_g_hr',
+            'alkanes_g_hr',
+            'alkenes_alkyne_g_hr',
+            'aromatics_g_hr',
+            'alcohols_g_hr',
+            'carbonyls_g_hr',
+        ]);
+
+        $groups = [
+            'Methane' => 'methane_g_hr',
+            'Alkanes' => 'alkanes_g_hr',
+            'Alkenes + alkyne' => 'alkenes_alkyne_g_hr',
+            'Aromatics' => 'aromatics_g_hr',
+            'Alcohols' => 'alcohols_g_hr',
+            'Carbonyls' => 'carbonyls_g_hr',
+        ];
+
+        $averages = collect($groups)->map(function ($column, $label) use ($rows) {
+            $values = $rows->pluck($column)->filter(fn ($value) => $value !== null);
+
+            return [
+                'label' => $label,
+                'value' => $values->count() ? round((float) $values->avg(), 6) : 0,
+            ];
+        })->values();
+
+        return response()->json([
+            'sample_type' => $request->get('sample_type'),
+            'measurement_count' => $rows->count(),
+            'groups' => $averages,
+        ]);
+    }
+
+    public function oilWellPadEmissionsOptionsJson()
+    {
+        return response()->json([
+            'sample_types' => OilWellPadEmission::query()
+                ->distinct()
+                ->orderBy('sample_type')
+                ->pluck('sample_type')
+                ->values(),
+            'metrics' => collect($this->oilWellPadEmissionMetrics())
+                ->map(fn ($label, $key) => compact('key', 'label'))
+                ->values(),
+        ]);
+    }
+
+    private function oilWellPadEmissionMetrics(): array
+    {
+        return [
+            'total_organic_compounds_g_hr' => 'Total organic compounds (g/hr)',
+            'methane_g_hr' => 'Methane (g/hr)',
+            'carbon_dioxide_g_hr' => 'Carbon dioxide (g/hr)',
+            'tnmhc_g_hr' => 'Total non-methane hydrocarbons (g/hr)',
+            'alkanes_g_hr' => 'Total alkanes (g/hr)',
+            'alkenes_alkyne_g_hr' => 'Total alkenes + alkyne (g/hr)',
+            'aromatics_g_hr' => 'Total aromatics (g/hr)',
+            'alcohols_g_hr' => 'Total alcohols (g/hr)',
+            'carbonyls_g_hr' => 'Total carbonyls (g/hr)',
         ];
     }
 

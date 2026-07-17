@@ -77,7 +77,7 @@
                 </ul>
             </li>
 
-            <li class="c-sidebar-nav-dropdown">
+            <li class="c-sidebar-nav-dropdown {{ activeClass(Route::is('frontend.user.data.subsurface-natural-gas-leaks*'), 'c-open c-show') }}">
                 <x-utils.link
                     href="#"
                     icon="c-sidebar-nav-icon cil-warning"
@@ -87,30 +87,31 @@
                 <ul class="c-sidebar-nav-dropdown-items">
                     <li class="c-sidebar-nav-item">
                         <x-utils.link
-                            href="#"
+                            :href="route('frontend.user.data.subsurface-natural-gas-leaks')"
                             class="c-sidebar-nav-link"
-                            :text="__('Coming Soon')" />
+                            :text="__('Subsurface Soil Emissions')"
+                            :active="activeClass(Route::is('frontend.user.data.subsurface-natural-gas-leaks*'), 'c-active')" />
                     </li>
                 </ul>
             </li>
 
-            <li class="c-sidebar-nav-dropdown">
+            <li class="c-sidebar-nav-dropdown {{ activeClass(Route::is('frontend.user.data.oil-well-pad-emissions*'), 'c-open c-show') }}">
                 <x-utils.link
                     href="#"
                     icon="c-sidebar-nav-icon cil-industry"
                     class="c-sidebar-nav-dropdown-toggle"
-                    :text="__('Oil Well Pads Emission')" />
+                    :text="__('Oil Well Pad Emissions')" />
 
                 <ul class="c-sidebar-nav-dropdown-items">
                     <li class="c-sidebar-nav-item">
                         <x-utils.link
-                            href="#"
+                            :href="route('frontend.user.data.oil-well-pad-emissions')"
                             class="c-sidebar-nav-link"
-                            :text="__('Duchesne County')" />
+                            :text="__('Duchesne County')"
+                            :active="activeClass(Route::is('frontend.user.data.oil-well-pad-emissions*'), 'c-active')" />
                     </li>
                 </ul>
             </li>
-
             <li class="c-sidebar-nav-dropdown">
                 <x-utils.link
                     href="#"
