@@ -65,9 +65,16 @@
     <script src="{{ asset('frontend/plugins/animate-css/wow.min.js') }}"></script>
     <script src="{{ asset('frontend/plugins/modal-video/jquery-modal-video.min.js') }}"></script>
     <script src="{{ asset('frontend/plugins/google-map/map.js') }}"></script>
-    @if($needsAuthPopup)<script src="{{ asset('frontend/js/popup-auth.js') }}"></script> @endif
     <script src="{{ asset('frontend/js/script.js') }}"></script>
-    <script src="https://www.google.com/recaptcha/api.js?render=explicit" async defer></script>
+    @if ($needsAuthPopup)
+    <script src="{{ asset('frontend/js/popup-auth.js') }}"></script>
+    @endif
+    <script src="{{ asset('frontend/js/invisible-captcha.js') }}"></script>
+    <script
+        src="https://www.google.com/recaptcha/api.js?onload=initializeInvisibleCaptchas&render=explicit"
+        async
+        defer>
+    </script>
     @stack('after-scripts')
 </body>
 </html>

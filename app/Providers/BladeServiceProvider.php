@@ -27,44 +27,61 @@ class BladeServiceProvider extends ServiceProvider
     protected function registerCaptcha(): void
     {
         /*
-         * The block of code inside this directive prints the required elements for google recaptcha
-         * courtesy of albertcht/invisible-recaptcha
-         */
+        * Outputs only the reCAPTCHA container.
+        *
+        * The Google API and form-submission logic are loaded once
+        * from the frontend layout. This allows multiple CAPTCHA
+        * forms to coexist on the same page.
+        */
         Blade::directive('captcha', function ($lang) {
-            $html = new HtmlString('<script src="https://cdn.polyfill.io/v2/polyfill.min.js"></script>');
-            $html .= new HtmlString('<div id="_g-recaptcha"></div>');
+            static $captchaCounter = 0;
 
-            if (config('boilerplate.access.captcha.configs.options.hidden')) {
-                $html .= new HtmlString('<style>.grecaptcha-badge{display:none;!important}</style>');
+            $captchaCounter++;
+
+            $captchaId = '_g-recaptcha-'.$captchaCounter;
+
+            $siteKey = htmlspecialchars(
+                (string) config(
+                    'boilerplate.access.captcha.configs.site_key'
+                ),
+                ENT_QUOTES,
+                'UTF-8'
+            );
+
+            $badgeLocation = htmlspecialchars(
+                (string) config(
+                    'boilerplate.access.captcha.configs.options.location',
+                    'bottomright'
+                ),
+                ENT_QUOTES,
+                'UTF-8'
+            );
+
+            $html = '';
+
+            if (
+                $captchaCounter === 1
+                && config('boilerplate.access.captcha.configs.options.hidden')
+            ) {
+                $html .= '
+                    <style>
+                        .grecaptcha-badge {
+                            visibility: hidden !important;
+                        }
+                    </style>
+                ';
             }
 
-            $html .= new HtmlString('
-                <div class="g-recaptcha"
-                    data-sitekey="'.config('boilerplate.access.captcha.configs.site_key').'"
-                    data-size="invisible"
-                    data-callback="_submitForm"
-                    data-badge="'.config('boilerplate.access.captcha.configs.options.location').'">
-                </div>');
+            $html .= '
+                <div
+                    id="'.$captchaId.'"
+                    class="js-invisible-recaptcha"
+                    data-sitekey="'.$siteKey.'"
+                    data-badge="'.$badgeLocation.'"
+                ></div>
+            ';
 
-            $html .= new HtmlString('<script src="'.($lang ? 'https://www.google.com/recaptcha/api.js'.'?hl='.$lang : 'https://www.google.com/recaptcha/api.js').'" async defer></script>');
-            $html .= new HtmlString('<script>var _submitForm,_captchaForm,_captchaSubmit,_execute=true;</script>');
-            $html .= new HtmlString("<script>window.addEventListener('load', _loadCaptcha);");
-            $html .= new HtmlString('function _loadCaptcha(){');
-
-            if (config('boilerplate.access.captcha.configs.options.hidden')) {
-                $html .= new HtmlString("document.querySelector('.grecaptcha-badge').style = 'display:none;!important';");
-            }
-
-            $html .= new HtmlString('
-                _captchaForm=document.querySelector("#_g-recaptcha").closest("form");
-                _captchaSubmit=_captchaForm.querySelector(\'[type=submit]\');
-                _submitForm=function(){if(typeof _submitEvent==="function"){_submitEvent();grecaptcha.reset();}else{_captchaForm.submit();}};
-                _captchaForm.addEventListener(\'submit\',function(e){e.preventDefault();
-                if(typeof _beforeSubmit===\'function\'){_execute=_beforeSubmit(e);}
-                if(_execute){grecaptcha.execute();}});}</script>
-            ');
-
-            return $html;
+            return new HtmlString($html);
         });
     }
 }
