@@ -6,27 +6,26 @@ use Illuminate\Support\Facades\Schema;
 
 class AddTimestampsToSyncStatesTable extends Migration
 {
-    /**
-     * Run the migrations.
-     *
-     * @return void
-     */
     public function up()
     {
-        Schema::table('sync_states', function (Blueprint $table) {
-            $table->timestamps();
-        });
+        if (! Schema::hasColumn('sync_states', 'created_at') ||
+            ! Schema::hasColumn('sync_states', 'updated_at')) {
+
+            Schema::table('sync_states', function (Blueprint $table) {
+                if (! Schema::hasColumn('sync_states', 'created_at')) {
+                    $table->timestamp('created_at')->nullable();
+                }
+
+                if (! Schema::hasColumn('sync_states', 'updated_at')) {
+                    $table->timestamp('updated_at')->nullable();
+                }
+            });
+        }
     }
 
-    /**
-     * Reverse the migrations.
-     *
-     * @return void
-     */
     public function down()
     {
-        Schema::table('sync_states', function (Blueprint $table) {
-            //
-        });
+        // Intentionally left empty because the columns may have been
+        // created by the original sync_states migration.
     }
 }

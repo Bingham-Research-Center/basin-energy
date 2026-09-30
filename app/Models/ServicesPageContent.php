@@ -12,16 +12,18 @@ class ServicesPageContent extends Model
     protected $table = 'services_page_contents';
 
     protected $fillable = [
-        'section',
-        'item_key',
-        'title',
-        'subtitle',
-        'description',
-        'icon',
-        'value',
-        'sort_order',
-        'is_active',
-    ];
+    'section',
+    'item_key',
+    'title',
+    'subtitle',
+    'description',
+    'button_text',
+    'button_link',
+    'icon',
+    'value',
+    'sort_order',
+    'is_active',
+];
 
     protected $casts = [
         'value' => 'array',

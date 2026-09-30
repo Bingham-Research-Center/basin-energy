@@ -22,7 +22,7 @@
 			<div class="column is-5-desktop">
 				<div class="pt-5 mb-4 mb-lg-0">
 					<h2 class="mt-3 text-md font-secondary">
-                        {{ $intro->title ?? 'We provide best solution to client with their business problem' }}
+                        Understanding Energy and Environmental Trends in the Uintah Basin
                     </h2>
 				</div>
 			</div>
@@ -32,15 +32,15 @@
 					<div class="column is-6-desktop is-6-tablet" data-aos="fade-up" data-aos-delay="200">
 						<div class="intro-item mb-4 mb-lg-0">
 							<i class="ti-wand text-color"></i>
-							<h4 class="mt-4 mb-3">Modern & Responsive design</h4>
-							<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Earum, aspernatur.</p>
+							<h4 class="mt-4 mb-3">Energy & Environmental Science</h4>
+							<p>Our work brings together energy research, air-quality monitoring, and environmental data to better understand the changing conditions of the Uintah Basin.</p>
 						</div>
 					</div>
 					<div class="column is-6-desktop is-6-tablet">
 						<div class="intro-item mb-4 mb-lg-0" data-aos="fade-up" data-aos-delay="300">
 							<i class="ti-medall text-color"></i>
-							<h4 class="mt-4 mb-3">Awarded licensed company</h4>
-							<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Earum, aspernatur.</p>
+							<h4 class="mt-4 mb-3">Award Winning Research Center</h4>
+							<p>The Bingham Research Center is a leading institution for energy and environmental research. The Bingham Research Center has received numerous awards for its contributions to the field.</p>
 						</div>
 					</div>
 				</div>
@@ -64,11 +64,11 @@
 			<div class="column is-6-desktop">
 				<div class="about-item">
 					<h2 class="mt-3 mb-4 font-secondary">
-                        {!! nl2br(e($aboutSection->title ?? 'Forget about design limits! Build and customize your portfolio')) !!}
+                        Exploring Energy and Environmental Trends
                     </h2>
 
 					<p class="mb-5">
-                        {{ $aboutSection->description ?? 'We provide consulting services in the area of IFRS and management reporting, helping companies to reach their highest level. We optimize business processes, making them easier.' }}
+                       BasinEnergy brings together research, data, and scientific expertise to better understand energy, air quality, and environmental conditions in the Uintah Basin. Our work supports a deeper understanding of the region and the challenges shaping its future.
                     </p>
 
 					<a href="{{ $aboutSection->button_link ?? '#' }}" class="btn btn-main">
@@ -91,8 +91,8 @@
 				<div class="counter-item is-flex is-align-items-center is-justify-content-center" data-aos="fade-up" data-aos-delay="100">
 					<i class="ti-check has-text-white text-md"></i>
 					<div class="ml-5">
-						<h3 class="mt-2 mb-0 has-text-white"><span class="counter-stat">1730</span></h3>
-						<p class="text-white-50 mb-0">Project Done</p>
+						<h3 class="mt-2 mb-0 has-text-white"><span class="counter-stat">58</span></h3>
+						<p class="text-white-50 mb-0">Air Quality Stations</p>
 					</div>
 				</div>
 			</div>
@@ -100,8 +100,8 @@
 				<div class="counter-item is-flex is-align-items-center is-justify-content-center" data-aos="fade-up" data-aos-delay="200">
 					<i class="ti-flag has-text-white text-md"></i>
 					<div class="ml-5">
-						<h3 class="mt-2 mb-0 has-text-white"><span class="counter-stat">125</span>M</h3>
-						<p class="text-white-50 mb-0">User Worldwide</p>
+						<h3 class="mt-2 mb-0 has-text-white"><span class="counter-stat">3</span></h3>
+						<p class="text-white-50 mb-0">Research Focus Areas</p>
 					</div>
 				</div>
 			</div>
@@ -109,8 +109,8 @@
 				<div class="counter-item is-flex is-align-items-center is-justify-content-center" data-aos="fade-up" data-aos-delay="300">
 					<i class="ti-layers has-text-white text-md"></i>
 					<div class="ml-5">
-						<h3 class="mt-2 mb-0 has-text-white"><span class="counter-stat">39</span></h3>
-						<p class="text-white-50 mb-0">Available Country</p>
+						<h3 class="mt-2 mb-0 has-text-white"><span class="counter-stat">16</span></h3>
+						<p class="text-white-50 mb-0">Utah Counties with Stations</p>
 					</div>
 				</div>
 			</div>
@@ -118,8 +118,8 @@
 				<div class="counter-item is-flex is-align-items-center is-justify-content-center" data-aos="fade-up" data-aos-delay="400">
 					<i class="ti-medall has-text-white text-md"></i>
 					<div class="ml-5">
-						<h3 class="mt-2 mb-0 has-text-white"><span class="counter-stat">14</span></h3>
-						<p class="text-white-50 mb-0">Award Winner</p>
+						<h3 class="mt-2 mb-0 has-text-white"><span class="counter-stat">24</span>/7</h3>
+						<p class="text-white-50 mb-0">Environmental Monitoring </p>
 					</div>
 				</div>
 			</div>
@@ -135,7 +135,7 @@
          <div class="column is-6-widescreen is-8-desktop is-10-tablet has-text-centered">
             <div class="section-title">
                <h2 class="mb-4">{{ $teamHeader->title ?? 'Team' }}</h2>
-               <p>{{ $teamHeader->description ?? 'We provide a wide range of creative services.' }}</p>
+               <p>Our Excellent Team Members </p>
             </div>
          </div>
       </div>

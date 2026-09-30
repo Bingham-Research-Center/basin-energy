@@ -38,20 +38,26 @@ class PageController extends Controller
         ));
     }
 
-    public function service()
-    {
-        $hero = ServicesPageContent::getSectionItem('hero', 'title');
+  public function service()
+{
+    $hero = ServicesPageContent::getSectionItem('hero', 'title');
 
-        $serviceItems = ServicesPageContent::where('section', 'service_items')
-            ->where('is_active', true)
-            ->orderBy('sort_order')
-            ->get();
+    $serviceItems = ServicesPageContent::where('section', 'service_items')
+        ->where('is_active', true)
+        ->orderBy('sort_order')
+        ->get();
 
-        return view('frontend.pages.service', compact(
-            'hero',
-            'serviceItems'
-        ));
-    }
+    $whyBasinEnergy = ServicesPageContent::where('section', 'why_basinenergy')
+        ->where('is_active', true)
+        ->orderBy('sort_order')
+        ->get();
+
+    return view('frontend.pages.service', compact(
+        'hero',
+        'serviceItems',
+        'whyBasinEnergy'
+    ));
+}
 
     public function portfolio()
     {

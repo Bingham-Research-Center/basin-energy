@@ -19,12 +19,10 @@ return new class extends Migration
                 ->on('blog_posts')
                 ->onDelete('cascade');
 
-            $table->foreign('blog_category_id', 'bcp_cat_fk')
-                ->references('id')
-                ->on('blog_categories')
-                ->onDelete('cascade');
-
-            $table->unique(['blog_post_id', 'blog_category_id'], 'bcp_unique');
+            $table->unique(
+                ['blog_post_id', 'blog_category_id'],
+                'bcp_unique'
+            );
         });
     }
 

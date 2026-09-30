@@ -12,6 +12,16 @@ class HomeController
      */
     public function index()
     {
-        return view('frontend.pages.index');
+        $hero = \App\Models\HomePageContent::getSectionItem('hero', 'main');
+        $weatherButton = \App\Models\HomePageContent::getSectionItem('hero', 'weather');
+        $platform = \App\Models\HomePageContent::getSectionItem('platform', 'main');
+        $platformButton = \App\Models\HomePageContent::getSectionItem('platform', 'button');
+
+        return view('frontend.pages.index', compact(
+            'hero',
+            'weatherButton',
+            'platform',
+            'platformButton'
+        ));
     }
 }

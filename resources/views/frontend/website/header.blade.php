@@ -11,9 +11,9 @@
 				</div>
 				<div class="column is-3">
 					<div class="header-top-socials has-text-centered has-text-right-tablet">
-						<a href="https://www.facebook.com/themefisher" target="_blank"><i class="ti-facebook"></i></a>
-						<a href="https://twitter.com/themefisher" target="_blank"><i class="ti-twitter"></i></a>
-						<a href="https://github.com/themefisher/" target="_blank"><i class="ti-github"></i></a>
+						<a href="https://www.facebook.com/USUUintahBasin/" target="_blank"><i class="ti-facebook"></i></a>
+						<a href="https://x.com/USUAggies" target="_blank"><i class="ti-twitter"></i></a>
+						<a href="https://github.com" target="_blank"><i class="ti-github"></i></a>
 					</div>
 				</div>
 			</div>

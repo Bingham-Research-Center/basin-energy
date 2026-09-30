@@ -16,6 +16,7 @@ use App\Models\BlogCategory;
 use App\Models\BlogPost;
 use App\Models\ContactPageContent;
 use App\Models\ContactMessage;
+use App\Models\HomePageContent;
 
 class WebUpdateController extends Controller
 {
@@ -25,14 +26,73 @@ class WebUpdateController extends Controller
     }
 
     public function home()
-    {
-        return view('backend.webupdate.home');
-    }
+{
+    $hero = HomePageContent::getSectionItem('hero', 'main');
+    $weatherButton = HomePageContent::getSectionItem('hero', 'weather');
+    $platform = HomePageContent::getSectionItem('platform', 'main');
+    $platformButton = HomePageContent::getSectionItem('platform', 'button');
 
-    public function updateHome(Request $request)
-    {
-        return back()->withFlashSuccess('Home page updated successfully.');
-    }
+    return view('backend.webupdate.home', compact(
+        'hero',
+        'weatherButton',
+        'platform',
+        'platformButton'
+    ));
+}
+
+public function updateHome(Request $request)
+{
+    $request->validate([
+        'hero_subtitle' => ['nullable', 'string', 'max:255'],
+        'hero_title' => ['nullable', 'string'],
+        'hero_button_text' => ['nullable', 'string', 'max:255'],
+        'hero_button_link' => ['nullable', 'string', 'max:255'],
+
+        'weather_button_text' => ['nullable', 'string', 'max:255'],
+        'weather_button_link' => ['nullable', 'string', 'max:255'],
+
+        'platform_heading' => ['nullable', 'string'],
+        'platform_description' => ['nullable', 'string'],
+        'platform_button_text' => ['nullable', 'string', 'max:255'],
+        'platform_button_link' => ['nullable', 'string', 'max:255'],
+    ]);
+
+    HomePageContent::updateOrCreate(
+        ['section' => 'hero', 'item_key' => 'main'],
+        [
+            'title' => $request->hero_title,
+            'description' => $request->hero_subtitle,
+            'button_text' => $request->hero_button_text,
+            'button_link' => $request->hero_button_link,
+        ]
+    );
+
+    HomePageContent::updateOrCreate(
+        ['section' => 'hero', 'item_key' => 'weather'],
+        [
+            'button_text' => $request->weather_button_text,
+            'button_link' => $request->weather_button_link,
+        ]
+    );
+
+    HomePageContent::updateOrCreate(
+        ['section' => 'platform', 'item_key' => 'main'],
+        [
+            'title' => $request->platform_heading,
+            'description' => $request->platform_description,
+        ]
+    );
+
+    HomePageContent::updateOrCreate(
+        ['section' => 'platform', 'item_key' => 'button'],
+        [
+            'button_text' => $request->platform_button_text,
+            'button_link' => $request->platform_button_link,
+        ]
+    );
+
+    return back()->withFlashSuccess('Home page updated successfully.');
+}
 
     public function about()
     {
@@ -198,33 +258,109 @@ class WebUpdateController extends Controller
         return back()->withFlashSuccess('Team member deleted successfully.');
     }
 
-    public function service()
-    {
-        $hero = ServicesPageContent::getSectionItem('hero', 'title');
+  public function service()
+{
+    $hero = ServicesPageContent::getSectionItem('hero', 'title');
 
-        $serviceItems = ServicesPageContent::where('section', 'service_items')
-            ->orderBy('sort_order')
-            ->get();
+    $serviceItems = ServicesPageContent::where('section', 'service_items')
+        ->orderBy('sort_order')
+        ->get();
 
-        return view('backend.webupdate.service', compact(
-            'hero',
-            'serviceItems'
-        ));
-    }
+    $whyBasinEnergy = ServicesPageContent::where('section', 'why_basinenergy')
+        ->orderBy('sort_order')
+        ->get();
 
-    public function updateService(Request $request)
-    {
-        $request->validate([
-            'hero_title' => ['nullable', 'string', 'max:255'],
-        ]);
+    return view('backend.webupdate.service', compact(
+        'hero',
+        'serviceItems',
+        'whyBasinEnergy'
+    ));
+}
+   public function updateService(Request $request)
+{
 
-        ServicesPageContent::updateOrCreate(
-            ['section' => 'hero', 'item_key' => 'title'],
-            ['title' => $request->hero_title]
-        );
+    $request->validate([
+        'hero_title' => ['nullable', 'string', 'max:255'],
 
-        return back()->withFlashSuccess('Service page updated successfully.');
-    }
+        'why_title' => ['nullable', 'string', 'max:255'],
+        'why_description' => ['nullable', 'string'],
+
+        'research_title' => ['nullable', 'string', 'max:255'],
+        'research_description' => ['nullable', 'string'],
+
+        'local_title' => ['nullable', 'string', 'max:255'],
+        'local_description' => ['nullable', 'string'],
+
+        'monitoring_title' => ['nullable', 'string', 'max:255'],
+        'monitoring_description' => ['nullable', 'string'],
+
+        'cta_title' => ['nullable', 'string', 'max:255'],
+        'cta_description' => ['nullable', 'string'],
+        'cta_button_text' => ['nullable', 'string', 'max:255'],
+        'cta_button_link' => ['nullable', 'string', 'max:255'],
+    ]);
+
+    ServicesPageContent::updateOrCreate(
+        ['section' => 'hero', 'item_key' => 'title'],
+        [
+            'title' => $request->hero_title,
+        ]
+    );
+
+    ServicesPageContent::updateOrCreate(
+        ['section' => 'why_basinenergy', 'item_key' => 'main'],
+        [
+            'title' => $request->why_title,
+            'description' => $request->why_description,
+            'sort_order' => 1,
+            'is_active' => true,
+        ]
+    );
+
+    ServicesPageContent::updateOrCreate(
+        ['section' => 'why_basinenergy', 'item_key' => 'research'],
+        [
+            'title' => $request->research_title,
+            'description' => $request->research_description,
+            'sort_order' => 2,
+            'is_active' => true,
+        ]
+    );
+
+    ServicesPageContent::updateOrCreate(
+        ['section' => 'why_basinenergy', 'item_key' => 'local'],
+        [
+            'title' => $request->local_title,
+            'description' => $request->local_description,
+            'sort_order' => 3,
+            'is_active' => true,
+        ]
+    );
+
+    ServicesPageContent::updateOrCreate(
+        ['section' => 'why_basinenergy', 'item_key' => 'monitoring'],
+        [
+            'title' => $request->monitoring_title,
+            'description' => $request->monitoring_description,
+            'sort_order' => 4,
+            'is_active' => true,
+        ]
+    );
+
+    ServicesPageContent::updateOrCreate(
+        ['section' => 'why_basinenergy', 'item_key' => 'cta'],
+        [
+            'title' => $request->cta_title,
+            'description' => $request->cta_description,
+            'button_text' => $request->cta_button_text,
+            'button_link' => $request->cta_button_link,
+            'sort_order' => 5,
+            'is_active' => true,
+        ]
+    );
+
+    return back()->withFlashSuccess('Service page updated successfully.');
+}
 
     public function storeServiceItem(Request $request)
     {

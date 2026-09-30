@@ -3,25 +3,153 @@
 @section('title', 'Update Service Page')
 
 @section('content')
+  <form action="{{ route('admin.website-update.service.update') }}" method="POST">
+    @csrf
+
     <x-backend.card>
         <x-slot name="header">
             Update Service Page
         </x-slot>
 
         <x-slot name="body">
-            <form action="{{ route('admin.website-update.service.update') }}" method="POST">
-                @csrf
-
-                <div class="form-group mb-3">
-                    <label>Page Title</label>
-                    <input type="text" name="hero_title" class="form-control"
-                        value="{{ old('hero_title', $hero->title ?? '') }}">
-                </div>
-
-                <button type="submit" class="btn btn-primary">Save Service Page</button>
-            </form>
+            <div class="form-group mb-3">
+                <label>Page Title</label>
+                <input type="text" name="hero_title" class="form-control"
+                    value="{{ old('hero_title', $hero->title ?? '') }}">
+            </div>
         </x-slot>
     </x-backend.card>
+
+    <!-- Why BasinEnergy -->
+    <x-backend.card class="mt-3">
+        <x-slot name="header">
+            Why BasinEnergy?
+        </x-slot>
+
+        <x-slot name="body">
+            @php
+                $whyMain = $whyBasinEnergy->firstWhere('item_key', 'main');
+                $research = $whyBasinEnergy->firstWhere('item_key', 'research');
+                $local = $whyBasinEnergy->firstWhere('item_key', 'local');
+                $monitoring = $whyBasinEnergy->firstWhere('item_key', 'monitoring');
+                $cta = $whyBasinEnergy->firstWhere('item_key', 'cta');
+            @endphp
+
+        <h5 class="mb-3">Main Section</h5>
+
+                <div class="form-group mb-3">
+                    <label>Heading</label>
+                    <input type="text"
+                        name="why_title"
+                        class="form-control"
+                        value="{{ old('why_title', $whyMain->title ?? 'Why BasinEnergy?') }}">
+                </div>
+
+                <div class="form-group mb-4">
+                    <label>Description</label>
+                    <textarea name="why_description"
+                        class="form-control"
+                        rows="3">{{ old('why_description', $whyMain->description ?? '') }}</textarea>
+                </div>
+
+                <hr>
+
+                <h5 class="mb-3">Research-Based</h5>
+
+                <div class="form-group mb-3">
+                    <label>Title</label>
+                    <input type="text"
+                        name="research_title"
+                        class="form-control"
+                        value="{{ old('research_title', $research->title ?? 'Research-Based') }}">
+                </div>
+
+                <div class="form-group mb-4">
+                    <label>Description</label>
+                    <textarea name="research_description"
+                        class="form-control"
+                        rows="3">{{ old('research_description', $research->description ?? '') }}</textarea>
+                </div>
+
+                <hr>
+
+                <h5 class="mb-3">Local Expertise</h5>
+
+                <div class="form-group mb-3">
+                    <label>Title</label>
+                    <input type="text"
+                        name="local_title"
+                        class="form-control"
+                        value="{{ old('local_title', $local->title ?? 'Local Expertise') }}">
+                </div>
+
+                <div class="form-group mb-4">
+                    <label>Description</label>
+                    <textarea name="local_description"
+                        class="form-control"
+                        rows="3">{{ old('local_description', $local->description ?? '') }}</textarea>
+                </div>
+
+                <hr>
+
+                <h5 class="mb-3">Data & Monitoring</h5>
+
+                <div class="form-group mb-3">
+                    <label>Title</label>
+                    <input type="text"
+                        name="monitoring_title"
+                        class="form-control"
+                        value="{{ old('monitoring_title', $monitoring->title ?? 'Data & Monitoring') }}">
+                </div>
+
+                <div class="form-group mb-4">
+                    <label>Description</label>
+                    <textarea name="monitoring_description"
+                        class="form-control"
+                        rows="3">{{ old('monitoring_description', $monitoring->description ?? '') }}</textarea>
+                </div>
+
+                <hr>
+
+                <h5 class="mb-3">Call to Action</h5>
+
+                <div class="form-group mb-3">
+                    <label>Title</label>
+                    <input type="text"
+                        name="cta_title"
+                        class="form-control"
+                        value="{{ old('cta_title', $cta->title ?? 'Explore Our Research') }}">
+                </div>
+
+                <div class="form-group mb-3">
+                    <label>Description</label>
+                    <textarea name="cta_description"
+                        class="form-control"
+                        rows="3">{{ old('cta_description', $cta->description ?? '') }}</textarea>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label>Button Text</label>
+                    <input type="text"
+                        name="cta_button_text"
+                        class="form-control"
+                        value="{{ old('cta_button_text', $cta->button_text ?? 'Explore Our Work') }}">
+                </div>
+
+                <div class="form-group mb-3">
+                    <label>Button Link</label>
+                    <input type="text"
+                        name="cta_button_link"
+                        class="form-control"
+                        value="{{ old('cta_button_link', $cta->button_link ?? '/portfolio') }}">
+                </div>
+
+                                <button type="submit" class="btn btn-primary">
+                    Save Service Page
+                </button>
+            </x-slot>
+        </x-backend.card>
+    </form>
 
     <x-backend.card class="mt-3">
         <x-slot name="header">

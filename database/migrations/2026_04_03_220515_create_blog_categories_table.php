@@ -16,6 +16,15 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
+
+        if (Schema::hasTable('blog_category_post')) {
+            Schema::table('blog_category_post', function (Blueprint $table) {
+                $table->foreign('blog_category_id', 'bcp_cat_fk')
+                    ->references('id')
+                    ->on('blog_categories')
+                    ->onDelete('cascade');
+            });
+        }
     }
 
     public function down(): void

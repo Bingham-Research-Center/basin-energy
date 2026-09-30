@@ -42,7 +42,7 @@
                   {!! nl2br(e($contactInfo->subtitle ?? 'Dont Hesitate to contact with us for any kind of information')) !!}
                </p>
 
-               <h2 class="mb-3">{{ $contactInfo->title ?? '(+00) 123 567990' }}</h2>
+               <h2 class="mb-3">{{ $contactInfo->title ?? '(435) 722-1740' }}</h2>
 
                <p>{{ $contactInfo->description ?? 'Start the collaboration with us while figuring out the best solution based on your needs.' }}</p>
 
@@ -103,10 +103,11 @@
                      </div>
                   </div>
                @endif
+<h3 class="text-md">{{ $contactForm->title ?? 'Contact Us' }}</h3>
 
-               <h3 class="text-md">{{ $contactForm->title ?? 'Contact Us' }}</h3>
-               <p class="mb-5">{{ $contactForm->description ?? 'Reach out to the world’s most reliable services.' }}</p>
-
+<p class="mb-5">
+   {{ $contactForm->description ?? 'Reach out to the world’s most reliable services.' }}
+</p>
                <div class="input-group">
                   <input name="name" type="text" class="input" placeholder="Your Name" value="{{ old('name') }}">
                   @error('name')
@@ -138,8 +139,19 @@
                      </div>
                   </div>
                @endif
+<button class="btn btn-main" type="submit">Send Message</button>
 
-               <button class="btn btn-main" type="submit">Send Message</button>
+<div style="width: 100%; margin-top: 30px;">
+   <a
+      href="https://www.usu.edu/binghamresearch/data-access"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="btn btn-main"
+   >
+      Data Requests
+      <i class="fa fa-angle-right ml-2"></i>
+   </a>
+</div>
             </form>
          </div>
       </div>

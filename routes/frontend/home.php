@@ -4,6 +4,7 @@ use App\Http\Controllers\Frontend\HomeController;
 use App\Http\Controllers\Frontend\TermsController;
 use App\Http\Controllers\Frontend\DroneController;
 use App\Http\Controllers\Frontend\PageController;
+use App\Http\Controllers\Frontend\BasinConditionsController;
 use Tabuna\Breadcrumbs\Trail;
 
 /*
@@ -52,3 +53,6 @@ Route::get('contact', [PageController::class, 'contact'])
     ->name('pages.contact');
 Route::post('contact', [PageController::class, 'submitContact'])
     ->name('pages.contact.submit');
+
+Route::get('api/basin-conditions', [BasinConditionsController::class, 'index'])
+    ->name('api.basin-conditions');

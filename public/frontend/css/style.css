@@ -1,4 +1,4 @@
-/**
+
  * WEBSITE: https://themefisher.com
  * TWITTER: https://twitter.com/themefisher
  * FACEBOOK: https://www.facebook.com/themefisher
@@ -1972,3 +1972,12 @@ a.link {
   }
 }
 /*# sourceMappingURL=style.css.map */
+.slider-cta h3 {
+  font-size: 20px;
+  line-height: 30px;
+}
+
+.slider-cta p {
+  font-size: 16px;
+  line-height: 27px;
+}
