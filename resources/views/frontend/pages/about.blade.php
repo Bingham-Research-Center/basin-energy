@@ -1,0 +1,241 @@
+@extends('frontend.layouts.web')
+
+@section('title', $hero->title ?? 'About Us')
+
+@section('content')
+<section class="page-title bg-1">
+   <div class="container">
+      <div class="columns">
+         <div class="column is-12">
+            <div class="has-text-centered">
+               <h1 class="text-capitalize mb-4 text-lg">{{ $hero->title ?? 'About Us' }}</h1>
+            </div>
+         </div>
+      </div>
+   </div>
+</section>
+
+<!-- Section Intro Start -->
+<section class="section intro">
+	<div class="container">
+		<div class="columns is-desktop is-justify-content-space-between">
+			<div class="column is-5-desktop">
+				<div class="pt-5 mb-4 mb-lg-0">
+					<h2 class="mt-3 text-md font-secondary">
+                        Understanding Energy and Environmental Trends in the Uintah Basin
+                    </h2>
+				</div>
+			</div>
+
+			<div class="column is-6-desktop">
+				<div class="columns">
+					<div class="column is-6-desktop is-6-tablet" data-aos="fade-up" data-aos-delay="200">
+						<div class="intro-item mb-4 mb-lg-0">
+							<i class="ti-wand text-color"></i>
+							<h4 class="mt-4 mb-3">Energy & Environmental Science</h4>
+							<p>Our work brings together energy research, air-quality monitoring, and environmental data to better understand the changing conditions of the Uintah Basin.</p>
+						</div>
+					</div>
+					<div class="column is-6-desktop is-6-tablet">
+						<div class="intro-item mb-4 mb-lg-0" data-aos="fade-up" data-aos-delay="300">
+							<i class="ti-medall text-color"></i>
+							<h4 class="mt-4 mb-3">Award Winning Research Center</h4>
+							<p>The Bingham Research Center is a leading institution for energy and environmental research. The Bingham Research Center has received numerous awards for its contributions to the field.</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+
+<section class="about">
+	<div class="container">
+		<div class="columns is-desktop is-align-items-center">
+			<div class="column is-6-desktop">
+				<div class="about-img" data-aos="fade-right" data-aos-delay="200" style="line-height: 0">
+					<img
+                        src="{{ !empty($aboutSection?->image) ? asset('storage/' . $aboutSection->image) : asset('frontend/images/about/home-8.jpg') }}"
+                        alt="{{ $aboutSection->title ?? 'About Image' }}"
+                        class="rounded"
+                    >
+				</div>
+			</div>
+			<div class="column is-6-desktop">
+				<div class="about-item">
+					<h2 class="mt-3 mb-4 font-secondary">
+                        Exploring Energy and Environmental Trends
+                    </h2>
+
+					<p class="mb-5">
+                       BasinEnergy brings together research, data, and scientific expertise to better understand energy, air quality, and environmental conditions in the Uintah Basin. Our work supports a deeper understanding of the region and the challenges shaping its future.
+                    </p>
+
+					<a href="{{ $aboutSection->button_link ?? '#' }}" class="btn btn-main">
+                        {{ $aboutSection->button_text ?? 'Get started' }}
+                    </a>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+<!-- Section About End -->
+
+</br>
+
+<!-- section Counter Start -->
+<section class="counter bg-counter">
+	<div class="container">
+		<div class="columns is-touch is-multiline">
+			<div class="column is-3-desktop is-6-tablet">
+				<div class="counter-item is-flex is-align-items-center is-justify-content-center" data-aos="fade-up" data-aos-delay="100">
+					<i class="ti-check has-text-white text-md"></i>
+					<div class="ml-5">
+						<h3 class="mt-2 mb-0 has-text-white"><span class="counter-stat">58</span></h3>
+						<p class="text-white-50 mb-0">Air Quality Stations</p>
+					</div>
+				</div>
+			</div>
+			<div class="column is-3-desktop is-6-tablet">
+				<div class="counter-item is-flex is-align-items-center is-justify-content-center" data-aos="fade-up" data-aos-delay="200">
+					<i class="ti-flag has-text-white text-md"></i>
+					<div class="ml-5">
+						<h3 class="mt-2 mb-0 has-text-white"><span class="counter-stat">3</span></h3>
+						<p class="text-white-50 mb-0">Research Focus Areas</p>
+					</div>
+				</div>
+			</div>
+			<div class="column is-3-desktop is-6-tablet">
+				<div class="counter-item is-flex is-align-items-center is-justify-content-center" data-aos="fade-up" data-aos-delay="300">
+					<i class="ti-layers has-text-white text-md"></i>
+					<div class="ml-5">
+						<h3 class="mt-2 mb-0 has-text-white"><span class="counter-stat">16</span></h3>
+						<p class="text-white-50 mb-0">Utah Counties with Stations</p>
+					</div>
+				</div>
+			</div>
+			<div class="column is-3-desktop is-6-tablet">
+				<div class="counter-item is-flex is-align-items-center is-justify-content-center" data-aos="fade-up" data-aos-delay="400">
+					<i class="ti-medall has-text-white text-md"></i>
+					<div class="ml-5">
+						<h3 class="mt-2 mb-0 has-text-white"><span class="counter-stat">24</span>/7</h3>
+						<p class="text-white-50 mb-0">Environmental Monitoring </p>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+<!-- section Counter End  -->
+
+<!-- Section Team Start -->
+<section class="section team position-relative">
+   <div class="container">
+      <div class="columns is-justify-content-center">
+         <div class="column is-6-widescreen is-8-desktop is-10-tablet has-text-centered">
+            <div class="section-title">
+               <h2 class="mb-4">{{ $teamHeader->title ?? 'Team' }}</h2>
+               <p>Our Excellent Team Members </p>
+            </div>
+         </div>
+      </div>
+
+      <div class="columns is-multiline is-justify-content-center">
+         @forelse($teamMembers as $member)
+            <div class="column is-4-desktop is-6-tablet">
+               <div class="team-item-wrap" data-aos="fade-left" data-aos-delay="200">
+                  <img
+                      src="{{ !empty($member->image) ? asset('storage/' . $member->image) : asset('frontend/images/team/team-1.jpg') }}"
+                      alt="{{ $member->title }}"
+                      class="w-100 rounded"
+                  >
+
+                  <div class="team-item-content">
+                     <p class="text-sm mb-0">{{ $member->subtitle }}</p>
+                     <h3 class="mt-0 mb-2 text-capitalize">{{ $member->title }}</h3>
+
+                     <ul class="team-social list-inline">
+                        @if(!empty($member->value['facebook']))
+                           <li class="list-inline-item">
+                              <a href="{{ $member->value['facebook'] }}" class="facebook" target="_blank">
+                                 <i class="fab fa-facebook-f" aria-hidden="true"></i>
+                              </a>
+                           </li>
+                        @endif
+
+                        @if(!empty($member->value['twitter']))
+                           <li class="list-inline-item">
+                              <a href="{{ $member->value['twitter'] }}" class="twitter" target="_blank">
+                                 <i class="fab fa-twitter" aria-hidden="true"></i>
+                              </a>
+                           </li>
+                        @endif
+
+                        @if(!empty($member->value['instagram']))
+                           <li class="list-inline-item">
+                              <a href="{{ $member->value['instagram'] }}" class="instagram" target="_blank">
+                                 <i class="fab fa-instagram" aria-hidden="true"></i>
+                              </a>
+                           </li>
+                        @endif
+
+                        @if(!empty($member->value['linkedin']))
+                           <li class="list-inline-item">
+                              <a href="{{ $member->value['linkedin'] }}" class="linkedin" target="_blank">
+                                 <i class="fab fa-linkedin-in" aria-hidden="true"></i>
+                              </a>
+                           </li>
+                        @endif
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         @empty
+            <div class="column is-12">
+               <p class="has-text-centered">No team members found.</p>
+            </div>
+         @endforelse
+      </div>
+   </div>
+</section>
+<!-- Section Team End -->
+
+<section class="section">
+   <div class="container">
+      <div class="columns is-justify-content-center">
+         <div class="column is-6-widescreen is-8-desktop is-10-tablet has-text-centered">
+            <div class="section-title">
+               <h2 class="mb-4">Patrons</h2>
+               <p>Thank you for your support!</p>
+            </div>
+         </div>
+      </div>
+      <div class="columns is-gapless is-mobile is-multiline">
+         <div class="column is-3-desktop is-4-tablet is-6-mobile">
+            <img src="{{ asset('frontend/images/about/key-vision1.png') }}" alt="" class="w-100">
+         </div>
+         <div class="column is-3-desktop is-4-tablet is-6-mobile">
+            <img src="{{ asset('frontend/images/about/key-vision2.png') }}" alt="" class="w-100">
+         </div>
+         <div class="column is-3-desktop is-4-tablet is-6-mobile">
+            <img src="{{ asset('frontend/images/about/key-vision3.png') }}" alt="" class="w-100">
+         </div>
+         <div class="column is-3-desktop is-4-tablet is-6-mobile">
+            <img src="{{ asset('frontend/images/about/key-vision4.png') }}" alt="" class="w-100">
+         </div>
+         <div class="column is-3-desktop is-4-tablet is-6-mobile">
+            <img src="{{ asset('frontend/images/about/key-vision3.png') }}" alt="" class="w-100">
+         </div>
+         <div class="column is-3-desktop is-4-tablet is-6-mobile">
+            <img src="{{ asset('frontend/images/about/key-vision5.png') }}" alt="" class="w-100">
+         </div>
+         <div class="column is-3-desktop is-4-tablet is-6-mobile">
+            <img src="{{ asset('frontend/images/about/key-vision3.png') }}" alt="" class="w-100">
+         </div>
+         <div class="column is-3-desktop is-4-tablet is-6-mobile">
+            <img src="{{ asset('frontend/images/about/key-vision4.png') }}" alt="" class="w-100">
+         </div>
+      </div>
+   </div>
+</section>
+@endsection

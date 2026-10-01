@@ -7,8 +7,8 @@ use App\Rules\Captcha;
 use Illuminate\Foundation\Auth\RegistersUsers;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
-use LangleyFoxall\LaravelNISTPasswordRules\PasswordRules;
-
+use Illuminate\Validation\Rules\Password;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 /**
  * Class RegisterController.
  */
@@ -75,7 +75,8 @@ class RegisterController
         return Validator::make($data, [
             'name' => ['required', 'string', 'max:100'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')],
-            'password' => array_merge(['max:100'], PasswordRules::register($data['email'] ?? null)),
+            //'password' => array_merge(['max:100'], PasswordRules::register($data['email'] ?? null)),
+            'password' => ['required', 'confirmed', 'max:100', Password::min(8)->mixedCase()->letters()->numbers()->symbols()],
             'terms' => ['required', 'in:1'],
             'g-recaptcha-response' => ['required_if:captcha_status,true', new Captcha],
         ], [
@@ -97,5 +98,25 @@ class RegisterController
         abort_unless(config('boilerplate.access.user.registration'), 404);
 
         return $this->userService->registerUser($data);
+    }
+
+    protected function registered(\Illuminate\Http\Request $request, $user)
+    {
+        if ($request->expectsJson()) {
+            if ($user instanceof MustVerifyEmail && ! $user->hasVerifiedEmail()) {
+                return response()->json([
+                    'verify'  => true,
+                    'email'   => $user->email,
+                    'message' => __('We’ve sent a verification link to your email. Please verify to continue.'),
+                ], 200);
+            }
+
+            // Otherwise normal success
+            return response()->json([
+                'redirect' => $this->redirectPath(),
+            ], 200);
+        }
+
+        // Non-AJAX: let the trait do its normal redirect behavior
     }
 }

@@ -9,7 +9,7 @@
         </x-slot>
 
         <x-slot name="body">
-            @lang('Welcome to the Dashboard')
+            <p>Welcome to the Dashboard!</p>
         </x-slot>
     </x-backend.card>
 @endsection

@@ -115,6 +115,55 @@
                 </ul>
             </li>
 
+            <li class="c-sidebar-nav-title">Frontend</li>
+
+           <li class="c-sidebar-nav-dropdown {{ activeClass(Route::is('admin.website-update.*'), 'c-open c-show') }}">
+            <x-utils.link
+                href="#"
+                icon="c-sidebar-nav-icon cil-info"
+                class="c-sidebar-nav-dropdown-toggle"
+                :text="__('Website Updates')" />
+
+            <ul class="c-sidebar-nav-dropdown-items">
+                <li class="c-sidebar-nav-item">
+                    <x-utils.link :href="route('admin.website-update.home')" class="c-sidebar-nav-link" :text="__('Home')" />
+                </li>
+                <li class="c-sidebar-nav-item">
+                    <x-utils.link :href="route('admin.website-update.about')" class="c-sidebar-nav-link" :text="__('About')" />
+                </li>
+                <li class="c-sidebar-nav-item">
+                    <x-utils.link :href="route('admin.website-update.service')" class="c-sidebar-nav-link" :text="__('Service')" />
+                </li>
+                <li class="c-sidebar-nav-item">
+                    <x-utils.link :href="route('admin.website-update.portfolio')" class="c-sidebar-nav-link" :text="__('Portfolio')" />
+                </li>
+                <li class="c-sidebar-nav-item">
+                    <x-utils.link :href="route('admin.website-update.blog')" class="c-sidebar-nav-link" :text="__('Blog')" />
+                </li>
+                <li class="c-sidebar-nav-item">
+                    <x-utils.link :href="route('admin.website-update.contact')" class="c-sidebar-nav-link" :text="__('Contact')" />
+                </li>
+            </ul>
+        </li>
+
+        <li class="c-sidebar-nav-dropdown {{ activeClass(Route::is('admin.sensors.*'), 'c-open c-show') }}">
+            <x-utils.link
+                href="#"
+                icon="c-sidebar-nav-icon cil-chart-line"
+                class="c-sidebar-nav-dropdown-toggle"
+                :text="__('Sensors')" />
+
+            <ul class="c-sidebar-nav-dropdown-items">
+                <li class="c-sidebar-nav-item">
+                    <x-utils.link
+                        :href="route('admin.sensors.dashboard')"
+                        class="c-sidebar-nav-link"
+                        :text="__('Sensor Dashboard')"
+                        :active="activeClass(Route::is('admin.sensors.dashboard'), 'c-active')" />
+                </li>
+            </ul>
+        </li>
+
         @endif
     </ul>
 

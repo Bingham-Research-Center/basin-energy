@@ -10,7 +10,9 @@ use Illuminate\Http\Request;
 class TwoFactorAuthenticationController
 {
     /**
-     * @param  Request  $request
+     * Show the enable 2FA page with QR/secret.
+     *
+     * @param  \Illuminate\Http\Request  $request
      * @return mixed
      */
     public function create(Request $request)
@@ -23,7 +25,9 @@ class TwoFactorAuthenticationController
     }
 
     /**
-     * @param  Request  $request
+     * Show recovery codes for an already-enabled 2FA account.
+     *
+     * @param  \Illuminate\Http\Request  $request
      * @return mixed
      */
     public function show(Request $request)
@@ -33,7 +37,9 @@ class TwoFactorAuthenticationController
     }
 
     /**
-     * @param  Request  $request
+     * Regenerate recovery codes.
+     *
+     * @param  \Illuminate\Http\Request  $request
      * @return mixed
      */
     public function update(Request $request)
@@ -42,6 +48,8 @@ class TwoFactorAuthenticationController
 
         session()->flash('flash_warning', __('Any old backup codes have been invalidated.'));
 
-        return redirect()->route('frontend.auth.account.2fa.show')->withFlashSuccess(__('Two Factor Recovery Codes Regenerated'));
+        return redirect()
+            ->route('frontend.auth.account.2fa.show')
+            ->withFlashSuccess(__('Two Factor Recovery Codes Regenerated'));
     }
 }

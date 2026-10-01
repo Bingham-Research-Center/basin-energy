@@ -1,3 +1,7 @@
+import ApexCharts from 'apexcharts';
+
+window.ApexCharts = ApexCharts;
+
 /**
  * Place any jQuery/helper plugins in here.
  */

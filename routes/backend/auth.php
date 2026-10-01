@@ -21,7 +21,7 @@ Route::group([
         'as' => 'user.',
     ], function () {
         Route::group([
-            'middleware' => 'role:'.config('boilerplate.access.role.admin'),
+            'middleware' => 'role:' . config('boilerplate.access.role.admin'),
         ], function () {
             Route::get('deleted', [DeletedUserController::class, 'index'])
                 ->name('deleted')
@@ -43,8 +43,9 @@ Route::group([
                 Route::get('edit', [UserController::class, 'edit'])
                     ->name('edit')
                     ->breadcrumbs(function (Trail $trail, User $user) {
-                        $trail->parent('admin.auth.user.show', $user)
-                            ->push(__('Edit'), route('admin.auth.user.edit', $user));
+                        $trail->parent('admin.auth.user.index')
+                            ->push($user->name, route('admin.auth.user.show', ['user' => $user->id]))
+                            ->push(__('Edit'), route('admin.auth.user.edit', ['user' => $user->id]));
                     });
 
                 Route::patch('/', [UserController::class, 'update'])->name('update');
@@ -82,7 +83,7 @@ Route::group([
                     ->middleware('permission:admin.access.user.list')
                     ->breadcrumbs(function (Trail $trail, User $user) {
                         $trail->parent('admin.auth.user.index')
-                            ->push($user->name, route('admin.auth.user.show', $user));
+                            ->push($user->name, route('admin.auth.user.show', ['user' => $user->id]));
                     });
 
                 Route::patch('mark/{status}', [DeactivatedUserController::class, 'update'])
@@ -98,8 +99,9 @@ Route::group([
                     ->name('change-password')
                     ->middleware('permission:admin.access.user.change-password')
                     ->breadcrumbs(function (Trail $trail, User $user) {
-                        $trail->parent('admin.auth.user.show', $user)
-                            ->push(__('Change Password'), route('admin.auth.user.change-password', $user));
+                        $trail->parent('admin.auth.user.index')
+                            ->push($user->name, route('admin.auth.user.show', ['user' => $user->id]))
+                            ->push(__('Change Password'), route('admin.auth.user.change-password', ['user' => $user->id]));
                     });
 
                 Route::patch('password/change', [UserPasswordController::class, 'update'])
@@ -112,7 +114,7 @@ Route::group([
     Route::group([
         'prefix' => 'role',
         'as' => 'role.',
-        'middleware' => 'role:'.config('boilerplate.access.role.admin'),
+        'middleware' => 'role:' . config('boilerplate.access.role.admin'),
     ], function () {
         Route::get('/', [RoleController::class, 'index'])
             ->name('index')
@@ -135,7 +137,7 @@ Route::group([
                 ->name('edit')
                 ->breadcrumbs(function (Trail $trail, Role $role) {
                     $trail->parent('admin.auth.role.index')
-                        ->push(__('Editing :role', ['role' => $role->name]), route('admin.auth.role.edit', $role));
+                        ->push(__('Editing :role', ['role' => $role->name]), route('admin.auth.role.edit', ['role' => $role->id]));
                 });
 
             Route::patch('/', [RoleController::class, 'update'])->name('update');
