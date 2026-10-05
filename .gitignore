@@ -17,7 +17,8 @@
 .env
 .env.*
 !.env.example
-
+/Dockerfile
+/docker-compose.yml
 
 # Testing / Coverage
 /coverage/
@@ -48,7 +49,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-
+yarn.lock
 
 # Build / package artifacts
 *.zip
@@ -74,3 +75,6 @@ docker-compose.override.yml
 *.swp
 *.swo
 *~
+
+# Obsolete/local project files
+/routes_old/
