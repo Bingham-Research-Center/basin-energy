@@ -3,12 +3,10 @@ name: Laravel CI
 on:
   pull_request:
     branches:
-      - devel
       - master
 
   push:
     branches:
-      - devel
       - master
 
 permissions:
