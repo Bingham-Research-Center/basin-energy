@@ -1,35 +1,76 @@
-/coverage
-/node_modules
-/public/css
-/public/js
-/public/fonts
-/public/hot
-/public/storage
-/public/mix-manifest.json
+# Laravel
+/vendor/
+/node_modules/
+/bootstrap/cache/*.php
 /storage/*.key
-/vendor
-/.vscode
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/testing/*
+/storage/framework/views/*
+/storage/logs/*
+/storage/debugbar/*
+/public/storage
+/public/hot
+/public/mix-manifest.json
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+
+# Testing / Coverage
+/coverage/
+.phpunit.result.cache
+.php_cs.cache
+
+
+# IDE / Editor
+.idea/
+.vscode/
 *.sublime-project
 *.sublime-workspace
 _ide_helper.php
-.DS_Store
-.env
-.env.backup
-.idea
-.php_cs.cache
-.phpunit.result.cache
 .phpstorm.meta.php
-.project
-composer.phar
-coverage.xml
-docker-compose.override.yml
-error.log
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+
+# Logs / temporary files
+*.log
+*.tmp
+*.temp
+*.cache
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+
+# Build / package artifacts
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+
+
+# Laravel Homestead / local development
 Homestead.json
 Homestead.yaml
-npm-debug.log
-output.txt
-Thumbs.db
-yarn-error.log
-*txt
-*.zip
-*.log
+
+# Docker local overrides
+docker-compose.override.yml
+
+
+# Local project artifacts
+/out.txt
+/output.txt
+/error.log
+
+# Miscellaneous
+*.swp
+*.swo
+*~
