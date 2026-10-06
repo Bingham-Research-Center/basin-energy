@@ -77,5 +77,26 @@ jobs:
       - name: Run database migrations
         run: php artisan migrate --force
 
+            - name: Check Laravel routes
+        run: php artisan route:list > /dev/null
+
+      - name: Run database migrations
+        run: php artisan migrate --force
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build frontend assets
+        run: npm run production
+
+      - name: Verify Laravel Mix manifest
+        run: test -f public/mix-manifest.json
+
       - name: Run PHPUnit tests
         run: ./vendor/bin/phpunit
