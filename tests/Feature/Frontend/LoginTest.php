@@ -37,10 +37,14 @@ class LoginTest extends TestCase
             'password' => 'secret',
         ]);
 
-        $this->post('/login', [
+        $response = $this->post('/login', [
             'email' => 'john@example.com',
             'password' => 'secret',
-        ])->assertRedirect(route(homeRoute()));
+        ]);
+        $response->assertOk();
+        $response->assertJson([
+            'redirect' => route(homeRoute()),
+        ]);
 
         Event::assertDispatched(function (UserLoggedIn $event) use ($user) {
             return $event->user->id === $user->id;
@@ -62,7 +66,10 @@ class LoginTest extends TestCase
             'password' => 'secret',
         ]);
 
-        $response->assertSessionHas('flash_danger', __('Your account has been deactivated.'));
+        $response->assertSessionHasErrors([
+            'email' => __('Your account has been deactivated.'),
+        ]);
+
         $this->assertFalse($this->isAuthenticated());
     }
 
