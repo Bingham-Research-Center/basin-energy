@@ -77,12 +77,6 @@ jobs:
       - name: Run database migrations
         run: php artisan migrate --force
 
-            - name: Check Laravel routes
-        run: php artisan route:list > /dev/null
-
-      - name: Run database migrations
-        run: php artisan migrate --force
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
