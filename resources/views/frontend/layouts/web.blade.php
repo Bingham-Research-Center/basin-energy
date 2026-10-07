@@ -51,6 +51,8 @@
 
     @include('frontend.website.header')
 
+    @include('includes.partials.announcements')
+
     @yield('content')
 
     @include('frontend.website.footer')

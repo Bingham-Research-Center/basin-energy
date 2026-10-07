@@ -15,7 +15,7 @@ class AnnouncementTest extends TestCase
     {
         $announcement = Announcement::factory()->enabled()->frontend()->noDates()->create();
 
-        $response = $this->get('login');
+        $response = $this->get('/');
 
         $response->assertSee($announcement->message);
 
@@ -31,7 +31,7 @@ class AnnouncementTest extends TestCase
     {
         $announcement = Announcement::factory()->enabled()->backend()->noDates()->create();
 
-        $response = $this->get('login');
+        $response = $this->get('/');
 
         $response->assertDontSee($announcement->message);
 
@@ -47,7 +47,7 @@ class AnnouncementTest extends TestCase
     {
         $announcement = Announcement::factory()->enabled()->global()->noDates()->create();
 
-        $response = $this->get('login');
+        $response = $this->get('/');
 
         $response->assertSee($announcement->message);
 
@@ -63,7 +63,7 @@ class AnnouncementTest extends TestCase
     {
         $announcement = Announcement::factory()->disabled()->global()->noDates()->create();
 
-        $response = $this->get('login');
+        $response = $this->get('/');
 
         $response->assertDontSee($announcement->message);
     }
@@ -73,7 +73,7 @@ class AnnouncementTest extends TestCase
     {
         $announcement = Announcement::factory()->enabled()->global()->insideDateRange()->create();
 
-        $response = $this->get('login');
+        $response = $this->get('/');
 
         $response->assertSee($announcement->message);
     }
@@ -83,7 +83,7 @@ class AnnouncementTest extends TestCase
     {
         $announcement = Announcement::factory()->enabled()->global()->outsideDateRange()->create();
 
-        $response = $this->get('login');
+        $response = $this->get('/');
 
         $response->assertDontSee($announcement->message);
     }

@@ -76,18 +76,19 @@ class ResetPasswordTest extends TestCase
 
         $token = $this->app->make('auth.password.broker')->createToken($user);
 
-        $response = $this->followingRedirects()
-            ->post('password/reset', [
-                'token' => $token,
-                'email' => 'john@example.com',
-                'password' => 'secret',
-                'password_confirmation' => 'secret',
-            ]);
+        $response = $this->post('password/reset', [
+            'token' => $token,
+            'email' => 'john@example.com',
+            'password' => 'secret',
+            'password_confirmation' => 'secret',
+        ]);
 
-        $this->assertStringContainsString(__('validation.min.string', [
-            'attribute' => __('password'),
-            'min' => 8,
-        ]), $response->content());
+        $response->assertSessionHasErrors([
+            'password' => __('validation.min.string', [
+                'attribute' => __('password'),
+                'min' => 8,
+            ]),
+        ]);
     }
 
     /** @test */
