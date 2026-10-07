@@ -14,7 +14,6 @@
       </div>
    </div>
 </section>
-
 <!-- Section Intro Start -->
 <section class="section intro">
 	<div class="container">
@@ -48,7 +47,6 @@
 		</div>
 	</div>
 </section>
-
 <section class="about">
 	<div class="container">
 		<div class="columns is-desktop is-align-items-center">
@@ -80,9 +78,7 @@
 	</div>
 </section>
 <!-- Section About End -->
-
 </br>
-
 <!-- section Counter Start -->
 <section class="counter bg-counter">
 	<div class="container">
@@ -127,7 +123,6 @@
 	</div>
 </section>
 <!-- section Counter End  -->
-
 <!-- Section Team Start -->
 <section class="section team position-relative">
    <div class="container">
@@ -199,43 +194,4 @@
    </div>
 </section>
 <!-- Section Team End -->
-
-<section class="section">
-   <div class="container">
-      <div class="columns is-justify-content-center">
-         <div class="column is-6-widescreen is-8-desktop is-10-tablet has-text-centered">
-            <div class="section-title">
-               <h2 class="mb-4">Patrons</h2>
-               <p>Thank you for your support!</p>
-            </div>
-         </div>
-      </div>
-      <div class="columns is-gapless is-mobile is-multiline">
-         <div class="column is-3-desktop is-4-tablet is-6-mobile">
-            <img src="{{ asset('frontend/images/about/key-vision1.png') }}" alt="" class="w-100">
-         </div>
-         <div class="column is-3-desktop is-4-tablet is-6-mobile">
-            <img src="{{ asset('frontend/images/about/key-vision2.png') }}" alt="" class="w-100">
-         </div>
-         <div class="column is-3-desktop is-4-tablet is-6-mobile">
-            <img src="{{ asset('frontend/images/about/key-vision3.png') }}" alt="" class="w-100">
-         </div>
-         <div class="column is-3-desktop is-4-tablet is-6-mobile">
-            <img src="{{ asset('frontend/images/about/key-vision4.png') }}" alt="" class="w-100">
-         </div>
-         <div class="column is-3-desktop is-4-tablet is-6-mobile">
-            <img src="{{ asset('frontend/images/about/key-vision3.png') }}" alt="" class="w-100">
-         </div>
-         <div class="column is-3-desktop is-4-tablet is-6-mobile">
-            <img src="{{ asset('frontend/images/about/key-vision5.png') }}" alt="" class="w-100">
-         </div>
-         <div class="column is-3-desktop is-4-tablet is-6-mobile">
-            <img src="{{ asset('frontend/images/about/key-vision3.png') }}" alt="" class="w-100">
-         </div>
-         <div class="column is-3-desktop is-4-tablet is-6-mobile">
-            <img src="{{ asset('frontend/images/about/key-vision4.png') }}" alt="" class="w-100">
-         </div>
-      </div>
-   </div>
-</section>
 @endsection
