@@ -29,10 +29,10 @@
 
                     <ul class="list-unstyled footer-menu lh-35">
                         <li>
-                            <a href="/terms-and-conditions">Terms & Conditions</a>
+                            <a href="{{ route('frontend.pages.terms') }}">Terms & Conditions</a>
                         </li>
                         <li>
-                            <a href="/privacy-policy">Privacy Policy</a>
+                            <a href="{{ route('frontend.pages.brc-resources') }}">Basin Resources</a>
                         </li>
                         <li>
                             <a href="/contact">Support</a>
