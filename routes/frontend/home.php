@@ -51,6 +51,13 @@ Route::get('blog/{slug}', [PageController::class, 'blogSingle'])
 
 Route::get('contact', [PageController::class, 'contact'])
     ->name('pages.contact');
+
+Route::get('brc-resources', [PageController::class, 'brcResources'])
+    ->name('pages.brc-resources');
+
+Route::get('faq', [PageController::class, 'faq'])
+    ->name('pages.faq');
+
 Route::post('contact', [PageController::class, 'submitContact'])
     ->name('pages.contact.submit');
 

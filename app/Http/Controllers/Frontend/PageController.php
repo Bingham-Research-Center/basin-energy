@@ -192,4 +192,12 @@ class PageController extends Controller
 
         return back()->withFlashSuccess('Your message was sent successfully.');
     }
+    public function brcResources()
+    {
+        return view('frontend.pages.brc-resources');
+    }
+public function faq()
+{
+    return view('frontend.pages.faq');
+}
 }
