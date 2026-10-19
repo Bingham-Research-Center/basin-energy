@@ -25,7 +25,7 @@ Route::group(['as' => 'user.', 'middleware' => ['auth', 'password.expires', conf
         ->breadcrumbs(function (Trail $trail) {
             $trail->parent('frontend.index')->push(__('My Account'), route('frontend.user.account'));
         });
-    
+
     Route::group([
     'prefix' => 'data',
     'as' => 'data.',
@@ -85,7 +85,7 @@ Route::group(['as' => 'user.', 'middleware' => ['auth', 'password.expires', conf
 
         Route::get('oil-well-pad-emissions/options/json', [DataController::class, 'oilWellPadEmissionsOptionsJson'])
             ->name('oil-well-pad-emissions.options.json');
-        
+
         /* Realtime Data */
         Route::get('realtime/ozone', [DataController::class, 'realtimeOzone'])
             ->name('realtime.ozone');
@@ -124,12 +124,15 @@ Route::group(['as' => 'user.', 'middleware' => ['auth', 'password.expires', conf
         Route::get('/utah/json', [CarbonMapperController::class, 'utahJson'])
             ->name('utah.json');
 
+            Route::get('/utah/boundary', [CarbonMapperController::class, 'utahBoundary'])
+    ->name('utah.boundary');
+
         Route::get('/utah/detections', [CarbonMapperController::class, 'utahDetections']);
         Route::get('/utah/sources', [CarbonMapperController::class, 'utahSources']);
 
 
     });
 
-    
+
     Route::patch('profile/update', [ProfileController::class, 'update'])->name('profile.update');
 });
