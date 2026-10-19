@@ -25,10 +25,13 @@ class Kernel extends ConsoleKernel
      * @param  \Illuminate\Console\Scheduling\Schedule  $schedule
      * @return void
      */
-    protected function schedule(Schedule $schedule)
-    {
-        // $schedule->command('activitylog:clean')->daily();
-    }
+   protected function schedule(Schedule $schedule)
+{
+    // Import new Carbon Mapper observations daily at 2:00 AM.
+    $schedule->command('carbon-mapper:import')
+        ->dailyAt('02:00')
+        ->withoutOverlapping();
+}
 
     /**
      * Register the commands for the application.

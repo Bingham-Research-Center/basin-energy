@@ -2,55 +2,154 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
-use App\Services\CarbonMapperStacService;
 use App\Models\CarbonMapperObservation;
+use App\Services\CarbonMapperStacService;
+use App\Services\UintahBasinCoverage;
+use Illuminate\Console\Command;
 
 class ImportCarbonMapper extends Command
 {
     protected $signature = 'carbon-mapper:import';
-    protected $description = 'Import Carbon Mapper L2C methane plume origins';
 
-    public function handle(CarbonMapperStacService $stac)
-    {
-        $this->info('Fetching Carbon Mapper STAC L2C CH4 data…');
+    protected $description =
+        'Import Carbon Mapper methane observations within Uintah Basin coverage';
 
-        $limit  = 100;
-        $offset = 0;
-        $total  = null;
+    public function handle(
+        CarbonMapperStacService $stac,
+        UintahBasinCoverage $coverage
+    ): int {
+        $this->info('Importing Carbon Mapper methane observations...');
+
+        $bounds = $coverage->bounds();
+
+        $response = $stac->search([
+            'collections' => ['l2c-ch4'],
+            'bbox' => [
+                $bounds['minLon'],
+                $bounds['minLat'],
+                $bounds['maxLon'],
+                $bounds['maxLat'],
+            ],
+            'limit' => 100,
+        ]);
+
+        $fetched = 0;
+        $insideCoverage = 0;
+        $saved = 0;
+        $skipped = 0;
+        $page = 0;
+        $visitedLinks = [];
+
+        $totalMatched = (int) (
+            $response['numberMatched']
+            ?? $response['context']['matched']
+            ?? 0
+        );
 
         do {
-            $response = $stac->search([
-                'collections' => ['l2c-ch4'],
-                'limit'       => $limit,
-                'offset'      => $offset,
-            ]);
+            $page++;
 
-            foreach ($response['features'] as $feature) {
-                $coords = $feature['geometry']['coordinates'];
-                $props  = $feature['properties'];
+            $features = $response['features'] ?? [];
+
+            if (empty($features)) {
+                break;
+            }
+
+            foreach ($features as $feature) {
+                $fetched++;
+
+                $properties = $feature['properties'] ?? [];
+                $coordinates = $feature['geometry']['coordinates'] ?? [];
+
+                $longitude = $properties['cm:longitude']
+                    ?? $coordinates[0]
+                    ?? null;
+
+                $latitude = $properties['cm:latitude']
+                    ?? $coordinates[1]
+                    ?? null;
+
+                $gas = $properties['cm:gas'] ?? null;
+                $observationId = $feature['id'] ?? null;
+
+                if (
+                    ! $observationId ||
+                    $gas !== 'CH4' ||
+                    ! is_numeric($latitude) ||
+                    ! is_numeric($longitude)
+                ) {
+                    $skipped++;
+                    continue;
+                }
+
+                if (! $coverage->contains(
+                    (float) $latitude,
+                    (float) $longitude
+                )) {
+                    $skipped++;
+                    continue;
+                }
+
+                $insideCoverage++;
 
                 CarbonMapperObservation::updateOrCreate(
-                    ['observation_id' => $feature['id']],
                     [
-                        'latitude'    => $coords[1],
-                        'longitude'   => $coords[0],
-                        'gas'         => $props['cm:gas'] ?? 'CH4',
-                        'sector'      => $props['cm:sector'] ?? null,
-                        'is_phme'     => $props['cm:phme_candidate'] ?? false,
-                        'observed_at' => $props['datetime'] ?? null,
+                        'observation_id' => $observationId,
+                        'gas' => $gas,
+                    ],
+                    [
+                        'latitude' => $latitude,
+                        'longitude' => $longitude,
+                        'is_super_emitter' =>
+                            $properties['cm:phme_candidate'] ?? false,
+                        'observed_at' => $properties['datetime'] ?? null,
                         'raw_payload' => $feature,
                     ]
                 );
+
+                $saved++;
             }
 
-            $offset += $limit;
-            $total = $response['context']['matched'] ?? 0;
+            $this->info(
+                "Page {$page}: processed " . count($features) .
+                " features; {$fetched} fetched so far."
+            );
 
-            $this->info("Imported {$offset} / {$total}");
+            $nextLink = collect($response['links'] ?? [])
+                ->first(fn ($link) => ($link['rel'] ?? null) === 'next');
 
-        } while ($offset < $total);
+            if (! $nextLink || empty($nextLink['href'])) {
+                break;
+            }
 
-        $this->info('Carbon Mapper import complete.');
+            // Prevent accidentally following the same pagination link forever.
+            $nextUrl = $nextLink['href'];
+
+            if (isset($visitedLinks[$nextUrl])) {
+                $this->warn('Repeated pagination link detected; stopping.');
+                break;
+            }
+
+            $visitedLinks[$nextUrl] = true;
+
+            $response = $stac->searchNext($nextLink);
+
+        } while (true);
+
+        $this->newLine();
+        $this->info('Carbon Mapper import finished.');
+
+        $this->table(
+            ['Result', 'Count'],
+            [
+                ['API matching records reported', $totalMatched],
+                ['API records fetched', $fetched],
+                ['Records inside exact basin coverage', $insideCoverage],
+                ['Records created or updated', $saved],
+                ['Records skipped', $skipped],
+            ]
+        );
+
+        return self::SUCCESS;
     }
 }
