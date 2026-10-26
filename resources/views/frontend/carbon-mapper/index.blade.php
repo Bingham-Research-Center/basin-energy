@@ -248,12 +248,20 @@ x
                 <div class="col-12 col-xl-8">
                 {{-- Carbon Mapper filters --}}
 <div class="dashboard-control-panel carbon-map-filters mb-3">
-    <div class="carbon-map-section-title">Filter methane observations</div>
+    <div class="carbon-map-section-title">Filter Carbon Mapper observations</div>
 <div class="carbon-map-section-description">
-    Narrow the map by observation date and detection type.
+    Narrow the map by gas type, observation date, and detection type.
 </div>
 
     <div class="row mt-3">
+<div class="col-12 col-md-3 mb-3">
+    <label for="carbonMapperGas">Gas type</label>
+    <select id="carbonMapperGas" class="form-control">
+        <option value="">All gases</option>
+        <option value="CH4">Methane (CH4)</option>
+        <option value="CO2">Carbon dioxide (CO2)</option>
+    </select>
+</div>
         <div class="col-12 col-md-4 mb-3">
             <label for="carbonMapperFrom">Start date</label>
             <input
