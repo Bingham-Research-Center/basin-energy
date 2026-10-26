@@ -294,7 +294,8 @@ $manualSourceUnit = $properties['source_emission_unit'] ?? null;
             'source_name' => $source['source_name'] ?? null,
             'source_emission_rate' => $source['emission_rate'] ?? $manualSourceRate,
 'source_emission_uncertainty' => $source['emission_uncertainty'] ?? $manualSourceUncertainty,
-'source_emission_unit' => $source['emission_unit'] ?? $manualSourceUnit,
+'source_emission_unit' => $source['emission_unit']
+                ?? (isset($source['emission_rate']) ? 'kg/hr' : $manualSourceUnit),
             'source_persistence' => $source['persistence'] ?? null,
             'source_plume_count' => $source['plume_count'] ?? null,
             'source_detection_days' => $source['detection_date_count'] ?? null,
