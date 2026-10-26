@@ -96,6 +96,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     const sourcesLayer = L.layerGroup().addTo(map);
 
     // Find the filter controls on the page.
+    const gasInput = document.getElementById('carbonMapperGas');
     const fromInput = document.getElementById('carbonMapperFrom');
     const toInput = document.getElementById('carbonMapperTo');
     const typeInput = document.getElementById(
@@ -150,7 +151,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             ? 'Potential super-emitter candidate'
             : 'Not flagged as a potential super-emitter';
 
-        let emissionInformation = '';
+           let emissionInformation = '';
 let sourceEmissionInformation = '';
 
 if (
@@ -188,9 +189,12 @@ if (
             }
         }
 
+if (!emissionInformation && !sourceEmissionInformation) {
+    emissionInformation = '<br><strong>Emission rate:</strong> Not available';
+}
         return `
             <div class="carbon-mapper-popup">
-                <strong>Methane Observation</strong>
+                <strong>Carbon Mapper Observation</strong>
                 <hr style="margin: 6px 0;">
                 <strong>Gas:</strong> ${gas}<br>
                 <strong>Observed:</strong> ${escapePopupText(observedDate)}<br>
@@ -336,7 +340,11 @@ function updateStatistics(detections) {
             );
 
             if (useFilters) {
-                if (fromInput && fromInput.value) {
+    if (gasInput && gasInput.value) {
+        url.searchParams.set('gas', gasInput.value);
+    }
+
+    if (fromInput && fromInput.value) {
                     url.searchParams.set('from', fromInput.value);
                 }
 
@@ -372,19 +380,28 @@ function updateStatistics(detections) {
 
             renderDetections(detections);
 
-            setStatus(
-                `Showing ${detections.length} methane observations.`
-            );
+            const selectedGas = gasInput ? gasInput.value : '';
+
+const gasLabel = selectedGas === 'CH4'
+    ? 'methane'
+    : selectedGas === 'CO2'
+        ? 'carbon dioxide'
+        : 'total';
+
+setStatus(
+    `Showing ${detections.length} ${gasLabel} observations.`
+);
 
             // Hide unfiltered source summaries while filters are active.
             const filtersActive = Boolean(
-                useFilters &&
-                (
-                    (fromInput && fromInput.value) ||
-                    (toInput && toInput.value) ||
-                    (typeInput && typeInput.value)
-                )
-            );
+    useFilters &&
+    (
+        (gasInput && gasInput.value) ||
+        (fromInput && fromInput.value) ||
+        (toInput && toInput.value) ||
+        (typeInput && typeInput.value)
+    )
+);
 
             if (filtersActive) {
                 if (map.hasLayer(sourcesLayer)) {
@@ -490,6 +507,9 @@ function updateStatistics(detections) {
     // Clear all filters and restore all available observations.
     if (resetButton) {
         resetButton.addEventListener('click', function () {
+            if (gasInput) {
+    gasInput.value = '';
+}
             if (fromInput) {
                 fromInput.value = '';
             }

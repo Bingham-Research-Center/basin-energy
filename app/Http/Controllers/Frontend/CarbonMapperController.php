@@ -86,10 +86,16 @@ class CarbonMapperController extends Controller
 
     // Validate the optional filters.
     $request->validate([
-        'from' => ['nullable', 'date_format:Y-m-d'],
-        'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
-        'detection_type' => ['nullable', 'string', 'max:50'],
-    ]);
+    'from' => ['nullable', 'date_format:Y-m-d'],
+    'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
+    'detection_type' => ['nullable', 'string', 'max:50'],
+    'gas' => ['nullable', 'in:CH4,CO2'],
+]);
+
+// Filter observations by the selected gas.
+if ($request->filled('gas')) {
+    $query->where('gas', $request->input('gas'));
+}
 
     // Apply the date filters.
     if ($request->filled('from')) {
@@ -117,6 +123,9 @@ class CarbonMapperController extends Controller
             []
         );
         $source = $sourcesByPlumeId[$observation->observation_id] ?? null;
+        $manualSourceRate = $properties['source_emission_rate'] ?? null;
+$manualSourceUncertainty = $properties['source_emission_uncertainty'] ?? null;
+$manualSourceUnit = $properties['source_emission_unit'] ?? null;
 
         return [
             'latitude' => $observation->latitude,
@@ -125,9 +134,11 @@ class CarbonMapperController extends Controller
             'published_at' => $properties['cm:published_at'] ?? null,
             'gas' => $observation->gas,
             'source_name' => $source['source_name'] ?? null,
-'source_emission_rate' => $source['emission_rate'] ?? null,
-'source_emission_uncertainty' => $source['emission_uncertainty'] ?? null,
-'source_emission_unit' => isset($source['emission_rate']) ? 'kg/hr' : null,
+            'source_emission_rate' => $source['emission_rate'] ?? $manualSourceRate,
+'source_emission_uncertainty' => $source['emission_uncertainty'] ?? $manualSourceUncertainty,
+'source_emission_unit' => isset($source['emission_rate'])
+    ? 'kg/hr'
+    : $manualSourceUnit,
             'is_super_emitter' => (bool) $observation->is_super_emitter,
             'detection_type' => $properties['cm:cmf_type'] ?? null,
             'sector' => $properties['cm:sector'] ?? null,
@@ -244,7 +255,7 @@ class CarbonMapperController extends Controller
     private function basinQuery(array $bounds): Builder
     {
         return CarbonMapperObservation::query()
-            ->where('gas', 'CH4')
+            ->whereIn('gas', ['CH4', 'CO2'])
             ->whereBetween('longitude', [
                 $bounds['minLon'],
                 $bounds['maxLon'],
