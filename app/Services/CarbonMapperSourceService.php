@@ -105,6 +105,23 @@ class CarbonMapperSourceService
                             )
                                 ? (float) $properties['persistence']
                                 : null,
+                               'plume_count' => is_numeric(
+    $properties['plume_count'] ?? null
+)
+    ? (int) $properties['plume_count']
+    : null,
+
+'detection_date_count' => is_numeric(
+    $properties['detection_date_count'] ?? null
+)
+    ? (int) $properties['detection_date_count']
+    : null,
+
+'observation_date_count' => is_numeric(
+    $properties['observation_date_count'] ?? null
+)
+    ? (int) $properties['observation_date_count']
+    : null,
                         ];
                     }
                 }

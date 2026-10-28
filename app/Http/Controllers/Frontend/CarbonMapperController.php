@@ -30,6 +30,117 @@ class CarbonMapperController extends Controller
     /**
      * Return methane observations inside the defined Uintah Basin area.
      */
+    /**
+ * Return the actual Carbon Mapper methane plume outline
+ * for an observation already imported into the Uintah Basin.
+ */
+public function utahPlume(
+    string $observationId,
+    UintahBasinCoverage $coverage
+) {
+    $observation = \App\Models\CarbonMapperObservation::query()
+        ->where('observation_id', $observationId)
+        ->where('gas', 'CH4')
+        ->first();
+
+    if (
+        ! $observation ||
+        ! $coverage->contains(
+            (float) $observation->latitude,
+            (float) $observation->longitude
+        )
+    ) {
+        return response()->json(['message' => 'Plume not found.'], 404);
+    }
+
+    $cacheKey = 'carbon_mapper.plume_outline.' . sha1($observationId);
+
+    $outline = \Illuminate\Support\Facades\Cache::remember(
+        $cacheKey,
+        now()->addHours(12),
+        function () use ($observationId) {
+            $token = config('services.carbon_mapper.token');
+
+            $collections = [
+    'l3a-vis-ch4',
+    'l3a-vis-ch4-mf-v002',
+];
+
+$itemResponse = null;
+
+foreach ($collections as $collection) {
+    $response = \Illuminate\Support\Facades\Http::withToken($token)
+        ->acceptJson()
+        ->timeout(20)
+        ->get(
+            'https://api.carbonmapper.org/api/v1/stac/collections/'
+            . $collection
+            . '/items/'
+            . rawurlencode($observationId)
+        );
+
+    if ($response->successful()) {
+        $itemResponse = $response;
+        break;
+    }
+
+    // Try another collection only when this item is not found.
+    if ($response->status() !== 404) {
+        return null;
+    }
+}
+
+if ($itemResponse === null) {
+    return null;
+}
+
+            $assets = $itemResponse->json('assets', []);
+
+            $assetUrl = $assets['plume-outline.geojson']['href'] ?? null;
+
+            if (
+                ! is_string($assetUrl) ||
+                ! str_starts_with(
+                    $assetUrl,
+                    'https://api.carbonmapper.org/api/v1/catalog/asset/'
+                )
+            ) {
+                return null;
+            }
+
+            $outlineResponse = \Illuminate\Support\Facades\Http::withToken($token)
+                ->acceptJson()
+                ->timeout(20)
+                ->get($assetUrl);
+
+            if (! $outlineResponse->successful()) {
+                return null;
+            }
+
+            $geoJson = $outlineResponse->json();
+
+            if (
+                ! is_array($geoJson) ||
+                ($geoJson['type'] ?? null) !== 'FeatureCollection' ||
+                ! is_array($geoJson['features'] ?? null)
+            ) {
+                return null;
+            }
+
+            return $geoJson;
+        }
+    );
+
+    if ($outline === null) {
+        return response()->json(
+            ['message' => 'Plume outline unavailable.'],
+            404
+        );
+    }
+
+    return response()->json($outline);
+}
+
   public function utahJson(
     Request $request,
     UintahBasinCoverage $coverage,
@@ -127,7 +238,8 @@ if ($request->filled('gas')) {
 $manualSourceUncertainty = $properties['source_emission_uncertainty'] ?? null;
 $manualSourceUnit = $properties['source_emission_unit'] ?? null;
 
-        return [
+            return [
+            'observation_id' => $observation->observation_id,
             'latitude' => $observation->latitude,
             'longitude' => $observation->longitude,
             'observed_at' => $observation->observed_at,
@@ -139,6 +251,11 @@ $manualSourceUnit = $properties['source_emission_unit'] ?? null;
 'source_emission_unit' => isset($source['emission_rate'])
     ? 'kg/hr'
     : $manualSourceUnit,
+            'source_persistence' => $source['persistence'] ?? null,
+            'source_plume_count' => $source['plume_count'] ?? null,
+            'source_detection_days' => $source['detection_date_count'] ?? null,
+            'source_observation_count' => $source['observation_scene_count'] ?? null,
+            'source_observation_days' => $source['observation_date_count'] ?? null,
             'is_super_emitter' => (bool) $observation->is_super_emitter,
             'detection_type' => $properties['cm:cmf_type'] ?? null,
             'sector' => $properties['cm:sector'] ?? null,
