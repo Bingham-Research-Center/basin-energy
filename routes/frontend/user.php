@@ -124,6 +124,9 @@ Route::group(['as' => 'user.', 'middleware' => ['auth', 'password.expires', conf
         Route::get('/utah/json', [CarbonMapperController::class, 'utahJson'])
             ->name('utah.json');
 
+        Route::get('/utah/plume/{observationId}', [CarbonMapperController::class, 'utahPlume'])
+    ->name('utah.plume');
+
             Route::get('/utah/boundary', [CarbonMapperController::class, 'utahBoundary'])
     ->name('utah.boundary');
 

@@ -95,6 +95,75 @@ document.addEventListener('DOMContentLoaded', async function () {
     // The repeated-observation layer is separate from individual detections.
     const sourcesLayer = L.layerGroup().addTo(map);
 
+    // Display the actual plume outline for the selected detection.
+const plumeLayer = L.geoJSON(null, {
+    style: {
+        color: '#6f42c1',
+        weight: 2,
+        opacity: 0.9,
+        fillColor: '#6f42c1',
+        fillOpacity: 0.35
+    }
+}).addTo(map);
+
+let plumeRequestController = null;
+
+async function showObservationPlume(point) {
+    if (plumeRequestController) {
+        plumeRequestController.abort();
+    }
+
+    plumeLayer.clearLayers();
+
+    if (point.gas !== 'CH4' || !point.observation_id) {
+        return;
+    }
+
+    const controller = new AbortController();
+    plumeRequestController = controller;
+
+    try {
+        const response = await fetch(
+            `/carbon-mapper/utah/plume/${encodeURIComponent(point.observation_id)}`,
+            {
+                signal: controller.signal,
+                headers: {
+                    Accept: 'application/json'
+                }
+            }
+        );
+
+        if (!response.ok) {
+            return;
+        }
+
+        const geoJson = await response.json();
+
+        if (
+            controller.signal.aborted ||
+            geoJson.type !== 'FeatureCollection' ||
+            !Array.isArray(geoJson.features)
+        ) {
+            return;
+        }
+
+        plumeLayer.addData(geoJson);
+    } catch (error) {
+        if (error.name !== 'AbortError') {
+            console.warn('Unable to load methane plume:', error);
+        }
+    }
+}
+
+function clearObservationPlume() {
+    if (plumeRequestController) {
+        plumeRequestController.abort();
+        plumeRequestController = null;
+    }
+
+    plumeLayer.clearLayers();
+}
+
     // Find the filter controls on the page.
     const gasInput = document.getElementById('carbonMapperGas');
     const fromInput = document.getElementById('carbonMapperFrom');
@@ -192,6 +261,62 @@ if (
 if (!emissionInformation && !sourceEmissionInformation) {
     emissionInformation = '<br><strong>Emission rate:</strong> Not available';
 }
+        // Display official Carbon Mapper source statistics.
+        const formatSourceCount = (value) => {
+            if (value === null || value === undefined || value === '') {
+                return 'Not available';
+            }
+
+            const number = Number(value);
+
+            return Number.isFinite(number)
+                ? escapePopupText(number.toLocaleString())
+                : 'Not available';
+        };
+
+        let sourceStatistics = '';
+
+        if (
+            point.source_persistence !== null &&
+            point.source_persistence !== undefined
+        ) {
+            const persistence = Number(point.source_persistence);
+
+            if (Number.isFinite(persistence)) {
+                sourceStatistics +=
+                    `<br><strong>Source persistence:</strong> ` +
+                    `${escapePopupText((persistence * 100).toFixed(2))}%`;
+            }
+        }
+
+        if (point.source_plume_count !== null &&
+            point.source_plume_count !== undefined) {
+            sourceStatistics +=
+                `<br><strong>Number of plumes:</strong> ` +
+                formatSourceCount(point.source_plume_count);
+        }
+
+        if (point.source_detection_days !== null &&
+            point.source_detection_days !== undefined) {
+            sourceStatistics +=
+                `<br><strong>Days with detections:</strong> ` +
+                formatSourceCount(point.source_detection_days);
+        }
+
+        if (point.source_observation_days !== null &&
+            point.source_observation_days !== undefined) {
+            sourceStatistics +=
+                `<br><strong>Days observed:</strong> ` +
+                formatSourceCount(point.source_observation_days);
+        }
+        if  (
+            point.source_observation_count !== null &&
+            point.source_observation_count !== undefined
+        ) {
+            sourceStatistics +=
+                `<br><strong>Number of observations (scenes):</strong> ` +
+                formatSourceCount(point.source_observation_count);
+        }
         return `
             <div class="carbon-mapper-popup">
                 <strong>Carbon Mapper Observation</strong>
@@ -205,6 +330,7 @@ if (!emissionInformation && !sourceEmissionInformation) {
                 ${escapePopupText(superEmitterStatus)}
                 ${emissionInformation}
                 ${sourceEmissionInformation}
+                ${sourceStatistics}
             </div>
         `;
     }
@@ -281,7 +407,9 @@ function updateStatistics(detections) {
    function renderDetections(detections) {
     updateStatistics(detections);
 
+    clearObservationPlume();
     detectionLayer.clearLayers();
+
 
         detections.forEach(function (point) {
             const latitude = Number(point.latitude);
@@ -315,7 +443,16 @@ function updateStatistics(detections) {
 
             marker.bindPopup(createObservationPopup(point));
 
-            detectionLayer.addLayer(marker);
+marker.on('popupopen', function () {
+    showObservationPlume(point);
+});
+
+marker.on('popupclose', function () {
+    clearObservationPlume();
+});
+
+detectionLayer.addLayer(marker);
+
         });
 
         updateDetectionVisibility();
