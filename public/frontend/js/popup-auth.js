@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   if (!popup) return;
 
-  const loginTrigger = document.getElementById("login-trigger");
+    const loginTriggers = document.querySelectorAll("#login-trigger");
   const verifyTrigger = document.getElementById("verify-trigger");
   const closeBtn = popup.querySelector(".close-btn");
 
@@ -145,8 +145,23 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  function setView(view) {
-    popup.classList.remove("show-signup", "show-reset", "show-verify", "show-two-factor");
+function setView(view) {
+    // Load the login form only when the login view is selected.
+    if (view === "login") {
+        const loginBox = popup.querySelector(".form-box.login");
+        const loginTemplate = document.getElementById("login-popup-template");
+
+        if (loginBox && loginTemplate && !loginBox.querySelector("form")) {
+            loginBox.appendChild(loginTemplate.content.cloneNode(true));
+        }
+    }
+
+    popup.classList.remove(
+        "show-signup",
+        "show-reset",
+        "show-verify",
+        "show-two-factor"
+    );
 
     if (view === "signup") popup.classList.add("show-signup");
     if (view === "reset") popup.classList.add("show-reset");
@@ -154,33 +169,11 @@ document.addEventListener("DOMContentLoaded", function () {
     if (view === "two-factor") popup.classList.add("show-two-factor");
 
     if (view === "login" || view === "signup") {
-      setTimeout(() => ensureRecaptcha(view), 0);
+        setTimeout(() => ensureRecaptcha(view), 0);
     }
 
     focusFirstInput(view);
-  }
-
-  if (loginTrigger) {
-    loginTrigger.addEventListener("click", function (e) {
-      e.preventDefault();
-      body.classList.add("show-popup");
-      clearAllErrors();
-      resetButtons();
-      setView("login");
-      setTimeout(() => ensureRecaptcha("login"), 0);
-    });
-  }
-
-  if (verifyTrigger) {
-    verifyTrigger.addEventListener("click", function (e) {
-      e.preventDefault();
-      body.classList.add("show-popup");
-      clearAllErrors();
-      resetButtons();
-      setView("verify");
-    });
-  }
-
+}
   function closePopup() {
     body.classList.remove("show-popup");
     setView("login");
@@ -189,6 +182,26 @@ document.addEventListener("DOMContentLoaded", function () {
 
     popup.querySelectorAll("form").forEach((form) => {
       form.reset();
+    });
+  }
+
+  loginTriggers.forEach((loginTrigger) => {
+    loginTrigger.addEventListener("click", function (e) {
+      e.preventDefault();
+      body.classList.add("show-popup");
+      clearAllErrors();
+      resetButtons();
+      setView("login");
+    });
+  });
+
+  if (verifyTrigger) {
+    verifyTrigger.addEventListener("click", function (e) {
+      e.preventDefault();
+      body.classList.add("show-popup");
+      clearAllErrors();
+      resetButtons();
+      setView("verify");
     });
   }
 

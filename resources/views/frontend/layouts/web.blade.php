@@ -28,8 +28,10 @@
             <span class="close-btn material-symbols-rounded">close</span>
 
             <div class="form-box login">
-                @include('frontend.auth.partials.login-popup')
-            </div>
+    <template id="login-popup-template">
+        @include('frontend.auth.partials.login-popup')
+    </template>
+</div>
 
             <div class="form-box signup">
                 @include('frontend.auth.partials.register-popup')
