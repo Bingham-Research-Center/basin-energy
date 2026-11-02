@@ -23,13 +23,13 @@
             <small class="text-danger">{{ $message }}</small>
         @enderror
 
-        <div class="input-field">
-            <input type="password"
-                   name="password"
-                   required
-                   autocomplete="current-password">
-            <label>@lang('Password')</label>
-        </div>
+        <div class="input-field" id="login-password-container">
+    <input type="password"
+           name="password"
+           required
+           autocomplete="current-password">
+    <label>@lang('Password')</label>
+</div>
 
         @error('password')
             <small class="text-danger">{{ $message }}</small>

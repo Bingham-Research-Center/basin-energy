@@ -79,7 +79,7 @@
 						</li>
 					@else
 						<li class="navbar-item">
-							<a href="{{ route('frontend.user.dashboard') }}"
+							<a href="{{ route('frontend.user.data.data') }}"
 							class="navbar-link is-arrowless quote-btn bg-primary rounded-btn letter-spacing is-uppercase">
 								MY ACCOUNT <i class="ti-angle-right"></i>
 							</a>
