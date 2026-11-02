@@ -173,11 +173,11 @@ class PageController extends Controller
         $rules = [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255'],
-            'message' => ['required', 'string'],
+            'message' => ['required', 'string', 'max:5000'],
         ];
 
         if (config('boilerplate.access.captcha.contact')) {
-            $rules['g-recaptcha-response'] = ['required'];
+            $rules['g-recaptcha-response'] = ['required', new \App\Rules\Captcha];
         }
 
         $request->validate($rules);

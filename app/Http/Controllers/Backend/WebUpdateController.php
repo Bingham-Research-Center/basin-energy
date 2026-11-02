@@ -697,6 +697,19 @@ public function updateHome(Request $request)
         return back()->withFlashSuccess('Blog category deleted successfully.');
     }
 
+    public function uploadBlogImage(Request $request)
+    {
+        $request->validate([
+            'image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+        ]);
+
+        $path = $request->file('image')->store('website/blog/content', 'public');
+
+        return response()->json([
+            'url' => asset('storage/' . $path),
+        ]);
+    }
+
     public function storeBlogPost(Request $request)
     {
         $request->validate([
@@ -716,8 +729,8 @@ public function updateHome(Request $request)
         $data = [
             'title' => $request->title,
             'slug' => $request->slug ?: Str::slug($request->title),
-            'excerpt' => $request->excerpt,
-            'content' => $request->content,
+            'excerpt' => app(\App\Services\BlogHtmlSanitizer::class)->sanitize($request->excerpt),
+            'content' => app(\App\Services\BlogHtmlSanitizer::class)->sanitize($request->content),
             'author_name' => $request->author_name,
             'published_at' => $request->published_at,
             'sort_order' => $request->sort_order ?? 0,
@@ -753,8 +766,8 @@ public function updateHome(Request $request)
         $data = [
             'title' => $request->title,
             'slug' => $request->slug ?: Str::slug($request->title),
-            'excerpt' => $request->excerpt,
-            'content' => $request->content,
+            'excerpt' => app(\App\Services\BlogHtmlSanitizer::class)->sanitize($request->excerpt),
+            'content' => app(\App\Services\BlogHtmlSanitizer::class)->sanitize($request->content),
             'author_name' => $request->author_name,
             'published_at' => $request->published_at,
             'sort_order' => $request->sort_order ?? 0,

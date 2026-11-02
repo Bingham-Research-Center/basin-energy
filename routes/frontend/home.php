@@ -59,6 +59,7 @@ Route::get('faq', [PageController::class, 'faq'])
     ->name('pages.faq');
 
 Route::post('contact', [PageController::class, 'submitContact'])
+    ->middleware('throttle:5,1')
     ->name('pages.contact.submit');
 
 Route::get('api/basin-conditions', [BasinConditionsController::class, 'index'])

@@ -53,6 +53,7 @@ Route::prefix('website-update')->as('website-update.')->group(function () {
     Route::post('/blog/categories', [WebUpdateController::class, 'storeBlogCategory'])->name('blog.categories.store');
     Route::put('/blog/categories/{blogCategory}', [WebUpdateController::class, 'updateBlogCategory'])->name('blog.categories.update');
     Route::delete('/blog/categories/{blogCategory}', [WebUpdateController::class, 'deleteBlogCategory'])->name('blog.categories.delete');
+    Route::post('/blog/images', [WebUpdateController::class, 'uploadBlogImage'])->name('blog.images.upload');
     Route::post('/blog/posts', [WebUpdateController::class, 'storeBlogPost'])->name('blog.posts.store');
     Route::put('/blog/posts/{blogPost}', [WebUpdateController::class, 'updateBlogPost'])->name('blog.posts.update');
     Route::delete('/blog/posts/{blogPost}', [WebUpdateController::class, 'deleteBlogPost'])->name('blog.posts.delete');
