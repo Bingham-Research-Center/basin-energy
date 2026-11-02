@@ -42,12 +42,12 @@
 
                      @if($post->excerpt)
                         <div class="mt-4">
-                           {!! $post->excerpt !!}
+                           {!! app(\App\Services\BlogHtmlSanitizer::class)->sanitize($post->excerpt) !!}
                         </div>
                      @endif
 
                      <div class="mt-4">
-                        {!! $post->content !!}
+                        {!! app(\App\Services\BlogHtmlSanitizer::class)->sanitize($post->content) !!}
                      </div>
                   </div>
                </div>

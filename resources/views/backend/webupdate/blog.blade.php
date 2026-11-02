@@ -409,12 +409,12 @@
                         <p><strong>Categories:</strong> {{ $post->categories->isNotEmpty() ? $post->categories->pluck('name')->implode(', ') : '-' }}</p>
                         <p><strong>Excerpt:</strong></p>
                         <div class="border rounded p-3 mb-3">
-                            {!! $post->excerpt !!}
+                            {!! app(\App\Services\BlogHtmlSanitizer::class)->sanitize($post->excerpt) !!}
                         </div>
 
                         <p><strong>Content:</strong></p>
                         <div class="border rounded p-3">
-                            {!! $post->content !!}
+                            {!! app(\App\Services\BlogHtmlSanitizer::class)->sanitize($post->content) !!}
                         </div>
                     </div>
                 </div>
@@ -533,9 +533,41 @@
                 ['color', ['color']],
                 ['para', ['ul', 'ol', 'paragraph']],
                 ['table', ['table']],
-                ['insert', ['link', 'picture', 'video']],
+                ['insert', ['link', 'picture']],
                 ['view', ['fullscreen', 'codeview', 'help']]
-            ]
+            ],
+            callbacks: {
+                onImageUpload: function(files) {
+                    const editor = $(this);
+
+                    Array.from(files).forEach(function(file) {
+                        const formData = new FormData();
+                        formData.append('image', file);
+                        formData.append('_token', '{{ csrf_token() }}');
+
+                        $.ajax({
+                            url: '{{ route("admin.website-update.blog.images.upload") }}',
+                            method: 'POST',
+                            data: formData,
+                            processData: false,
+                            contentType: false,
+                            success: function(response) {
+                                editor.summernote('insertImage', response.url);
+                            },
+                            error: function(xhr) {
+                                const message = xhr.responseJSON?.message
+                                    || 'Image upload failed. Please try again.';
+
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Image Upload Failed',
+                                    text: message
+                                });
+                            }
+                        });
+                    });
+                }
+            }
         });
 
         document.querySelectorAll('.delete-blog-category-form').forEach(function(form) {
