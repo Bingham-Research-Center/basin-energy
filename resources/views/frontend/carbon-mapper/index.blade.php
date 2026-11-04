@@ -58,7 +58,6 @@
             font-weight: 600;
             margin-bottom: 7px;
         }
-x
         .carbon-mapper-page .carbon-map-filters .form-control {
             border-radius: 6px;
             min-height: 40px;
@@ -158,7 +157,7 @@ x
                 font-size: 1.35rem;
             }
         }
-    </style>
+   </style>
 @endpush
 
 @section('content')
@@ -184,14 +183,16 @@ x
         <div class="card-body dashboard-fill-card-body">
             <div class="row">
                 <div class="col-12 col-xl-4 mb-4 mb-xl-0">
+
                     <div class="dashboard-control-panel h-100">
-                        <div class="dashboard-control-title">
-                            @lang('How to read this map')
-                        </div>
+
+    <div class="dashboard-control-title">
+        @lang('How to read this map')
+    </div>
 
                         <div class="dashboard-control-subtitle mb-3">
-                            @lang('Each symbol reflects satellite-detected methane activity near a location over time.')
-                        </div>
+                     @lang('Explore Carbon Mapper gas emission observations and learn what each map symbol represents.')
+ </div>
 
                         <div class="carbon-map-help">
                             <div class="carbon-map-help-item">
@@ -202,7 +203,7 @@ x
                                 <div>
                                     <h6>@lang('Clustered circles')</h6>
                                     <p>
-                                        @lang('Large numbered circles represent groups of nearby methane detections. Higher numbers indicate repeated observations and persistent source locations.')
+                                   @lang('Large numbered circles represent groups of nearby gas emission detections. The number indicates how many observations are grouped together.')
                                     </p>
                                 </div>
                             </div>
@@ -232,16 +233,51 @@ x
                                     </p>
                                 </div>
                             </div>
+                              {{-- Carbon Mapper map legend --}}
+<div class="mt-3 mb-3">
+    <h6 class="mb-3">Map Legend</h6>
+
+    <div class="carbon-map-help-item">
+        <div style="width:24px;min-width:24px;display:flex;justify-content:center;">
+            <span style="width:12px;height:12px;border-radius:50%;background:#6f42c1;"></span>
+        </div>
+        <div>
+            <h6>Gas emission observation</h6>
+            <p>Individual gas emission detection recorded by Carbon Mapper.</p>
+        </div>
+    </div>
+
+    <div class="carbon-map-help-item">
+        <div style="width:24px;min-width:24px;display:flex;justify-content:center;">
+            <span style="width:14px;height:14px;border-radius:50%;background:#e67e22;"></span>
+        </div>
+        <div>
+            <h6>Potential super-emitter candidate</h6>
+            <p>Observation flagged as a potential super-emitter.</p>
+        </div>
+    </div>
+
+    <div class="carbon-map-help-item">
+        <div style="width:24px;min-width:24px;display:flex;justify-content:center;">
+            <span style="width:17px;height:13px;background:rgba(111,66,193,0.35);border:2px solid #6f42c1;border-radius:40% 60% 50% 35%;"></span>
+        </div>
+        <div>
+            <h6>Methane plume outline</h6>
+            <p>Geographic footprint of a methane plume provided by Carbon Mapper.</p>
+        </div>
+    </div>
+</div>
 
                             <div class="carbon-map-help-note mt-3">
                                 <strong>@lang('This confirms:')</strong>
                                 <ul class="mb-0 mt-2 pl-3">
                                     <li>@lang('Detection-level satellite data')</li>
                                     <li>@lang('Repeat observations over time')</li>
-                                    <li>@lang('Dense Utah methane source coverage')</li>
+                                    <li>@lang('Dense Utah gas emission source coverage')</li>
                                 </ul>
                             </div>
                         </div>
+
                     </div>
                 </div>
 
@@ -305,11 +341,22 @@ x
             Reset filters
         </button>
 
-        <span
-            id="carbonMapperFilterStatus"
-            class="small ml-md-3 mb-2"
-            aria-live="polite"
-        ></span>
+        <button
+    type="button"
+    id="carbonMapperDownloadCsv"
+    class="btn btn-outline-primary ml-2 mb-2"
+    disabled
+>
+    Download CSV
+</button>
+
+      <span
+    id="carbonMapperFilterStatus"
+    class="small ml-md-3 mb-2"
+    role="status"
+    aria-live="polite"
+    aria-atomic="true"
+></span>
     </div>
 
     {{-- Carbon Mapper source data refresh information --}}
@@ -329,7 +376,12 @@ x
             <div class="dashboard-control-subtitle">
                 Total observations
             </div>
-            <div class="dashboard-chart-title" id="carbonMapperTotal">
+             <div
+    class="dashboard-chart-title"
+    id="carbonMapperTotal"
+    role="status"
+    aria-label="Total Carbon Mapper observations"
+>
                 —
             </div>
         </div>
@@ -369,20 +421,13 @@ x
     </div>
 </div>
 <div class="dashboard-map-shell">
-    <div id="map" class="dashboard-leaflet-map"></div>
-</div>
+    <div
+    id="map"
+    class="dashboard-leaflet-map"
+    role="region"
+    aria-label="Interactive Carbon Mapper gas emissions map of Utah"
+></div>
 
-{{-- Methane observation legend --}}
-<div class="d-flex flex-wrap align-items-center mt-3 mb-2 small">
-    <div class="d-flex align-items-center mr-4 mb-2">
-        <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#6f42c1;margin-right:8px;"></span>
-        <span>Methane observation</span>
-    </div>
-
-    <div class="d-flex align-items-center mb-2">
-        <span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#e67e22;border:2px solid #e67e22;margin-right:8px;"></span>
-        <span>Potential super-emitter candidate</span>
-    </div>
 </div>
 
 <div class="dashboard-chart-help mt-3">
