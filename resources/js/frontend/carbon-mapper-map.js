@@ -108,6 +108,16 @@ const plumeLayer = L.geoJSON(null, {
 
 let plumeRequestController = null;
 
+function setPlumeStatus(message) {
+    const status = document.querySelector(
+        '.leaflet-popup .carbon-mapper-plume-status'
+    );
+
+    if (status) {
+        status.textContent = message;
+    }
+}
+
 async function showObservationPlume(point) {
     if (plumeRequestController) {
         plumeRequestController.abort();
@@ -122,6 +132,8 @@ async function showObservationPlume(point) {
     const controller = new AbortController();
     plumeRequestController = controller;
 
+    setPlumeStatus('Loading methane plume outline...');
+
     try {
         const response = await fetch(
             `/carbon-mapper/utah/plume/${encodeURIComponent(point.observation_id)}`,
@@ -134,8 +146,16 @@ async function showObservationPlume(point) {
         );
 
         if (!response.ok) {
-            return;
-        }
+    if (!controller.signal.aborted) {
+        setPlumeStatus(
+            response.status === 404
+                ? 'Plume outline unavailable from Carbon Mapper.'
+                : 'Unable to retrieve plume outline.'
+        );
+    }
+
+    return;
+}
 
         const geoJson = await response.json();
 
@@ -147,12 +167,23 @@ async function showObservationPlume(point) {
             return;
         }
 
-plumeLayer.addData(geoJson);
-    } catch (error) {
-        if (error.name !== 'AbortError') {
-            console.warn('Unable to load methane plume:', error);
-        }
+        plumeLayer.addData(geoJson);
+
+setPlumeStatus(
+    geoJson.features.length > 0
+        ? 'Methane plume outline displayed.'
+        : 'Plume outline unavailable from Carbon Mapper.'
+);
+        } catch (error) {
+    if (
+        error.name !== 'AbortError' &&
+        !controller.signal.aborted &&
+        plumeRequestController === controller
+    ) {
+        console.warn('Unable to load methane plume:', error);
+        setPlumeStatus('Unable to retrieve plume outline.');
     }
+}
 }
 
 function clearObservationPlume() {
@@ -168,15 +199,33 @@ function clearObservationPlume() {
     const gasInput = document.getElementById('carbonMapperGas');
     const fromInput = document.getElementById('carbonMapperFrom');
     const toInput = document.getElementById('carbonMapperTo');
+
     const typeInput = document.getElementById(
         'carbonMapperDetectionType'
     );
+
     const applyButton = document.getElementById(
         'carbonMapperApplyFilters'
     );
+
     const resetButton = document.getElementById(
         'carbonMapperResetFilters'
     );
+
+    const downloadCsvButton = document.getElementById(
+        'carbonMapperDownloadCsv'
+    );
+
+// Store observations from the most recent successful map update.
+let displayedObservations = [];
+
+function updateExportData(detections) {
+    displayedObservations = detections;
+
+    if (downloadCsvButton) {
+        downloadCsvButton.disabled = detections.length === 0;
+    }
+}
     const statusElement = document.getElementById(
         'carbonMapperFilterStatus'
     );
@@ -318,8 +367,8 @@ if (!emissionInformation && !sourceEmissionInformation) {
                 formatSourceCount(point.source_observation_count);
         }
         return `
-            <div class="carbon-mapper-popup">
-                <strong>Carbon Mapper Observation</strong>
+                <div class="carbon-mapper-popup">
+                <strong role="heading" aria-level="3">Carbon Mapper Observation</strong>
                 <hr style="margin: 6px 0;">
                 <strong>Gas:</strong> ${gas}<br>
                 <strong>Observed:</strong> ${escapePopupText(observedDate)}<br>
@@ -331,6 +380,9 @@ if (!emissionInformation && !sourceEmissionInformation) {
                 ${emissionInformation}
                 ${sourceEmissionInformation}
                 ${sourceStatistics}
+                ${point.gas === 'CH4' && point.observation_id
+    ? '<div class="carbon-mapper-plume-status small mt-2" role="status" aria-live="polite"></div>'
+    : ''}
             </div>
         `;
     }
@@ -405,6 +457,7 @@ function updateStatistics(detections) {
 }
     // Draw the observations returned by the server.
    function renderDetections(detections) {
+    updateExportData(detections);
     updateStatistics(detections);
 
     clearObservationPlume();
@@ -534,13 +587,13 @@ detectionLayer.addLayer(marker);
 
             renderDetections(detections);
 
-            const selectedGas = gasInput ? gasInput.value : '';
+            const selectedGas = useFilters && gasInput ? gasInput.value : '';
 
 const gasLabel = selectedGas === 'CH4'
-    ? 'methane'
+    ? 'methane (CH4)'
     : selectedGas === 'CO2'
-        ? 'carbon dioxide'
-        : 'total';
+        ? 'carbon dioxide (CO2)'
+        : 'Carbon Mapper';
 
 if (detections.length === 0) {
     const noResultsMessage = selectedGas === 'CO2'
@@ -579,9 +632,9 @@ if (detections.length === 0) {
                 error
             );
 
-            setStatus(
-                'Could not load observations. Please try again.'
-            );
+           setStatus(
+    'Unable to retrieve Carbon Mapper observations. Please try again.'
+);
         } finally {
             if (applyButton) {
                 applyButton.disabled = false;
@@ -634,16 +687,25 @@ if (detections.length === 0) {
 
         renderDetections(initialDetections);
 
-        setStatus(
-            `Showing ${initialDetections.length} methane observations.`
-        );
+        if (initialDetections.length === 0) {
+    setStatus(
+        'No Carbon Mapper observations are currently available for this area.'
+    );
+} else {
+    setStatus(
+        `Showing ${initialDetections.length} Carbon Mapper observations.`
+    );
+}
+
     } catch (error) {
         console.error(
             'Carbon Mapper: Could not load methane observations.',
             error
         );
 
-        setStatus('Could not load observations.');
+        setStatus(
+    'Unable to retrieve Carbon Mapper observations. Please try again.'
+);
     }
 
     // Apply the selected date and detection-type filters.
@@ -686,6 +748,82 @@ if (detections.length === 0) {
             }
 
             loadDetections(false);
+        });
+    }
+    // Download the currently displayed Carbon Mapper observations as CSV.
+    if (downloadCsvButton) {
+        downloadCsvButton.addEventListener('click', function () {
+            if (displayedObservations.length === 0) {
+                return;
+            }
+
+            const columns = [
+                ['Observation ID', 'observation_id'],
+                ['Gas', 'gas'],
+                ['Observed At', 'observed_at'],
+                ['Published At', 'published_at'],
+                ['Latitude', 'latitude'],
+                ['Longitude', 'longitude'],
+                ['Detection Type', 'detection_type'],
+                ['Sector', 'sector'],
+                ['Potential Super Emitter', 'is_super_emitter'],
+                ['Observation Emission Rate', 'emission_rate'],
+                ['Observation Emission Unit', 'emission_unit'],
+                ['Source Name', 'source_name'],
+                ['Source Emission Rate', 'source_emission_rate'],
+                ['Source Emission Unit', 'source_emission_unit'],
+                ['Source Emission Uncertainty', 'source_emission_uncertainty']
+            ];
+
+            function escapeCsvValue(value) {
+                if (value === null || value === undefined) {
+                    return '';
+                }
+
+                let text = String(value);
+
+                // Prevent spreadsheet programs from interpreting
+                // untrusted values as formulas.
+                if (/^[\s\u0000-\u001f]*[=+\-@]/.test(text)) {
+                    text = "'" + text;
+                }
+
+                return '"' + text.replace(/"/g, '""') + '"';
+            }
+
+            const header = columns.map(column =>
+                escapeCsvValue(column[0])
+            ).join(',');
+
+            const rows = displayedObservations.map(function (point) {
+                return columns.map(function (column) {
+                    return escapeCsvValue(point[column[1]]);
+                }).join(',');
+            });
+
+            const csv = [header, ...rows].join('\r\n');
+
+            const blob = new Blob(
+                ['\uFEFF', csv],
+                { type: 'text/csv;charset=utf-8;' }
+            );
+
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+
+            link.href = url;
+            link.download =
+                'carbon-mapper-observations-' +
+                new Date().toISOString().slice(0, 10) +
+                '.csv';
+
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+
+            window.setTimeout(function () {
+                URL.revokeObjectURL(url);
+            }, 1000);
         });
     }
 
