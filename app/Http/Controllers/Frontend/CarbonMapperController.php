@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
 use App\Models\CarbonMapperObservation;
+use App\Models\CarbonMapperSourceMeasurement;
+use App\Models\CarbonMapperPlumeOutline;
 use App\Services\UintahBasinCoverage;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -16,7 +18,15 @@ class CarbonMapperController extends Controller
      */
     public function utah()
     {
-        return view('frontend.carbon-mapper.index');
+        $lastFetchedAt = CarbonMapperSourceMeasurement::max('last_fetched_at');
+
+        $sourceMeasurementsLastUpdated = $lastFetchedAt
+            ? \Carbon\Carbon::parse($lastFetchedAt)->utc()
+            : null;
+
+        return view('frontend.carbon-mapper.index', [
+            'sourceMeasurementsLastUpdated' => $sourceMeasurementsLastUpdated,
+        ]);
     }
 
     /**
@@ -28,13 +38,10 @@ class CarbonMapperController extends Controller
     }
 
     /**
-     * Return methane observations inside the defined Uintah Basin area.
+     * Return the actual Carbon Mapper methane plume outline
+     * for an observation already imported into the Uintah Basin.
      */
-    /**
- * Return the actual Carbon Mapper methane plume outline
- * for an observation already imported into the Uintah Basin.
- */
-public function utahPlume(
+    public function utahPlume(
     string $observationId,
     UintahBasinCoverage $coverage
 ) {
@@ -52,6 +59,15 @@ public function utahPlume(
     ) {
         return response()->json(['message' => 'Plume not found.'], 404);
     }
+    // Check for a permanently saved plume outline first.
+    $savedOutline = CarbonMapperPlumeOutline::where(
+        'observation_id',
+        $observationId
+    )->first();
+
+    if ($savedOutline && is_array($savedOutline->geojson)) {
+        return response()->json($savedOutline->geojson);
+    }
 
     $cacheKey = 'carbon_mapper.plume_outline.' . sha1($observationId);
 
@@ -62,40 +78,39 @@ public function utahPlume(
             $token = config('services.carbon_mapper.token');
 
             $collections = [
-    'l3a-vis-ch4',
-    'l3a-vis-ch4-mf-v002',
-];
+                'l3a-vis-ch4',
+                'l3a-vis-ch4-mf-v002',
+            ];
 
-$itemResponse = null;
+            $itemResponse = null;
 
-foreach ($collections as $collection) {
-    $response = \Illuminate\Support\Facades\Http::withToken($token)
-        ->acceptJson()
-        ->timeout(20)
-        ->get(
-            'https://api.carbonmapper.org/api/v1/stac/collections/'
-            . $collection
-            . '/items/'
-            . rawurlencode($observationId)
-        );
+            foreach ($collections as $collection) {
+                $response = \Illuminate\Support\Facades\Http::withToken($token)
+                    ->acceptJson()
+                    ->timeout(20)
+                    ->get(
+                        'https://api.carbonmapper.org/api/v1/stac/collections/'
+                        . $collection
+                        . '/items/'
+                        . rawurlencode($observationId)
+                    );
 
-    if ($response->successful()) {
-        $itemResponse = $response;
-        break;
-    }
+                if ($response->successful()) {
+                    $itemResponse = $response;
+                    break;
+                }
 
-    // Try another collection only when this item is not found.
-    if ($response->status() !== 404) {
-        return null;
-    }
-}
+                // Try another collection only when this item is not found.
+                if ($response->status() !== 404) {
+                    return null;
+                }
+            }
 
-if ($itemResponse === null) {
-    return null;
-}
+            if ($itemResponse === null) {
+                return null;
+            }
 
             $assets = $itemResponse->json('assets', []);
-
             $assetUrl = $assets['plume-outline.geojson']['href'] ?? null;
 
             if (
@@ -138,13 +153,21 @@ if ($itemResponse === null) {
         );
     }
 
+    // Permanently save successful plume outlines in MySQL.
+    // This also saves outlines retrieved from Laravel's existing cache.
+    CarbonMapperPlumeOutline::updateOrCreate(
+        ['observation_id' => $observationId],
+        [
+            'geojson' => $outline,
+            'last_fetched_at' => now(),
+        ]
+    );
+
     return response()->json($outline);
 }
-
   public function utahJson(
     Request $request,
-    UintahBasinCoverage $coverage,
-    CarbonMapperSourceService $sourceService
+    UintahBasinCoverage $coverage
 ) {
     $bounds = $coverage->bounds();
 
@@ -224,7 +247,30 @@ if ($request->filled('gas')) {
         20000
     );
 
-    $sourcesByPlumeId = $sourceService->byPlumeId($coverage);
+// Retrieve permanently saved source measurements from the database.
+// No Carbon Mapper API connection is required to display these values.
+$sourcesByPlumeId = CarbonMapperSourceMeasurement::query()
+    ->whereIn(
+        'plume_id',
+        $observations->pluck('observation_id')->filter()->unique()
+    )
+    ->get()
+    ->mapWithKeys(function ($measurement) {
+        return [
+            $measurement->plume_id => [
+                'source_name' => $measurement->source_name,
+                'emission_rate' => $measurement->emission_rate,
+                'emission_uncertainty' => $measurement->emission_uncertainty,
+                'emission_unit' => $measurement->emission_unit,
+                'persistence' => $measurement->persistence,
+                'plume_count' => $measurement->plume_count,
+                'detection_date_count' => $measurement->detection_date_count,
+                'observation_scene_count' => $measurement->observation_scene_count,
+                'observation_date_count' => $measurement->observation_date_count,
+            ],
+        ];
+    })
+    ->all();
 
     // Prepare the data used by the map and observation popups.
     $results = $observations->map(function ($observation) use ($sourcesByPlumeId) {
@@ -248,9 +294,7 @@ $manualSourceUnit = $properties['source_emission_unit'] ?? null;
             'source_name' => $source['source_name'] ?? null,
             'source_emission_rate' => $source['emission_rate'] ?? $manualSourceRate,
 'source_emission_uncertainty' => $source['emission_uncertainty'] ?? $manualSourceUncertainty,
-'source_emission_unit' => isset($source['emission_rate'])
-    ? 'kg/hr'
-    : $manualSourceUnit,
+'source_emission_unit' => $source['emission_unit'] ?? $manualSourceUnit,
             'source_persistence' => $source['persistence'] ?? null,
             'source_plume_count' => $source['plume_count'] ?? null,
             'source_detection_days' => $source['detection_date_count'] ?? null,

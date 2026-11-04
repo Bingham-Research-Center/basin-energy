@@ -311,6 +311,16 @@ x
             aria-live="polite"
         ></span>
     </div>
+
+    {{-- Carbon Mapper source data refresh information --}}
+    <div class="small mt-2" style="color: #a8b3c7;">
+        <strong>Source measurements last updated:</strong>
+        @if($sourceMeasurementsLastUpdated)
+            {{ $sourceMeasurementsLastUpdated->format('F j, Y') }} UTC
+        @else
+            Not available
+        @endif
+    </div>
 </div>
 {{-- Carbon Mapper summary statistics --}}
 <div class="row mb-3" id="carbonMapperStatistics">
