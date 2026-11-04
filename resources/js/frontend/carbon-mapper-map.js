@@ -147,7 +147,7 @@ async function showObservationPlume(point) {
             return;
         }
 
-        plumeLayer.addData(geoJson);
+plumeLayer.addData(geoJson);
     } catch (error) {
         if (error.name !== 'AbortError') {
             console.warn('Unable to load methane plume:', error);
@@ -441,8 +441,25 @@ function updateStatistics(detections) {
                 }
             );
 
-            marker.bindPopup(createObservationPopup(point));
+// Position the popup differently depending on the zoom level.
+marker.bindPopup(createObservationPopup(point), {
+    offset: L.point(0, 0),
+    autoPan: true
+});
 
+marker.on('popupopen', function () {
+    const popup = marker.getPopup();
+
+    if (map.getZoom() >= 12) {
+        // Move the popup higher above the plume when zoomed in.
+        popup.options.offset = L.point(0, -180);
+    } else {
+        // Normal popup position when zoomed out.
+        popup.options.offset = L.point(0, 0);
+    }
+
+    popup.update();
+});
 marker.on('popupopen', function () {
     showObservationPlume(point);
 });
@@ -525,10 +542,19 @@ const gasLabel = selectedGas === 'CH4'
         ? 'carbon dioxide'
         : 'total';
 
-setStatus(
-    `Showing ${detections.length} ${gasLabel} observations.`
-);
+if (detections.length === 0) {
+    const noResultsMessage = selectedGas === 'CO2'
+        ? 'No CO2 observations found for the selected filters.'
+        : selectedGas === 'CH4'
+            ? 'No CH4 observations found for the selected filters.'
+            : 'No observations found for the selected filters.';
 
+    setStatus(noResultsMessage);
+} else {
+    setStatus(
+        `Showing ${detections.length} ${gasLabel} observations.`
+    );
+}
             // Hide unfiltered source summaries while filters are active.
             const filtersActive = Boolean(
     useFilters &&
