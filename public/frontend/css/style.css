@@ -898,6 +898,13 @@ ul.navbar-dropdown li {
     line-height: 48px;
   }
 }
+/* Improve homepage hero readability on smaller phones */
+@media (max-width: 480px) {
+  .slider h1 {
+    font-size: 27px;
+    line-height: 38px;
+  }
+}
 .intro-item i {
   font-size: 60px;
   line-height: 60px;
@@ -1980,4 +1987,23 @@ a.link {
 .slider-cta p {
   font-size: 16px;
   line-height: 27px;
+}
+
+/* Accessibility: Skip to main content */
+.skip-link {
+    position: absolute;
+    top: -100px;
+    left: 16px;
+    z-index: 99999;
+    padding: 12px 20px;
+    background: #ffffff;
+    color: #000000;
+    font-weight: 600;
+    border: 2px solid #000000;
+    border-radius: 4px;
+    text-decoration: none;
+}
+
+.skip-link:focus {
+    top: 16px;
 }

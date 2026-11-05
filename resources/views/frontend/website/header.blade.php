@@ -26,7 +26,14 @@
 					<!-- <img src="images/logo/logo.png" alt="logo"> -->
 					<h2 class="has-text-white" style="font-size:2rem">BasinEnergy</h2>
 				</a>
-				<button role="button" class="navbar-burger burger" data-hidden="true" data-target="navigation">
+<button
+    type="button"
+    class="navbar-burger burger"
+    data-hidden="true"
+    data-target="navigation"
+    aria-label="Toggle navigation"
+    aria-controls="navigation"
+    aria-expanded="false">
 					<span aria-hidden="true"></span>
 					<span aria-hidden="true"></span>
 					<span aria-hidden="true"></span>
