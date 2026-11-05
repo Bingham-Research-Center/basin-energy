@@ -1,8 +1,11 @@
 @extends('frontend.layouts.web')
 
-@section('title', 'Home')
+@section('title', 'BasinEnergy | Energy, Emissions & Environmental Research')
+
+@section('meta_description', 'Explore energy production, methane emissions, air quality, weather conditions, and environmental research in Utah’s Uintah Basin.')
 
 @section('content')
+
 <!-- Slider Start -->
 <section class="slider">
    <div class="container">
