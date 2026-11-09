@@ -11,7 +11,6 @@
     <link rel="stylesheet" href="{{ asset('frontend/plugins/aos/aos.css') }}">
     <link rel="stylesheet" href="{{ asset('frontend/plugins/slick-carousel/slick/slick.css') }}">
     <link rel="stylesheet" href="{{ asset('frontend/plugins/slick-carousel/slick/slick-theme.css') }}">
-    <link rel="stylesheet" href="{{ asset('frontend/plugins/magnific-popup/dist/magnific-popup.css') }}">
     <link rel="stylesheet" href="{{ asset('frontend/plugins/modal-video/modal-video.min.css') }}">
     <link rel="stylesheet" href="{{ asset('frontend/css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('frontend/css/popup-auth.css') }}">
@@ -60,7 +59,6 @@
     @include('frontend.website.footer')
 
     <script src="{{ asset('frontend/plugins/jquery/jquery.js') }}"></script>
-    <script src="{{ asset('frontend/plugins/magnific-popup/dist/jquery.magnific-popup.min.js') }}"></script>
     <script src="{{ asset('frontend/plugins/slick-carousel/slick/slick.min.js') }}"></script>
     <script src="{{ asset('frontend/plugins/aos/aos.js') }}"></script>
     <script src="{{ asset('frontend/plugins/animate-css/wow.min.js') }}"></script>
