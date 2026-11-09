@@ -16,8 +16,6 @@ AOS.init({
 (function ($) {
   "use strict";
 
-  $(".videoplay").modalVideo();
-
   $(window).scroll(function () {
     var $this = $(this),
       st = $this.scrollTop(),
