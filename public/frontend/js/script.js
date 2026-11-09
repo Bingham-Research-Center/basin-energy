@@ -182,31 +182,4 @@ AOS.init({
     google.maps.event.addDomListener(window, "load", initialize);
   }
 
-  // Counter
-
-  $(".counter-stat").counterUp({
-    delay: 10,
-    time: 1000,
-  });
-
-  // Shuffle js filter and masonry
-  var Shuffle = window.Shuffle;
-  var jQuery = window.jQuery;
-
-var shuffleElement = document.querySelector(".shuffle-wrapper");
-
-if (shuffleElement) {
-  var myShuffle = new Shuffle(shuffleElement, {
-    itemSelector: ".shuffle-item",
-    buffer: 1,
-  });
-
-  jQuery('input[name="shuffle-filter"]').on("change", function (evt) {
-    var input = evt.currentTarget;
-    if (input.checked) {
-      myShuffle.filter(input.value);
-    }
-  });
-}
-
 })(jQuery);

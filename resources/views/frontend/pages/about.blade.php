@@ -195,3 +195,17 @@
 </section>
 <!-- Section Team End -->
 @endsection
+
+@push('after-scripts')
+<script src="{{ asset('frontend/plugins/counterup/jquery.waypoints.min.js') }}"></script>
+<script src="{{ asset('frontend/plugins/counterup/jquery.counterup.min.js') }}"></script>
+
+<script>
+    $(function () {
+        $(".counter-stat").counterUp({
+            delay: 10,
+            time: 1000
+        });
+    });
+</script>
+@endpush

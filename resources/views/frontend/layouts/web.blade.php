@@ -62,9 +62,6 @@
     <script src="{{ asset('frontend/plugins/jquery/jquery.js') }}"></script>
     <script src="{{ asset('frontend/plugins/magnific-popup/dist/jquery.magnific-popup.min.js') }}"></script>
     <script src="{{ asset('frontend/plugins/slick-carousel/slick/slick.min.js') }}"></script>
-    <script src="{{ asset('frontend/plugins/counterup/jquery.waypoints.min.js') }}"></script>
-    <script src="{{ asset('frontend/plugins/counterup/jquery.counterup.min.js') }}"></script>
-    <script src="{{ asset('frontend/plugins/shuffle/shuffle.min.js') }}"></script>
     <script src="{{ asset('frontend/plugins/aos/aos.js') }}"></script>
     <script src="{{ asset('frontend/plugins/animate-css/wow.min.js') }}"></script>
     <script src="{{ asset('frontend/plugins/modal-video/jquery-modal-video.min.js') }}"></script>
