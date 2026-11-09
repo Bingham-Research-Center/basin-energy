@@ -98,17 +98,6 @@ $(".navbar-burger").on("click", function () {
   });
 
 
-  $(".portfolio-gallery").each(function () {
-    $(this)
-      .find(".popup-gallery")
-      .magnificPopup({
-        type: "image",
-        gallery: {
-          enabled: true,
-        },
-      });
-  });
-
   var map;
 
   function initialize() {

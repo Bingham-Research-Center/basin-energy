@@ -98,9 +98,12 @@
 	</div>
 </section>
 @endsection
-
+@push('after-styles')
+<link rel="stylesheet" href="{{ asset('frontend/plugins/magnific-popup/dist/magnific-popup.css') }}">
+@endpush
 @push('after-scripts')
 <script src="{{ asset('frontend/plugins/shuffle/shuffle.min.js') }}"></script>
+<script src="{{ asset('frontend/plugins/magnific-popup/dist/jquery.magnific-popup.min.js') }}"></script>
 
 <script>
     $(function () {
@@ -120,6 +123,14 @@
                 }
             });
         }
+$(".portfolio-gallery").each(function () {
+    $(this).find(".popup-gallery").magnificPopup({
+        type: "image",
+        gallery: {
+            enabled: true
+        }
+    });
+});
     });
 </script>
 @endpush
