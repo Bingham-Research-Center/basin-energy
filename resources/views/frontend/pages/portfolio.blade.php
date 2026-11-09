@@ -98,3 +98,28 @@
 	</div>
 </section>
 @endsection
+
+@push('after-scripts')
+<script src="{{ asset('frontend/plugins/shuffle/shuffle.min.js') }}"></script>
+
+<script>
+    $(function () {
+        var shuffleElement = document.querySelector(".shuffle-wrapper");
+
+        if (shuffleElement && window.Shuffle) {
+            var myShuffle = new Shuffle(shuffleElement, {
+                itemSelector: ".shuffle-item",
+                buffer: 1
+            });
+
+            $('input[name="shuffle-filter"]').on("change", function (evt) {
+                var input = evt.currentTarget;
+
+                if (input.checked) {
+                    myShuffle.filter(input.value);
+                }
+            });
+        }
+    });
+</script>
+@endpush
