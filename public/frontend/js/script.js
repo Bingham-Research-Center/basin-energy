@@ -44,16 +44,18 @@ AOS.init({
     }
   });
 
-  // navbar
-  $(".navbar-burger").click(function () {
-    $(".navbar-burger").toggleClass("is-active");
-    $(".navbar-menu").toggleClass("is-active");
+// Mobile navigation
+$(".navbar-burger").on("click", function () {
+  var $button = $(this);
+  var isExpanded = $button.attr("aria-expanded") === "true";
+  var newExpanded = !isExpanded;
 
-    $(this).attr(
-      "data-hidden",
-      $(this).attr("data-hidden") === "true" ? "false" : "true"
-    );
-  });
+  $button.toggleClass("is-active", newExpanded);
+  $(".navbar-menu").toggleClass("is-active", newExpanded);
+
+  $button.attr("aria-expanded", String(newExpanded));
+  $button.attr("data-hidden", String(!newExpanded));
+});
   if ($(window).width() < 1024) {
     $(".navigation .has-dropdown").on("click", function (e) {
       $(this).children(".navbar-dropdown").toggle();
@@ -93,60 +95,5 @@ AOS.init({
     $(this).parent(".btn").addClass("active");
   });
 
-  $(".portfolio-single-slider").slick({
-    infinite: true,
-    arrows: false,
-    autoplay: true,
-    autoplaySpeed: 2000,
-  });
-
-  $(".clients-logo").slick({
-    infinite: true,
-    arrows: false,
-    autoplay: true,
-    autoplaySpeed: 2000,
-  });
-
-  $(".testimonial-wrap").slick({
-    slidesToShow: 1,
-    slidesToScroll: 1,
-    infinite: true,
-    dots: false,
-    arrows: false,
-    autoplay: true,
-    autoplaySpeed: 6000,
-    responsive: [
-      {
-        breakpoint: 1024,
-        settings: {
-          slidesToShow: 1,
-          slidesToScroll: 1,
-          infinite: true,
-          dots: true,
-        },
-      },
-      {
-        breakpoint: 900,
-        settings: {
-          slidesToShow: 1,
-          slidesToScroll: 1,
-        },
-      },
-      {
-        breakpoint: 600,
-        settings: {
-          slidesToShow: 1,
-          slidesToScroll: 1,
-        },
-      },
-      {
-        breakpoint: 480,
-        settings: {
-          slidesToShow: 1,
-          slidesToScroll: 1,
-        },
-      },
-    ],
-  });
 
 })(jQuery);

@@ -4,7 +4,15 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', appName())</title>
+    <meta
+        name="description"
+        content="@yield('meta_description', 'Explore energy production, emissions, air quality, and environmental research in Utah’s Uintah Basin through BasinEnergy.')"
+    >
+
+    <link rel="canonical" href="{{ url()->current() }}">
+
     <meta name="csrf-token" content="{{ csrf_token() }}">
+
     <link rel="stylesheet" href="{{ asset('frontend/plugins/bulma/bulma.min.css') }}">
     <link rel="stylesheet" href="{{ asset('frontend/plugins/themify/css/themify-icons.css') }}">
     <link rel="stylesheet" href="{{ asset('frontend/plugins/fontawesome/css/all.css') }}">
@@ -14,9 +22,14 @@
     <link rel="stylesheet" href="{{ asset('frontend/css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('frontend/css/popup-auth.css') }}">
     @stack('after-styles')
+
 </head>
 
 <body>
+    <a href="#main-content" class="skip-link">
+        Skip to main content
+    </a>
+
     @php
         $needsAuthPopup =auth()->guest() || (auth()->check() && method_exists(auth()->user(), 'hasVerifiedEmail') && !auth()->user()->hasVerifiedEmail());
     @endphp
@@ -53,10 +66,11 @@
 
     @include('includes.partials.announcements')
 
-    @yield('content')
+    <main id="main-content" tabindex="-1">
+        @yield('content')
+    </main>
 
     @include('frontend.website.footer')
-
     <script src="{{ asset('frontend/plugins/jquery/jquery.js') }}"></script>
     <script src="{{ asset('frontend/plugins/slick-carousel/slick/slick.min.js') }}"></script>
     <script src="{{ asset('frontend/plugins/aos/aos.js') }}"></script>

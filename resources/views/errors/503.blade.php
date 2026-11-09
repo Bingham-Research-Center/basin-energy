@@ -1,5 +1,5 @@
-@extends('errors::minimal')
+@extends('errors.layout')
 
-@section('title', __('Service Unavailable'))
+@section('title', 'Service Temporarily Unavailable')
 @section('code', '503')
-@section('message', __($exception->getMessage() ?: 'Service Unavailable'))
+@section('message', 'BasinEnergy is temporarily unavailable due to maintenance or a technical issue. Please try again in a few minutes.')
