@@ -93,6 +93,10 @@ Route::group(['as' => 'user.', 'middleware' => ['auth', 'password.expires', conf
         Route::get('realtime/ozone/json', [DataController::class, 'realtimeOzoneJson'])
             ->name('realtime.ozone.json');
 
+        /* Other Monitoring Sites */
+        Route::get('realtime/other/{site}', [DataController::class, 'otherMonitoringSite'])
+            ->name('realtime.other');
+
         Route::get('realtime/logger/{site}', [DataController::class, 'campbellLogger'])
             ->name('realtime.logger');
 

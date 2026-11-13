@@ -587,6 +587,18 @@ class DataController extends Controller
     |
     */
 
+    public function otherMonitoringSite(string $site)
+    {
+        $siteConfig = config("services.other_monitoring_sites.{$site}");
+
+        abort_unless(is_array($siteConfig), 404);
+
+        return view('frontend.user.data.other_monitoring_site', [
+            'siteKey' => $site,
+            'site' => $siteConfig,
+        ]);
+    }
+
     public function campbellLogger(string $site)
     {
         $siteConfig = $this->campbellSiteConfig($site);
