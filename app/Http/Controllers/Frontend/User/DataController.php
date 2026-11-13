@@ -673,6 +673,112 @@ class DataController extends Controller
         }
     }
 
+    public function campbellLoggerHistoryJson(string $site)
+    {
+        $siteConfig = $this->campbellSiteConfig($site);
+
+        if (empty($siteConfig['url'])) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Logger URL is not configured.',
+                'data' => [],
+            ], 422);
+        }
+
+        try {
+            $data = Cache::remember(
+                "campbell_logger_history_{$site}",
+                now()->addMinutes(2),
+                function () use ($siteConfig) {
+                    $query = $siteConfig['query'] ?? [];
+                    $query['mode'] = 'most-recent';
+                    $query['p1'] = 24;
+
+                    $response = Http::timeout($siteConfig['timeout'] ?? 20)
+                        ->connectTimeout(6)
+                        ->retry(1, 300)
+                        ->get($siteConfig['url'], $query);
+
+                    if (! $response->ok()) {
+                        throw new \RuntimeException('Logger returned HTTP '.$response->status());
+                    }
+
+                    $dom = new \DOMDocument();
+                    $previous = libxml_use_internal_errors(true);
+
+                    try {
+                        if (! $dom->loadHTML($response->body())) {
+                            throw new \RuntimeException('Unable to parse logger response.');
+                        }
+
+                        $xpath = new \DOMXPath($dom);
+                        $headers = [];
+
+                        foreach ($xpath->query('//table//tr[1]/th') as $th) {
+                            $headers[] = trim($th->textContent);
+                        }
+
+                        $ozoneField = in_array('O3_ppb_1h', $headers, true)
+                            ? 'O3_ppb_1h'
+                            : 'O3_Hr';
+
+                        $timeIndex = array_search('TimeStamp', $headers, true);
+                        $ozoneIndex = array_search($ozoneField, $headers, true);
+
+                        if ($timeIndex === false || $ozoneIndex === false) {
+                            throw new \RuntimeException('Ozone or timestamp column missing.');
+                        }
+
+                        $points = [];
+
+                        foreach ($xpath->query('//table//tr[position()>1]') as $row) {
+                            $cells = $xpath->query('./td', $row);
+
+                            if ($cells->length <= max($timeIndex, $ozoneIndex)) {
+                                continue;
+                            }
+
+                            $timestamp = trim($cells->item($timeIndex)->textContent);
+                            $value = trim($cells->item($ozoneIndex)->textContent);
+
+                            if ($timestamp === '' || ! is_numeric($value)) {
+                                continue;
+                            }
+
+                            $points[] = [
+                                'x' => $timestamp,
+                                'y' => (float) $value,
+                            ];
+                        }
+
+                        usort($points, fn ($a, $b) => strcmp($a['x'], $b['x']));
+
+                        return $points;
+                    } finally {
+                        libxml_clear_errors();
+                        libxml_use_internal_errors($previous);
+                    }
+                }
+            );
+
+            return response()->json([
+                'ok' => true,
+                'station' => $siteConfig['name'] ?? Str::headline($site),
+                'site' => $site,
+                'unit' => 'ppb',
+                'data' => $data,
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'ok' => false,
+                'message' => 'Unable to retrieve historical ozone observations.',
+                'data' => [],
+            ], 502);
+        }
+    }
+
     /*
     |--------------------------------------------------------------------------
     | Backward-Compatible Horsepool Methods

@@ -119,6 +119,8 @@ return [
         'horsepool' => [
             'name' => 'Horsepool',
             'source' => 'Campbell CR1000 Logger',
+            'latitude' => 40.144,
+            'longitude' => -109.467,
             'url' => env('CAMPBELL_HORSEPOOL_URL'),
             'query' => [
                 'command' => 'DataQuery',

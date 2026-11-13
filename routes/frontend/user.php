@@ -99,6 +99,9 @@ Route::group(['as' => 'user.', 'middleware' => ['auth', 'password.expires', conf
         Route::get('realtime/logger/{site}/json', [DataController::class, 'campbellLoggerJson'])
             ->name('realtime.logger.json');
 
+        Route::get('realtime/logger/{site}/history/json', [DataController::class, 'campbellLoggerHistoryJson'])
+            ->name('realtime.logger.history.json');
+
         /* Backward-compatible old Horsepool URL */
         Route::get('realtime/horsepool', function () {
             return redirect()->route('frontend.user.data.realtime.logger', ['site' => 'horsepool']);
