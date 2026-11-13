@@ -99,6 +99,41 @@ return [
     ],
 
 
+    'other_monitoring_sites' => [
+        'dinosaur-nm' => [
+            'name' => 'Dinosaur NM',
+            'source' => null,
+            'latitude' => null,
+            'longitude' => null,
+            'elevation_ft' => null,
+            'status' => 'pending',
+        ],
+        'little-mountain' => [
+            'name' => 'Little Mountain',
+            'source' => null,
+            'latitude' => null,
+            'longitude' => null,
+            'elevation_ft' => null,
+            'status' => 'pending',
+        ],
+        'ouray' => [
+            'name' => 'Ouray',
+            'source' => null,
+            'latitude' => null,
+            'longitude' => null,
+            'elevation_ft' => null,
+            'status' => 'pending',
+        ],
+        'whiterocks' => [
+            'name' => 'Whiterocks',
+            'source' => null,
+            'latitude' => null,
+            'longitude' => null,
+            'elevation_ft' => null,
+            'status' => 'pending',
+        ],
+    ],
+
     'campbell_sites' => [
         'seven-sisters' => [
             'name' => 'Seven Sisters',

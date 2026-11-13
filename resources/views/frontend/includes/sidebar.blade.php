@@ -176,33 +176,15 @@
 
                     <li class="c-sidebar-nav-title">@lang('Other Sites')</li>
 
-                    <li class="c-sidebar-nav-item">
-                        <x-utils.link
-                            href="#"
-                            class="c-sidebar-nav-link"
-                            :text="__('Dinosaur NM')" />
-                    </li>
-
-                    <li class="c-sidebar-nav-item">
-                        <x-utils.link
-                            href="#"
-                            class="c-sidebar-nav-link"
-                            :text="__('Little Mountain')" />
-                    </li>
-
-                    <li class="c-sidebar-nav-item">
-                        <x-utils.link
-                            href="#"
-                            class="c-sidebar-nav-link"
-                            :text="__('Ouray')" />
-                    </li>
-
-                    <li class="c-sidebar-nav-item">
-                        <x-utils.link
-                            href="#"
-                            class="c-sidebar-nav-link"
-                            :text="__('Whiterocks')" />
-                    </li>
+                    @foreach(config('services.other_monitoring_sites', []) as $key => $site)
+                        <li class="c-sidebar-nav-item">
+                            <x-utils.link
+                                :href="route('frontend.user.data.realtime.other', ['site' => $key])"
+                                class="c-sidebar-nav-link"
+                                :text="$site['name'] ?? Str::headline($key)"
+                                :active="activeClass(Route::is('frontend.user.data.realtime.other') && request()->route('site') === $key, 'c-active')" />
+                        </li>
+                    @endforeach
                 </ul>
             </li>
 
