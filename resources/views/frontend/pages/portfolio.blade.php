@@ -98,3 +98,39 @@
 	</div>
 </section>
 @endsection
+@push('after-styles')
+<link rel="stylesheet" href="{{ asset('frontend/plugins/magnific-popup/dist/magnific-popup.css') }}">
+@endpush
+@push('after-scripts')
+<script src="{{ asset('frontend/plugins/shuffle/shuffle.min.js') }}"></script>
+<script src="{{ asset('frontend/plugins/magnific-popup/dist/jquery.magnific-popup.min.js') }}"></script>
+
+<script>
+    $(function () {
+        var shuffleElement = document.querySelector(".shuffle-wrapper");
+
+        if (shuffleElement && window.Shuffle) {
+            var myShuffle = new Shuffle(shuffleElement, {
+                itemSelector: ".shuffle-item",
+                buffer: 1
+            });
+
+            $('input[name="shuffle-filter"]').on("change", function (evt) {
+                var input = evt.currentTarget;
+
+                if (input.checked) {
+                    myShuffle.filter(input.value);
+                }
+            });
+        }
+$(".portfolio-gallery").each(function () {
+    $(this).find(".popup-gallery").magnificPopup({
+        type: "image",
+        gallery: {
+            enabled: true
+        }
+    });
+});
+    });
+</script>
+@endpush

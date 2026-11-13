@@ -16,8 +16,6 @@ AOS.init({
 (function ($) {
   "use strict";
 
-  $(".videoplay").modalVideo();
-
   $(window).scroll(function () {
     var $this = $(this),
       st = $this.scrollTop(),
@@ -97,63 +95,5 @@ $(".navbar-burger").on("click", function () {
     $(this).parent(".btn").addClass("active");
   });
 
-
-  $(".portfolio-gallery").each(function () {
-    $(this)
-      .find(".popup-gallery")
-      .magnificPopup({
-        type: "image",
-        gallery: {
-          enabled: true,
-        },
-      });
-  });
-
-  var map;
-
-  function initialize() {
-    var mapOptions = {
-      zoom: 13,
-      center: new google.maps.LatLng(50.97797382271958, -114.107718560791),
-      // styles: style_array_here
-    };
-    map = new google.maps.Map(
-      document.getElementById("map-canvas"),
-      mapOptions
-    );
-  }
-
-  var google_map_canvas = $("#map-canvas");
-
-  if (google_map_canvas.length) {
-    google.maps.event.addDomListener(window, "load", initialize);
-  }
-
-  // Counter
-
-  $(".counter-stat").counterUp({
-    delay: 10,
-    time: 1000,
-  });
-
-  // Shuffle js filter and masonry
-  var Shuffle = window.Shuffle;
-  var jQuery = window.jQuery;
-
-var shuffleElement = document.querySelector(".shuffle-wrapper");
-
-if (shuffleElement) {
-  var myShuffle = new Shuffle(shuffleElement, {
-    itemSelector: ".shuffle-item",
-    buffer: 1,
-  });
-
-  jQuery('input[name="shuffle-filter"]').on("change", function (evt) {
-    var input = evt.currentTarget;
-    if (input.checked) {
-      myShuffle.filter(input.value);
-    }
-  });
-}
 
 })(jQuery);
