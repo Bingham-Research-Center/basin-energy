@@ -107,6 +107,7 @@ class GoogleAuthenticationTest extends TestCase
         $this->assertSame('google-new-123', $user->provider_id);
         $this->assertNotNull($user->email_verified_at);
         $this->assertNull($user->password);
+        $this->assertSame(0, $user->passwordHistories()->count());
         $this->assertFalse($user->roles()->exists());
         $this->assertAuthenticatedAs($user);
     }
