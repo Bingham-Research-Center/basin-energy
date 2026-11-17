@@ -182,4 +182,96 @@ class GoogleAuthenticationTest extends TestCase
             ->assertRedirect(route('frontend.auth.login'));
         $this->assertGuest();
     }
+
+    public function test_google_popup_status_is_incomplete_without_a_popup_flow(): void
+    {
+        $this->enableGoogle();
+        $this->get('/login/google/popup/status')
+            ->assertOk()->assertJson(['complete' => false, 'redirect' => null]);
+    }
+
+    public function test_google_popup_status_requires_a_completed_authenticated_session(): void
+    {
+        $this->enableGoogle();
+        $user = User::factory()->user()->create([
+            'provider' => 'google',
+            'provider_id' => 'popup-existing',
+            'email' => 'popup-existing@example.test',
+        ]);
+        $this->withSession(['auth.google.popup_started_at' => time()])
+            ->get('/login/google/popup/status')
+            ->assertOk()->assertJson(['complete' => false]);
+
+        $this->actingAs($user)->withSession([
+            'auth.google.popup_started_at' => time(),
+            'auth.2fa_passed' => true,
+        ])->get('/login/google/popup/status')
+            ->assertOk()->assertJson(['complete' => true, 'redirect' => route(homeRoute())]);
+    }
+
+    public function test_popup_callback_returns_completion_view_after_google_login(): void
+    {
+        $this->enableGoogle();
+        $user = User::factory()->user()->create([
+            'provider' => 'google',
+            'provider_id' => 'popup-login-id',
+            'email' => 'popup-login@example.test',
+        ]);
+        $this->mockGoogleCallback($this->googleProfile('popup-login-id', $user->email));
+
+        $this->withSession(['auth.google.popup_started_at' => time()])
+            ->get('/login/google/callback')
+            ->assertOk()->assertSee('basinenergy.google.oauth.result');
+
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_first_time_google_popup_signup_stays_in_popup_until_terms_are_accepted(): void
+    {
+        $this->enableGoogle();
+        $this->mockGoogleCallback($this->googleProfile('popup-new-id', 'popup-new@example.test'));
+
+        $this->withSession(['auth.google.popup_started_at' => time()])
+            ->get('/login/google/callback')
+            ->assertRedirect(route('frontend.auth.social.signup'));
+        $this->assertGuest();
+        $this->assertDatabaseMissing('users', ['email' => 'popup-new@example.test']);
+
+        $this->post('/signup/google/complete', ['terms' => '1'])
+            ->assertOk()
+            ->assertSee('basinenergy.google.oauth.result');
+
+        $this->assertAuthenticated();
+        $this->assertDatabaseHas('users', [
+            'provider' => 'google',
+            'provider_id' => 'popup-new-id',
+            'email' => 'popup-new@example.test',
+        ]);
+    }
+
+    public function test_google_popup_status_rejects_expired_popup_marker(): void
+    {
+        $this->enableGoogle();
+        $user = User::factory()->user()->create([
+            'provider' => 'google',
+            'provider_id' => 'stale-flow',
+        ]);
+        $this->actingAs($user)->withSession([
+            'auth.google.popup_started_at' => time() - 3600,
+            'auth.2fa_passed' => true,
+        ])->get('/login/google/popup/status')
+            ->assertOk()->assertJson(['complete' => false]);
+    }
+
+    public function test_popup_status_route_works_for_authenticated_users_and_requires_google_enabled(): void
+    {
+        $this->enableGoogle();
+        $this->actingAs(User::factory()->user()->create())
+            ->get('/login/google/popup/status')
+            ->assertOk();
+
+        config(['services.google.active' => false]);
+        $this->get('/login/google/popup/status')->assertNotFound();
+    }
+
 }

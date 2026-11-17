@@ -65,6 +65,19 @@ class TwoFactorChallengeController
             ], 200);
         }
 
+        // The Google OAuth popup stays open through 2FA; return success
+        // only after the second factor was actually verified.
+        $popupStarted = $request->session()->get('auth.google.popup_started_at');
+        if (is_numeric($popupStarted)
+            && time() >= (int) $popupStarted
+            && time() - (int) $popupStarted <= 900) {
+            return response()->view('frontend.auth.social-google-popup-result', [
+                'success' => true,
+                'message' => __('Two-factor authentication confirmed.'),
+                'redirectUrl' => route(homeRoute()),
+            ])->header('Cache-Control', 'no-store, private');
+        }
+
         return redirect()->intended(route(homeRoute()))
             ->withFlashSuccess(__('Two-factor authentication confirmed.'));
     }
