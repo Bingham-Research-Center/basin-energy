@@ -11,6 +11,8 @@
     var runningCheck = false;
     var panel = null;
     var messageNode = null;
+    var errorNode = null;
+    var feedbackTimer = null;
     var MAX_WAIT_MS = 15 * 60 * 1000;
 
     function waitingPanel() {
@@ -19,23 +21,52 @@
         panel.className = 'google-oauth-waiting';
         panel.setAttribute('role', 'status');
         panel.setAttribute('aria-live', 'polite');
+        panel.setAttribute('aria-atomic', 'true');
         panel.hidden = true;
-        panel.innerHTML = '<strong>Waiting for Google sign-in</strong>' +
-            '<p class="google-oauth-message"></p>' +
-            '<button type="button" class="google-oauth-cancel">Cancel</button>';
+
+        // Compact, wordless spinner while authorizing. Instructions remain
+        // available to screen readers without interrupting the main page.
+        panel.innerHTML =
+            '<span class="google-oauth-indicator" aria-hidden="true"></span>' +
+            '<span class="google-oauth-message google-oauth-sr-only"></span>' +
+            '<span class="google-oauth-error" aria-hidden="true"></span>' +
+            '<button type="button" class="google-oauth-cancel" ' +
+                'aria-label="Cancel Google sign-in" title="Cancel Google sign-in">' +
+                '<span aria-hidden="true">&times;</span></button>';
+
         document.body.appendChild(panel);
         messageNode = panel.querySelector('.google-oauth-message');
+        errorNode = panel.querySelector('.google-oauth-error');
         panel.querySelector('.google-oauth-cancel').addEventListener('click', function () {
+            closeChild();
             stop();
-            update('Sign-in cancelled. You can try again.', true);
+            update('', false);
         });
         return panel;
     }
 
-    function update(message, visible) {
+    function update(message, visible, isError) {
         waitingPanel();
-        messageNode.textContent = message;
+        if (feedbackTimer) {
+            clearTimeout(feedbackTimer);
+            feedbackTimer = null;
+        }
+        panel.classList.toggle('is-error', Boolean(isError));
+        messageNode.textContent = message || '';
+        errorNode.textContent = isError ? (message || 'Google sign-in was not completed.') : '';
+        panel.querySelector('.google-oauth-cancel').setAttribute(
+            'aria-label', isError ? 'Dismiss Google sign-in notice' : 'Cancel Google sign-in'
+        );
         panel.hidden = !visible;
+
+        // Only genuine failures show brief, compact feedback. Never show
+        // instructional copy during Google's authorization process.
+        if (visible && isError) {
+            feedbackTimer = setTimeout(function () {
+                panel.hidden = true;
+                feedbackTimer = null;
+            }, 6500);
+        }
     }
 
     function stop() {
@@ -67,7 +98,7 @@
             if (!response.ok) {
                 if (response.status === 404 || response.status === 401 || response.status === 403) {
                     stop();
-                    update('Unable to verify Google sign-in. Please try again.', true);
+                    update('Unable to verify Google sign-in. Please try again.', true, true);
                 }
                 return;
             }
@@ -84,16 +115,16 @@
             }
             if (current.window.closed) {
                 stop();
-                update('Google window closed before sign-in was completed. Try again.', true);
+                update('Google window closed before sign-in was completed. Try again.', true, true);
             } else if (Date.now() > timeoutAt) {
                 closeChild();
                 stop();
-                update('Google sign-in timed out. Please try again.', true);
+                update('Google sign-in timed out. Please try again.', true, true);
             }
         } catch (e) {
             if (current === active && (current.window.closed || Date.now() > timeoutAt)) {
                 stop();
-                update('Could not confirm Google sign-in. Please try again.', true);
+                update('Could not confirm Google sign-in. Please try again.', true, true);
             }
         } finally {
             runningCheck = false;
@@ -132,7 +163,7 @@
             status: link.getAttribute('data-google-oauth-status')
         };
         timeoutAt = Date.now() + MAX_WAIT_MS;
-        update('Approve access in the Google window. This page will continue automatically.', true);
+        update('Waiting for Google sign-in', true);
         try { child.focus(); } catch (e) {}
         timer = window.setInterval(check, 1200);
         // Don't poll immediately: the popup needs to establish its server-side marker.
@@ -146,7 +177,7 @@
             check();
         } else {
             stop();
-            update(event.data.message || 'Google sign-in was not completed.', true);
+            update(event.data.message || 'Google sign-in was not completed.', true, true);
         }
     });
 }());
