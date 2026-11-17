@@ -21,6 +21,7 @@
     <link rel="stylesheet" href="{{ asset('frontend/plugins/slick-carousel/slick/slick-theme.css') }}">
     <link rel="stylesheet" href="{{ asset('frontend/css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('frontend/css/popup-auth.css') }}">
+    <link rel="stylesheet" href="{{ asset('frontend/css/google-auth.css') }}">
     @stack('after-styles')
 
 </head>

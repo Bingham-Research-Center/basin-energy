@@ -76,27 +76,43 @@ class UserService extends BaseService
      */
     public function registerProvider($info, $provider): User
     {
-        $user = $this->model::where('provider_id', $info->id)->first();
+        $providerId = (string) $info->id;
+        $email = mb_strtolower(trim((string) $info->email));
 
-        if (! $user) {
-            DB::beginTransaction();
+        // Provider identifiers are not globally unique across OAuth services.
+        $user = $this->model::where('provider', $provider)
+            ->where('provider_id', $providerId)
+            ->first();
 
-            try {
-                $user = $this->createUser([
-                    'name' => $info->name,
-                    'email' => $info->email,
-                    'provider' => $provider,
-                    'provider_id' => $info->id,
-                    'email_verified_at' => now(),
-                ]);
-            } catch (Exception $e) {
-                DB::rollBack();
+        if ($user) {
+            return $user;
+        }
 
-                throw new GeneralException(__('There was a problem connecting to :provider', ['provider' => $provider]));
+        DB::beginTransaction();
+
+        try {
+            // Never silently link an OAuth identity to a local account by
+            // email: existing owners must authenticate normally first.
+            if ($this->model::where('email', $email)->exists()) {
+                throw new GeneralException(__('This email is already registered. Please sign in using your existing account.'));
             }
 
-            DB::commit();
+            $user = $this->createUser([
+                'name' => $info->name,
+                'email' => $email,
+                'provider' => $provider,
+                'provider_id' => $providerId,
+                'email_verified_at' => now(),
+            ]);
+        } catch (GeneralException $e) {
+            DB::rollBack();
+            throw $e;
+        } catch (Exception $e) {
+            DB::rollBack();
+            throw new GeneralException(__('There was a problem connecting to :provider', ['provider' => $provider]));
         }
+
+        DB::commit();
 
         return $user;
     }

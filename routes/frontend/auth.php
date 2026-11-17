@@ -38,9 +38,20 @@ Route::group(['as' => 'auth.'], function () {
         Route::get('password/reset/{token}', [ResetPasswordController::class, 'showResetForm'])->name('password.reset');
         Route::post('password/reset', [ResetPasswordController::class, 'reset'])->name('password.update');
 
-        // Socialite Routes
-        Route::get('login/{provider}', [SocialController::class, 'redirect'])->name('social.login');
-        Route::get('login/{provider}/callback', [SocialController::class, 'callback']);
+        // Google OAuth uses a stateful browser redirect for both login and signup.
+        Route::get('login/{provider}', [SocialController::class, 'redirect'])
+            ->where('provider', 'google')
+            ->name('social.login');
+        Route::get('login/{provider}/callback', [SocialController::class, 'callback'])
+            ->where('provider', 'google')
+            ->name('social.callback');
+
+        // New Google users must accept the site's Terms before an account is created.
+        Route::get('signup/google/complete', [SocialController::class, 'showSignup'])
+            ->name('social.signup');
+        Route::post('signup/google/complete', [SocialController::class, 'completeSignup'])
+            ->middleware('throttle:10,1')
+            ->name('social.signup.store');
     });
 
     Route::group(['middleware' => 'auth'], function () {

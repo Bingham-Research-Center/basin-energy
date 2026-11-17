@@ -73,6 +73,8 @@
          <button type="submit"class="auth-submit-btn" data-loading-text="Creating account...">Register</button>
     </form>
 
+    @include('frontend.auth.includes.social', ['context' => 'signup'])
+
     <div class="bottom-link">
         @lang('Already have an account?')
         <a href="#" id="login-link">@lang('Login')</a>
