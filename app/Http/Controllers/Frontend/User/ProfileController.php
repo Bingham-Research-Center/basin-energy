@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Frontend\User;
 
 use App\Domains\Auth\Services\UserService;
+use App\Domains\Auth\Support\AccountNavigation;
 use App\Http\Requests\Frontend\User\UpdateProfileRequest;
 
 /**
@@ -20,9 +21,18 @@ class ProfileController
         $userService->updateProfile($request->user(), $request->validated());
 
         if (session()->has('resent')) {
-            return redirect()->route('frontend.auth.verification.notice')->withFlashInfo(__('You must confirm your new e-mail address before you can go any further.'));
+            if ($request->user()->isAdmin()) {
+                return redirect()->to(AccountNavigation::url($request->user(), 'information'))
+                    ->withFlashInfo(__('You must confirm your new e-mail address before you can go any further.'));
+            }
+
+            return redirect()->route('frontend.auth.verification.notice')
+                ->withFlashInfo(__('You must confirm your new e-mail address before you can go any further.'));
         }
 
-        return redirect()->route('frontend.user.account', ['#information'])->withFlashSuccess(__('Profile successfully updated.'));
+        // Legacy admin forms may still submit to the frontend endpoint.
+        // Never switch an Administrator into the User account interface.
+        return redirect()->to(AccountNavigation::url($request->user(), 'information'))
+            ->withFlashSuccess(__('Profile successfully updated.'));
     }
 }

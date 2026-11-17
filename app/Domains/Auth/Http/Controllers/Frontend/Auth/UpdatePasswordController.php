@@ -4,6 +4,7 @@ namespace App\Domains\Auth\Http\Controllers\Frontend\Auth;
 
 use App\Domains\Auth\Http\Requests\Frontend\Auth\UpdatePasswordRequest;
 use App\Domains\Auth\Services\UserService;
+use App\Domains\Auth\Support\AccountNavigation;
 
 /**
  * Class UpdatePasswordController.
@@ -35,6 +36,7 @@ class UpdatePasswordController
     {
         $this->userService->updatePassword($request->user(), $request->validated());
 
-        return redirect()->route('frontend.user.account', ['#password'])->withFlashSuccess(__('Password successfully updated.'));
+        return redirect()->to(AccountNavigation::url($request->user(), 'password'))
+            ->withFlashSuccess(__('Password successfully updated.'));
     }
 }

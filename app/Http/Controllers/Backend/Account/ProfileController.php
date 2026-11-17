@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Backend\Account;
 
 use App\Http\Controllers\Controller;
 use App\Domains\Auth\Services\UserService;
+use App\Domains\Auth\Support\AccountNavigation;
 use App\Http\Requests\Frontend\User\UpdateProfileRequest;
 
 class ProfileController extends Controller
@@ -21,13 +22,13 @@ class ProfileController extends Controller
 
             // OPTION B (safe fallback):
             return redirect()
-                ->route('admin.account.index')
+                ->to(AccountNavigation::url($request->user(), 'information'))
                 ->withFlashInfo(__('You must confirm your new e-mail address before you can go any further.'));
         }
 
         // Redirect to the backend account page, and keep the tab anchor
         return redirect()
-            ->to(route('admin.account.index') . '#information')
+            ->to(AccountNavigation::url($request->user(), 'information'))
             ->withFlashSuccess(__('Profile successfully updated.'));
     }
 }

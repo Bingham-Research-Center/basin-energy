@@ -2,6 +2,7 @@
 
 namespace App\Domains\Auth\Http\Controllers\Frontend\Auth;
 
+use App\Domains\Auth\Support\AccountNavigation;
 use Illuminate\Http\Request;
 
 /**
@@ -19,7 +20,7 @@ class TwoFactorAuthenticationController
     {
         $secret = $request->user()->createTwoFactorAuth();
 
-        return view('frontend.user.account.tabs.two-factor-authentication.enable')
+        return view(AccountNavigation::twoFactorView($request->user(), 'enable'))
             ->withQrCode($secret->toQr())
             ->withSecret($secret->toString());
     }
@@ -32,7 +33,7 @@ class TwoFactorAuthenticationController
      */
     public function show(Request $request)
     {
-        return view('frontend.user.account.tabs.two-factor-authentication.recovery')
+        return view(AccountNavigation::twoFactorView($request->user(), 'recovery'))
             ->withRecoveryCodes($request->user()->getRecoveryCodes());
     }
 

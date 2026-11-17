@@ -5,7 +5,9 @@ use App\Http\Controllers\Backend\Account\ProfileController;
 
 Route::group(['prefix' => 'account', 'as' => 'account.', 'middleware' => [
         config('boilerplate.access.middleware.confirm'),
-        'role:' . config('boilerplate.access.role.admin'),
+        // The enclosing "admin" middleware in routes/web.php already verifies
+        // the account type. Limited Administrator roles must be able to edit
+        // their own profile too; the super-admin role is not required.
         'password.expires'],
 ], function () {
     Route::get('/', [AccountController::class, 'index'])->name('index');

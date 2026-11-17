@@ -4,6 +4,7 @@ namespace App\Domains\Auth\Http\Controllers\Frontend\Auth;
 
 use App\Domains\Auth\Http\Requests\Frontend\Auth\UpdatePasswordRequest;
 use App\Domains\Auth\Services\UserService;
+use App\Domains\Auth\Support\AccountNavigation;
 
 /**
  * Class PasswordExpiredController.
@@ -31,9 +32,11 @@ class PasswordExpiredController
     {
         abort_unless(config('boilerplate.access.user.password_expires_days'), 404);
 
-        $userService->updatePassword($request->user(), $request->only('old_password', 'password'), true);
+        // Validate and verify the same current_password field used by the form.
+        // Omitting it previously skipped UserService's current-password check.
+        $userService->updatePassword($request->user(), $request->validated(), true);
 
-        return redirect()->route('frontend.user.account')
+        return redirect()->to(AccountNavigation::url($request->user(), 'password'))
             ->withFlashSuccess(__('Password successfully updated.'));
     }
 }

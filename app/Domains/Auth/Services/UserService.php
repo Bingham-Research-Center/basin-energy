@@ -207,16 +207,25 @@ class UserService extends BaseService
      */
     public function updateProfile(User $user, array $data = []): User
     {
-        $user->name = $data['name'] ?? null;
+        $user->name = $data['name'];
+        $newEmail = $data['email'] ?? $user->email;
+        $emailChanged = $user->canChangeEmail() && $user->email !== $newEmail;
 
-        if ($user->canChangeEmail() && $user->email !== $data['email']) {
-            $user->email = $data['email'];
+        if ($emailChanged) {
+            $user->email = $newEmail;
             $user->email_verified_at = null;
+        }
+
+        // Persist before generating the verification URL and sending the mail.
+        // Only name/email are modified here; type, roles and permissions stay intact.
+        $user->save();
+
+        if ($emailChanged) {
             $user->sendEmailVerificationNotification();
             session()->flash('resent', true);
         }
 
-        return tap($user)->save();
+        return $user;
     }
 
     /**

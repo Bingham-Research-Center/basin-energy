@@ -3,6 +3,8 @@
 namespace App\Domains\Auth\Http\Controllers\Frontend\Auth;
 
 use App\Domains\Auth\Http\Requests\Frontend\Auth\DisableTwoFactorAuthenticationRequest;
+use App\Domains\Auth\Support\AccountNavigation;
+use Illuminate\Http\Request;
 
 /**
  * Class DisableTwoFactorAuthenticationController.
@@ -12,9 +14,9 @@ class DisableTwoFactorAuthenticationController
     /**
      * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\View\View
      */
-    public function show()
+    public function show(Request $request)
     {
-        return view('frontend.user.account.tabs.two-factor-authentication.disable');
+        return view(AccountNavigation::twoFactorView($request->user(), 'disable'));
     }
 
     /**
@@ -26,7 +28,7 @@ class DisableTwoFactorAuthenticationController
         $request->user()->disableTwoFactorAuth();
         $request->session()->forget('auth.2fa_passed');
 
-        return redirect()->to(route('frontend.user.account') . '#two-factor-authentication')
+        return redirect()->to(AccountNavigation::url($request->user(), 'two-factor-authentication'))
             ->withFlashSuccess(__('Two Factor Authentication Successfully Disabled'));
     }
 }

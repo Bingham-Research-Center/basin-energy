@@ -95,6 +95,10 @@
                     </li>
                 </ul>
             </li>
+        @endif
+
+        {{-- Personal account settings are for every Administrator-type account,
+             including those without the master Administrator role. --}}
             <li class="c-sidebar-nav-title">Admin</li>
 
             <li class="c-sidebar-nav-dropdown {{ activeClass(Route::is('admin.account.*'), 'c-open c-show') }}">
@@ -114,8 +118,6 @@
                     </li>
                 </ul>
             </li>
-
-        @endif
 
         @if (\App\Domains\Auth\Support\WebsiteContentPermissions::canEditAny($logged_in_user))
             <li class="c-sidebar-nav-title">Frontend</li>
