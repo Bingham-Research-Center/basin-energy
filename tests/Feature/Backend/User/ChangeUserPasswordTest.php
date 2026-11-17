@@ -179,4 +179,21 @@ class ChangeUserPasswordTest extends TestCase
         $this->assertSame($errors->get('password')[0], __('You can not set a password that you have previously used within the last 3 times.'));
         $this->assertTrue(Hash::check('OC4Nzu270N!QBVi%U%qX_02', $user->fresh()->password));
     }
+    /** @test */
+    public function changing_another_users_password_requires_a_password_and_confirmation()
+    {
+        $this->loginAsAdmin();
+        $target = User::factory()->create();
+        $previousHash = $target->password;
+
+        $this->patch("/admin/auth/user/{$target->id}/password/change", [])
+            ->assertSessionHasErrors('password');
+
+        $this->patch("/admin/auth/user/{$target->id}/password/change", [
+            'password' => 'AnewSecurePassword123!',
+        ])->assertSessionHasErrors('password');
+
+        $this->assertSame($previousHash, $target->fresh()->password);
+    }
+
 }

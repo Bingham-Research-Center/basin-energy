@@ -37,17 +37,23 @@ class SocialController
             return redirect()->route('frontend.auth.login')->withFlashDanger(__('Your account has been deactivated.'));
         }
 
-        auth()->login($user);
-
-        event(new UserLoggedIn($user));
-
         $hasTwoFactor = method_exists($user, 'hasTwoFactorEnabled') && $user->hasTwoFactorEnabled();
 
-        session(['auth.2fa_passed' => ! $hasTwoFactor]);
-
         if ($hasTwoFactor) {
+            // Match the password-login challenge flow: keep the user logged out
+            // until a valid second factor has been verified.
+            session()->put('auth.pending_2fa.user_id', $user->id);
+            session()->put('auth.pending_2fa.remember', false);
+            session()->forget('auth.2fa_passed');
+            session()->regenerate();
+
             return redirect()->route('frontend.auth.2fa.challenge');
         }
+
+        auth()->login($user);
+        session()->regenerate();
+        session()->put('auth.2fa_passed', true);
+        event(new UserLoggedIn($user));
 
         return redirect()->route(homeRoute());
     }

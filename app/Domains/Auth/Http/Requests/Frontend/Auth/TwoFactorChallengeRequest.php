@@ -35,7 +35,7 @@ class TwoFactorChallengeRequest extends FormRequest
 
             $user = User::find($userId);
 
-            if (! $user || ! $user->hasTwoFactorEnabled()) {
+            if (! $user || ! $user->isActive() || ! $user->hasTwoFactorEnabled()) {
                 $validator->errors()->add('code', __('Two-factor authentication is not available for this account.'));
                 return;
             }
