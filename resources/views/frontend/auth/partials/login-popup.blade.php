@@ -61,7 +61,7 @@
         </div>
 
         <div class="text-center mt-3">
-            @include('frontend.auth.includes.social')
+            @include('frontend.auth.includes.social', ['context' => 'login'])
         </div>
     </form>
 

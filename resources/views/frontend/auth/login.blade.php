@@ -99,7 +99,7 @@
                         </div>
 
                         <div class="has-text-centered mt-5">
-                            @include('frontend.auth.includes.social')
+                            @include('frontend.auth.includes.social', ['context' => 'login'])
                         </div>
                     </x-forms.post>
                 </div>

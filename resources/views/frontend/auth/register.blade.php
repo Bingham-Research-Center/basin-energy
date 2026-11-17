@@ -71,6 +71,10 @@
                                 </div>
                             </div><!--form-group-->
                         </x-forms.post>
+
+                        <div class="has-text-centered mt-4">
+                            @include('frontend.auth.includes.social', ['context' => 'signup'])
+                        </div>
                     </x-slot>
                 </x-frontend.card>
             </div><!--col-md-8-->
