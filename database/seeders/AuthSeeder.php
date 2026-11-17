@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Database\Seeders\Auth\PermissionRoleSeeder;
 use Database\Seeders\Auth\UserRoleSeeder;
 use Database\Seeders\Auth\DataCategorySeeder;
+use Database\Seeders\Auth\WebsiteContentPermissionSeeder;
 use Database\Seeders\Auth\UserSeeder;
 use Database\Seeders\Traits\DisableForeignKeys;
 use Database\Seeders\Traits\TruncateTable;
@@ -44,6 +45,7 @@ class AuthSeeder extends Seeder
         $this->call(UserSeeder::class);
         $this->call(PermissionRoleSeeder::class);
         $this->call(DataCategorySeeder::class);
+        $this->call(WebsiteContentPermissionSeeder::class);
         $this->call(UserRoleSeeder::class);
 
         $this->enableForeignKeys();
