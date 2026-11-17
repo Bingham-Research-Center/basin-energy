@@ -14,6 +14,14 @@ trait UserAttribute
      */
     public function setPasswordAttribute($password): void
     {
+        // OAuth-only accounts have no local password. Do not hash null:
+        // Hash::make(null) creates a real hash and implies a password exists.
+        if ($password === null) {
+            $this->attributes['password'] = null;
+
+            return;
+        }
+
         // If password was accidentally passed in already hashed, try not to double hash it
         // Note: Password Histories are logged from the \App\Domains\Auth\Observer\UserObserver class
         $this->attributes['password'] =
