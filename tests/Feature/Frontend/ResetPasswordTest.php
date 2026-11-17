@@ -145,4 +145,29 @@ class ResetPasswordTest extends TestCase
         $this->assertSame($errors->get('password')[0], __('You can not set a password that you have previously used within the last 3 times.'));
         $this->assertTrue(Hash::check(':ZqD~57}1t', $user->fresh()->password));
     }
+    /** @test */
+    public function the_password_link_request_uses_the_same_standalone_layout_as_login()
+    {
+        $this->get('/password/reset')
+            ->assertOk()
+            ->assertSee('frontend/css/auth-pages.css')
+            ->assertSee('class="section auth-page"', false)
+            ->assertSee('class="auth-card"', false)
+            ->assertSee('Send Password Reset Link')
+            ->assertSee('Back to Login');
+    }
+
+    /** @test */
+    public function the_token_reset_form_uses_the_standalone_layout_and_preserves_the_reset_token()
+    {
+        $this->get('/password/reset/example-token?email=visitor%40example.com')
+            ->assertOk()
+            ->assertSee('class="section auth-page"', false)
+            ->assertSee('class="auth-card"', false)
+            ->assertSee('name="token" value="example-token"', false)
+            ->assertSee('visitor@example.com')
+            ->assertSee('New Password')
+            ->assertSee('Back to Login');
+    }
+
 }
