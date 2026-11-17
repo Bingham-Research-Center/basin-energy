@@ -15,7 +15,7 @@ class PasswordExpirationTest extends TestCase
     {
         config(['boilerplate.access.user.password_expires_days' => 30]);
 
-        $user = User::factory()->create();
+        $user = User::factory()->user()->create();
 
         $this->actingAs($user);
 
@@ -25,7 +25,7 @@ class PasswordExpirationTest extends TestCase
     /** @test */
     public function a_user_with_an_expired_password_cannot_access_dashboard()
     {
-        $user = User::factory()->passwordExpired()->create();
+        $user = User::factory()->user()->passwordExpired()->create();
 
         $this->actingAs($user);
 
@@ -39,7 +39,7 @@ class PasswordExpirationTest extends TestCase
     /** @test */
     public function a_user_with_an_expired_password_cannot_access_account()
     {
-        $user = User::factory()->passwordExpired()->create();
+        $user = User::factory()->user()->passwordExpired()->create();
 
         $this->actingAs($user);
 
@@ -53,7 +53,7 @@ class PasswordExpirationTest extends TestCase
     /** @test */
     public function password_expiration_update_requires_validation()
     {
-        $this->actingAs(User::factory()->create());
+        $this->actingAs(User::factory()->user()->create());
 
         $response = $this->patch('/password/expired');
 
@@ -63,17 +63,17 @@ class PasswordExpirationTest extends TestCase
     /** @test */
     public function a_user_can_update_their_expired_password()
     {
-        $user = User::factory()->passwordExpired()->create();
+        $user = User::factory()->user()->passwordExpired()->create();
 
         $this->actingAs($user);
 
         $this->get('/account')->assertRedirect('/password/expired');
 
         $response = $this->patch('/password/expired', [
-            'current_password' => '1234',
+            'current_password' => 'secret',
             'password' => 'OC4Nzu270N!QBVi%U%qX',
             'password_confirmation' => 'OC4Nzu270N!QBVi%U%qX',
-        ])->assertRedirect('/account');
+        ])->assertRedirect('/account#password');
 
         $response->assertSessionHas('flash_success', __('Password successfully updated.'));
 
