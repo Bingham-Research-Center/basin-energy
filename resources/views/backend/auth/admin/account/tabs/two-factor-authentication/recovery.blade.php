@@ -1,4 +1,4 @@
-@extends('frontend.layouts.app')
+@extends('backend.layouts.app')
 
 @section('title', __('Two Factor Recovery Codes'))
 
@@ -6,7 +6,7 @@
     <div class="container py-4">
         <div class="row justify-content-center">
             <div class="col-md-8">
-                <x-frontend.card>
+                <x-backend.card>
                     <x-slot name="header">
                         @lang('Two Factor Recovery Codes')
                     </x-slot>
@@ -46,9 +46,9 @@
                             @endforeach
                         </div><!--row-->
 
-                        <a href="{{ route('frontend.user.account', ['#two-factor-authentication']) }}" class="btn btn-sm btn-block btn-success">@lang('I have stored these codes in a safe place')</a>
+                        <a href="{{ \App\Domains\Auth\Support\AccountNavigation::url($logged_in_user, 'two-factor-authentication') }}" class="btn btn-sm btn-block btn-success">@lang('I have stored these codes in a safe place')</a>
                     </x-slot>
-                </x-frontend.card>
+                </x-backend.card>
             </div><!--col-md-8-->
         </div><!--row-->
     </div><!--container-->

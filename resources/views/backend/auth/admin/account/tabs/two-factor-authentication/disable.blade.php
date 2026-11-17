@@ -1,4 +1,4 @@
-@extends('frontend.layouts.app')
+@extends('backend.layouts.app')
 
 @section('title', __('Disable Two Factor Authentication'))
 
@@ -6,7 +6,7 @@
     <div class="container py-4">
         <div class="row justify-content-center">
             <div class="col-md-8">
-                <x-frontend.card>
+                <x-backend.card>
                     <x-slot name="header">
                         @lang('Disable Two Factor Authentication')
                     </x-slot>
@@ -26,7 +26,7 @@
                             <button class="btn btn-sm btn-block btn-danger" type="submit">@lang('Remove Two Factor Authentication')</button>
                         </x-forms.delete>
                     </x-slot>
-                </x-frontend.card>
+                </x-backend.card>
             </div><!--col-md-8-->
         </div><!--row-->
     </div><!--container-->

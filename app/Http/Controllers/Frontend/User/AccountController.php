@@ -12,6 +12,10 @@ class AccountController
      */
     public function index()
     {
+        if (auth()->user()->isAdmin()) {
+            return redirect()->route('admin.account.index');
+        }
+
         return view('frontend.user.account');
     }
 }

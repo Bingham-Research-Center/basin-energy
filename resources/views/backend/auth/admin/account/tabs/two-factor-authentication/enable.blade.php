@@ -1,4 +1,4 @@
-@extends('frontend.layouts.app')
+@extends('backend.layouts.app')
 
 @section('title', __('Enable Two Factor Authentication'))
 
@@ -6,7 +6,7 @@
     <div class="container py-4">
         <div class="row justify-content-center">
             <div class="col-md-8">
-                <x-frontend.card>
+                <x-backend.card>
                     <x-slot name="header">
                         @lang('Enable Two Factor Authentication')
                     </x-slot>
@@ -38,7 +38,7 @@
 
                         <livewire:frontend.two-factor-authentication />
                     </x-slot>
-                </x-frontend.card>
+                </x-backend.card>
             </div><!--col-md-8-->
         </div><!--row-->
     </div><!--container-->
