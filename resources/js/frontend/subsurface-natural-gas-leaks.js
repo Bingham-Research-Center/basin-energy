@@ -20,6 +20,53 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let surveyChart = null;
     let temporalChart = null;
+    let surveyRows = [];
+    let temporalRows = [];
+        const downloadCsv = (filename, rows) => {
+        if (!rows.length) {
+            showDashboardError('There are no measurements to download.');
+            return;
+        }
+
+        const columns = Object.keys(rows[0]);
+
+        const escapeCsv = (value) => {
+            if (value === null || value === undefined) {
+                return '';
+            }
+
+            const text = typeof value === 'object'
+                ? JSON.stringify(value)
+                : String(value);
+
+            // Quote fields containing commas, quotes, or line breaks.
+            return `"${text.replace(/"/g, '""')}"`;
+        };
+
+        const csv = [
+            columns.map(escapeCsv).join(','),
+            ...rows.map(row =>
+                columns.map(column => escapeCsv(row[column])).join(',')
+            ),
+        ].join('\r\n');
+
+        const blob = new Blob(
+            ['\uFEFF', csv],
+            { type: 'text/csv;charset=utf-8;' }
+        );
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+
+        link.href = url;
+        link.download = filename;
+
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        URL.revokeObjectURL(url);
+    };
 
     const getJson = async (url) => {
         const response = await fetch(url, {
@@ -182,7 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const data = await getJson(`${urls.survey}?${params.toString()}`);
-
+                surveyRows = data.rows || [];
         if (populateFilters) {
             addOptions(
                 wellTypeElement,
@@ -202,9 +249,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 row[metric] !== null &&
                 row[metric] !== undefined
             )
-            .map(row => ({
+                        .map(row => ({
                 x: Number(row.flux_distance_m),
                 y: Number(row[metric]),
+
+                // Additional information for chart tooltips.
+                wellId: row.well_id,
+                wellType: row.well_type,
+                wellStatus: row.well_status,
+                sampleDate: row.flux_sample_date,
             }))
             .filter(point =>
                 Number.isFinite(point.x) &&
@@ -220,6 +273,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const metricLabel =
             metricOption?.textContent || metric.replaceAll('_', ' ');
+                   const scaleType =
+            document.getElementById('surveyScale').value;
+
+        const isLogarithmic = scaleType === 'logarithmic';
+
+        const chartPoints = isLogarithmic
+            ? points.filter(point => point.y > 0)
+            : points;
+
+        const excludedCount = points.length - chartPoints.length;
+
+        const chartStatus = document.getElementById('surveyChartStatus');
+
+        if (chartStatus) {
+            chartStatus.textContent = isLogarithmic
+                ? `Displaying ${chartPoints.length} positive measurements. ` +
+                  `${excludedCount} zero or negative measurements excluded ` +
+                  'from the logarithmic view.'
+                : `Displaying ${points.length} measurements.`;
+        }
 
         surveyChart = new Chart(
             document.getElementById('surveyChart'),
@@ -229,7 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     datasets: [
                         {
                             label: `${metricLabel} versus distance`,
-                            data: points,
+                            data: chartPoints,
                             pointRadius: 3,
                             pointHoverRadius: 5,
                         },
@@ -247,18 +320,38 @@ document.addEventListener('DOMContentLoaded', () => {
                                 text: 'Distance from wellhead (m)',
                             },
                         },
-                        y: {
+                                                y: {
+                            type: isLogarithmic ? 'logarithmic' : 'linear',
                             title: {
                                 display: true,
                                 text: 'Flux (mg/m²/hr)',
                             },
                         },
                     },
+                    interaction: {
+                        mode: 'nearest',
+                        intersect: true,
+                    },
                     plugins: {
                         tooltip: {
+                            mode: 'nearest',
+                            intersect: true,
                             callbacks: {
                                 label(context) {
+                                    const point = context.raw;
+
                                     return [
+                                        `Well ID: ${point.wellId ?? 'Not specified'}`,
+                                        `Well type: ${point.wellType ?? 'Not specified'}`,
+                                        `Well status: ${point.wellStatus ?? 'Not specified'}`,
+                                        `Sampling date: ${point.sampleDate
+    ? new Date(point.sampleDate).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        timeZone: 'UTC',
+    })
+    : 'Not specified'}`,
                                         `Distance: ${context.parsed.x.toLocaleString()} m`,
                                         `Flux: ${context.parsed.y.toLocaleString()} mg/m²/hr`,
                                     ];
@@ -285,10 +378,25 @@ document.addEventListener('DOMContentLoaded', () => {
             aggregation:
                 document.getElementById('temporalAggregation').value,
         });
+               const startDate = document.getElementById('temporalStart').value;
+        const endDate = document.getElementById('temporalEnd').value;
+
+        if (startDate && endDate && startDate > endDate) {
+            throw new Error('Start date must be before or equal to end date.');
+        }
+
+        if (startDate) {
+            params.set('start', `${startDate} 00:00:00`);
+        }
+
+        if (endDate) {
+            params.set('end', `${endDate} 23:59:59`);
+        }
 
         const data = await getJson(
             `${urls.temporal}?${params.toString()}`
         );
+                temporalRows = data.rows || [];
 
         const points = (data.rows || [])
             .filter(row =>
@@ -297,15 +405,43 @@ document.addEventListener('DOMContentLoaded', () => {
                 row[data.column] !== undefined
             )
             .map(row => ({
-                x: row.measured_at,
+            x: new Date(row.measured_at.replace(' ', 'T')).getTime(),
                 y: Number(row[data.column]),
             }))
-            .filter(point => Number.isFinite(point.y));
+            .filter(point => Number.isFinite(point.x) && Number.isFinite(point.y));
 
-        if (temporalChart) {
+                    if (temporalChart) {
             temporalChart.destroy();
+            temporalChart = null;
         }
 
+        const chartStatus = document.getElementById('temporalChartStatus');
+        const chartCanvas = document.getElementById('temporalChart');
+
+        if (points.length === 0) {
+            chartStatus.textContent =
+                'No measurements available for the selected site, ' +
+                'chamber, and date range. Try changing the filters.';
+
+            chartCanvas.classList.add('d-none');
+            return;
+        }
+
+        chartStatus.textContent =
+            `Displaying ${points.length.toLocaleString()} measurements.`;
+
+        chartCanvas.classList.remove('d-none');
+         // Maximum time gap allowed between connected measurements.
+        const hour = 60 * 60 * 1000;
+        const day = 24 * hour;
+
+        const aggregation = document.getElementById(
+            'temporalAggregation'
+        ).value;
+
+        const maximumGap = aggregation === 'daily'
+            ? 7 * day
+            : 24 * hour;
         temporalChart = new Chart(
             document.getElementById('temporalChart'),
             {
@@ -320,7 +456,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             pointRadius: 0,
                             pointHoverRadius: 4,
                             borderWidth: 1.5,
-                            spanGaps: false,
+                            spanGaps: maximumGap,
                         },
                     ],
                 },
@@ -329,20 +465,35 @@ document.addEventListener('DOMContentLoaded', () => {
                     maintainAspectRatio: false,
                     parsing: false,
                     interaction: {
-                        mode: 'nearest',
-                        intersect: false,
-                    },
+    mode: 'nearest',
+    intersect: false,
+},
+plugins: {
+    tooltip: {
+        callbacks: {
+            title(items) {
+                if (!items.length) return '';
+
+                return new Date(items[0].parsed.x)
+                    .toLocaleString();
+            },
+        },
+    },
+},
                     scales: {
-                        x: {
-                            type: 'category',
-                            title: {
-                                display: true,
-                                text: 'Measurement time',
-                            },
-                            ticks: {
-                                maxTicksLimit: 12,
-                            },
-                        },
+                    x: {
+    type: 'linear',
+    title: {
+        display: true,
+        text: 'Measurement date and time',
+    },
+    ticks: {
+        maxTicksLimit: 8,
+        callback(value) {
+            return new Date(Number(value)).toLocaleDateString();
+        },
+    },
+},
                         y: {
                             title: {
                                 display: true,
@@ -399,6 +550,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 showDashboardError('Unable to update the survey chart.');
             });
         });
+       document.getElementById('surveyScale')
+        ?.addEventListener('change', () => {
+            hideDashboardError();
+
+            loadSurvey(false).catch((error) => {
+                console.error(error);
+
+                showDashboardError(
+                    'Unable to update the survey chart scale.'
+                );
+            });
+        });
 
     document.getElementById('reloadTemporal')
         ?.addEventListener('click', () => {
@@ -409,6 +572,99 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 showDashboardError(
                     'Unable to update the temporal measurement chart.'
+                );
+            });
+        });
+        document.getElementById('downloadSurveyCsv')
+        ?.addEventListener('click', () => {
+            hideDashboardError();
+
+            const metric = document.getElementById('surveyMetric').value;
+            const wellType = document.getElementById('surveyWellType').value;
+            const wellStatus = document.getElementById('surveyWellStatus').value;
+
+            const filename = [
+                'subsurface_soil_survey',
+                metric || 'ch4_flux',
+                wellType || 'all_types',
+                wellStatus || 'all_statuses',
+            ].join('_') + '.csv';
+
+            downloadCsv(filename, surveyRows);
+        });
+    
+    document.getElementById('resetSurvey')
+        ?.addEventListener('click', () => {
+            hideDashboardError();
+
+            // Restore the default survey filters.
+            document.getElementById('surveyMetric').value = 'ch4_flux';
+            document.getElementById('surveyWellType').value = '';
+            document.getElementById('surveyWellStatus').value = '';
+            document.getElementById('surveyScale').value = 'linear';
+
+            // Reload the survey chart.
+            loadSurvey(false).catch((error) => {
+                console.error(error);
+
+                showDashboardError(
+                    'Unable to reset the survey chart.'
+                );
+            });
+        });
+
+        document.getElementById('downloadTemporalCsv')
+        ?.addEventListener('click', () => {
+            hideDashboardError();
+
+            const site = document.getElementById('temporalSite').value;
+            const gas = document.getElementById('temporalGas').value;
+            const chamber = document.getElementById('temporalChamber').value;
+            const aggregation =
+                document.getElementById('temporalAggregation').value;
+
+            const filename = [
+                'subsurface_temporal',
+                site,
+                gas,
+                `chamber_${chamber}`,
+                aggregation,
+            ].join('_') + '.csv';
+
+            downloadCsv(filename, temporalRows);
+        });
+
+    document.getElementById('resetTemporal')
+        ?.addEventListener('click', () => {
+            hideDashboardError();
+
+            const siteSelect = document.getElementById('temporalSite');
+
+            // Restore the preferred monitoring site.
+            const preferredSite = Array.from(siteSelect.options)
+                .find(option => option.value === 'UPW1');
+
+            if (preferredSite) {
+                siteSelect.value = 'UPW1';
+            } else if (siteSelect.options.length > 0) {
+                siteSelect.selectedIndex = 0;
+            }
+
+            // Restore the default measurement settings.
+            document.getElementById('temporalGas').value = 'ch4';
+            document.getElementById('temporalChamber').value = '1';
+            document.getElementById('temporalAggregation').value = 'hourly';
+
+            // Remove the selected date restrictions.
+            document.getElementById('temporalStart').value = '';
+            document.getElementById('temporalEnd').value = '';
+
+            // Reload the chart using the restored settings.
+            loadTemporal().catch((error) => {
+                console.error(error);
+
+                showDashboardError(
+                    'Unable to reset the temporal measurement chart.'
                 );
             });
         });
