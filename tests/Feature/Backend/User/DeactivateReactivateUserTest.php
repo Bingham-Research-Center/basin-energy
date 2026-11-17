@@ -150,4 +150,48 @@ class DeactivateReactivateUserTest extends TestCase
 
         $response->assertSessionHas('flash_danger', __('You can not deactivate the administrator account.'));
     }
+    /** @test */
+    public function deactivate_permission_alone_cannot_reactivate_an_account()
+    {
+        $this->actingAs($operator = User::factory()->admin()->create());
+        $operator->syncPermissions(['admin.access.user.deactivate']);
+        $target = User::factory()->inactive()->create();
+
+        $this->patch("/admin/auth/user/{$target->id}/mark/1")->assertForbidden();
+        $this->assertFalse($target->fresh()->isActive());
+    }
+
+    /** @test */
+    public function reactivate_permission_alone_cannot_deactivate_an_account()
+    {
+        $this->actingAs($operator = User::factory()->admin()->create());
+        $operator->syncPermissions(['admin.access.user.reactivate']);
+        $target = User::factory()->active()->create();
+
+        $this->patch("/admin/auth/user/{$target->id}/mark/0")->assertForbidden();
+        $this->assertTrue($target->fresh()->isActive());
+    }
+
+    /** @test */
+    public function a_reactivate_only_operator_returns_to_an_authorized_page()
+    {
+        $this->actingAs($operator = User::factory()->admin()->create());
+        $operator->syncPermissions(['admin.access.user.reactivate']);
+        $target = User::factory()->inactive()->create();
+
+        $this->patch("/admin/auth/user/{$target->id}/mark/1")
+            ->assertRedirect(route('admin.auth.user.deactivated'));
+        $this->assertTrue($target->fresh()->isActive());
+    }
+
+    /** @test */
+    public function invalid_user_status_is_not_a_valid_route()
+    {
+        $this->loginAsAdmin();
+        $target = User::factory()->active()->create();
+
+        $this->patch("/admin/auth/user/{$target->id}/mark/,")->assertNotFound();
+        $this->assertTrue($target->fresh()->isActive());
+    }
+
 }

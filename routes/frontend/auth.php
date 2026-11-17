@@ -25,6 +25,7 @@ Route::group(['as' => 'auth.'], function () {
             ->name('2fa.challenge');
 
         Route::post('two-factor/challenge', [TwoFactorChallengeController::class, 'store'])
+            ->middleware('throttle:5,1')
             ->name('2fa.challenge.store');
 
         // Registration

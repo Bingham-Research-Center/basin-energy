@@ -25,7 +25,7 @@ class TwoFactorChallengeController
 
         $user = User::find($userId);
 
-        if (! $user) {
+        if (! $user || ! $user->isActive() || ! $user->hasTwoFactorEnabled()) {
             $request->session()->forget([
                 'auth.pending_2fa.user_id',
                 'auth.pending_2fa.remember',

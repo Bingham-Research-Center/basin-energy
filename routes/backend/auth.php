@@ -88,7 +88,7 @@ Route::group([
 
                 Route::patch('mark/{status}', [DeactivatedUserController::class, 'update'])
                     ->name('mark')
-                    ->where(['status' => '[0,1]'])
+                    ->where('status', '[01]')
                     ->middleware('permission:admin.access.user.deactivate|admin.access.user.reactivate');
 
                 Route::post('clear-session', [UserSessionController::class, 'update'])

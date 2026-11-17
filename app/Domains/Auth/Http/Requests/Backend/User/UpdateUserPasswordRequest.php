@@ -31,6 +31,8 @@ class UpdateUserPasswordRequest extends FormRequest
     {
         return [
             'password' => [
+                'required',
+                'confirmed',
                 'max:100',
                 new UnusedPassword((int) $this->segment(4)),
                 Password::min(8)->mixedCase()->letters()->numbers()->symbols(),
