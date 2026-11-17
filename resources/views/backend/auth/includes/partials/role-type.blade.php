@@ -7,7 +7,8 @@
                 value="{{ $role->id }}"
                 class="form-check-input"
                 type="checkbox"
-                {{ (old('rules') && in_array($role->id, old('rules'), true)) || (isset($user) && in_array($role->id, $user->roles->modelKeys(), true)) ? 'checked' : '' }} />
+                x-bind:disabled="userType !== '{{ $type }}'"
+                {{ (old('roles') && in_array($role->id, old('roles'), true)) || (isset($user) && in_array($role->id, $user->roles->modelKeys(), true)) ? 'checked' : '' }} />
 
             <label class="form-check-label" for="role_{{ $role->id }}">
                 {{ $role->name }}
