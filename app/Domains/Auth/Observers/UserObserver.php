@@ -33,7 +33,7 @@ class UserObserver
      */
     private function logPasswordHistory(User $user): void
     {
-        if (config('boilerplate.access.user.password_history')) {
+        if (config('boilerplate.access.user.password_history') && $user->password !== null) {
             $user->passwordHistories()->create([
                 'password' => $user->password, // Password already hashed & saved so just take from model
             ]);
