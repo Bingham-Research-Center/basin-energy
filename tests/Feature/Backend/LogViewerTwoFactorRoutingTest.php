@@ -8,7 +8,7 @@ use Tests\TestCase;
 
 class LogViewerTwoFactorRoutingTest extends TestCase
 {
-    protected function setUp(): void
+    public function setUp(): void
     {
         parent::setUp();
 
