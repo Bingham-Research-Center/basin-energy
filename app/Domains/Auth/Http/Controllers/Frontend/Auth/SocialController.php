@@ -14,6 +14,8 @@ class SocialController
 {
     private const PENDING_SIGNUP = 'auth.google.pending_signup';
     private const SIGNUP_LIFETIME = 600;
+    private const POPUP_SESSION_KEY = 'auth.google.popup_started_at';
+    private const POPUP_LIFETIME = 900;
 
     private function googleAvailable(): bool
     {
@@ -26,6 +28,14 @@ class SocialController
     public function redirect(string $provider, Request $request)
     {
         abort_unless($provider === 'google' && $this->googleAvailable(), 404);
+
+        // Retain this marker through OAuth, Terms acceptance and optional 2FA.
+        // The session cookie is shared by the opener tab and the popup window.
+        if ($request->query('popup') === '1') {
+            $request->session()->put(self::POPUP_SESSION_KEY, time());
+        } else {
+            $request->session()->forget(self::POPUP_SESSION_KEY);
+        }
 
         // Keep the flow in the current browser session; Socialite verifies OAuth state.
         return Socialite::driver('google')
@@ -42,8 +52,7 @@ class SocialController
         } catch (Throwable $e) {
             report($e);
 
-            return redirect()->route('frontend.auth.login')
-                ->withFlashDanger(__('Google sign-in could not be completed. Please try again.'));
+            return $this->failedLogin($request, __('Google sign-in could not be completed. Please try again.'));
         }
 
         $verified = ($profile->user['email_verified'] ?? $profile->user['verified_email'] ?? false) === true;
@@ -51,8 +60,7 @@ class SocialController
         $providerId = (string) $profile->getId();
 
         if (! $verified || ! filter_var($email, FILTER_VALIDATE_EMAIL) || $providerId === '') {
-            return redirect()->route('frontend.auth.login')
-                ->withFlashDanger(__('Google did not provide a verified email address.'));
+            return $this->failedLogin($request, __('Google did not provide a verified email address.'));
         }
 
         // Match by both provider AND immutable provider user ID, never by email alone.
@@ -60,8 +68,7 @@ class SocialController
 
         if ($user) {
             if (! $user->isActive()) {
-                return redirect()->route('frontend.auth.login')
-                    ->withFlashDanger(__('Your account has been deactivated.'));
+                return $this->failedLogin($request, __('Your account has been deactivated.'));
             }
 
             return $this->completeLogin($request, $user);
@@ -70,8 +77,7 @@ class SocialController
         // A previous local or other-provider account must not be silently
         // attached to Google based solely on an email claim.
         if (User::where('email', $email)->exists()) {
-            return redirect()->route('frontend.auth.login')
-                ->withFlashDanger(__('This email is already registered. Sign in using your existing method.'));
+            return $this->failedLogin($request, __('This email is already registered. Sign in using your existing method.'));
         }
 
         abort_unless(config('boilerplate.access.user.registration'), 404);
@@ -92,8 +98,7 @@ class SocialController
 
         $pending = $this->pendingSignup($request);
         if (! $pending) {
-            return redirect()->route('frontend.auth.login')
-                ->withFlashDanger(__('Your Google sign-up session has expired. Please try again.'));
+            return $this->failedLogin($request, __('Your Google sign-up session has expired. Please try again.'));
         }
 
         return view('frontend.auth.social-google-signup', ['pending' => $pending]);
@@ -105,8 +110,7 @@ class SocialController
 
         $pending = $this->pendingSignup($request);
         if (! $pending) {
-            return redirect()->route('frontend.auth.login')
-                ->withFlashDanger(__('Your Google sign-up session has expired. Please try again.'));
+            return $this->failedLogin($request, __('Your Google sign-up session has expired. Please try again.'));
         }
 
         $request->validate([
@@ -120,8 +124,7 @@ class SocialController
             || User::where('provider', 'google')->where('provider_id', $pending['id'])->exists()) {
             $request->session()->forget(self::PENDING_SIGNUP);
 
-            return redirect()->route('frontend.auth.login')
-                ->withFlashDanger(__('This account already exists. Please sign in.'));
+            return $this->failedLogin($request, __('This account already exists. Please sign in.'));
         }
 
         try {
@@ -134,8 +137,7 @@ class SocialController
         } catch (Throwable $e) {
             report($e);
 
-            return redirect()->route('frontend.auth.login')
-                ->withFlashDanger(__('Unable to create your account. Please try again or contact support.'));
+            return $this->failedLogin($request, __('Unable to create your account. Please try again or contact support.'));
         }
 
         $request->session()->forget(self::PENDING_SIGNUP);
@@ -174,6 +176,58 @@ class SocialController
         $request->session()->put('auth.2fa_passed', true);
         event(new UserLoggedIn($user));
 
+        if ($this->isPopupFlow($request)) {
+            return $this->popupResult(true, __('Google sign-in is complete.'));
+        }
+
         return redirect()->route(homeRoute());
+    }
+
+    public function popupStatus(Request $request)
+    {
+        abort_unless($this->googleAvailable(), 404);
+
+        // A postMessage is only a hint. The opener polls this endpoint
+        // using the shared, server-side authenticated session.
+        $user = $request->user();
+        $complete = $this->isPopupFlow($request)
+            && $user
+            && $user->isActive()
+            && (! $user->hasTwoFactorEnabled()
+                || $request->session()->get('auth.2fa_passed') === true);
+
+        return response()->json([
+            'complete' => (bool) $complete,
+            'redirect' => $complete ? route(homeRoute()) : null,
+        ])->header('Cache-Control', 'no-store, private');
+    }
+
+    private function isPopupFlow(Request $request): bool
+    {
+        $started = $request->session()->get(self::POPUP_SESSION_KEY);
+
+        return is_numeric($started)
+            && time() >= (int) $started
+            && time() - (int) $started <= self::POPUP_LIFETIME;
+    }
+
+    private function failedLogin(Request $request, string $message)
+    {
+        if ($this->isPopupFlow($request)) {
+            return $this->popupResult(false, $message);
+        }
+
+        return redirect()->route('frontend.auth.login')->withFlashDanger($message);
+    }
+
+    private function popupResult(bool $success, string $message)
+    {
+        return response()
+            ->view('frontend.auth.social-google-popup-result', [
+                'success' => $success,
+                'message' => $message,
+                'redirectUrl' => route(homeRoute()),
+            ])
+            ->header('Cache-Control', 'no-store, private');
     }
 }

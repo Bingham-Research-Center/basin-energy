@@ -15,6 +15,11 @@ use App\Domains\Auth\Http\Controllers\Frontend\Auth\VerificationController;
 use Tabuna\Breadcrumbs\Trail;
 
 Route::group(['as' => 'auth.'], function () {
+    // Both guest and authenticated sessions poll the same status route.
+    Route::get('login/google/popup/status', [SocialController::class, 'popupStatus'])
+        ->middleware('throttle:60,1')
+        ->name('social.popup.status');
+
     Route::group(['middleware' => 'guest'], function () {
         // Authentication
         Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');
