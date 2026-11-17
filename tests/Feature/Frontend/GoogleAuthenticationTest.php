@@ -93,7 +93,7 @@ class GoogleAuthenticationTest extends TestCase
         $this->get('/signup/google/complete')
             ->assertOk()
             ->assertSee('new-google@example.test')
-            ->assertSee('Terms &amp; Conditions');
+            ->assertSee('Terms & Conditions', false);
 
         $this->post('/signup/google/complete')->assertSessionHasErrors('terms');
         $this->assertDatabaseMissing('users', ['email' => 'new-google@example.test']);
