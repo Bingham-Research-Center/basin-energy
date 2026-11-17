@@ -41,7 +41,7 @@ class StoreUserRequest extends FormRequest
             'roles' => ['sometimes', 'array'],
             'roles.*' => [Rule::exists('roles', 'id')->where('type', $this->type)],
             'permissions' => ['sometimes', 'array'],
-            'permissions.*' => [Rule::exists('permissions', 'id')->where('type', $this->type)],
+            'permissions.*' => [Rule::exists('permissions', 'id')->where('type', $this->type)->where('name', '!=', 'user.data')],
         ];
     }
 
