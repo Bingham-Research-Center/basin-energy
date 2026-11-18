@@ -4,13 +4,25 @@ namespace App\Services;
 
 class BroadcastRichText
 {
-    public function __construct(private BlogHtmlSanitizer $sanitizer)
-    {
-    }
-
+    /**
+     * Resolve HTMLPurifier only when HTML needs sanitizing.
+     *
+     * Opening an empty newsletter/announcement modal or rendering a legacy
+     * plain-text message must not eagerly construct the HTML sanitizer.
+     * Rich-text save/render still fails closed if Composer dependencies are
+     * missing: never send unfiltered user-supplied HTML.
+     */
     public function sanitize(?string $html): string
     {
-        return (string) $this->sanitizer->sanitize($html ?? '');
+        if (! class_exists(\HTMLPurifier_Config::class) || ! class_exists(\HTMLPurifier::class)) {
+            throw new \RuntimeException(
+                'HTMLPurifier is not installed in this PHP runtime. Run composer install '.
+                '--no-dev --prefer-dist --no-interaction --optimize-autoloader '.
+                'inside the production application container, then retry.'
+            );
+        }
+
+        return (string) app(BlogHtmlSanitizer::class)->sanitize($html ?? '');
     }
 
     public function hasText(?string $html): bool
