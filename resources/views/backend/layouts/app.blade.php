@@ -46,6 +46,7 @@
     <script src="{{ mix('js/vendor.js') }}"></script>
     <script src="{{ mix('js/backend.js') }}"></script>
     <script src="{{ asset('js/dashboard-theme.js') }}" defer></script>
+    <script src="{{ asset('js/dashboard-toasts.js') }}?v=1"></script>
     <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-bs4.min.js"></script>
     <livewire:scripts />
     @stack('after-scripts')

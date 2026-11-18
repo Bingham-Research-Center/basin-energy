@@ -64,9 +64,6 @@
             return Promise.resolve();
         }
 
-        if (window.brcBroadcastToast) notify(window.brcBroadcastToast, 'success');
-
-
         function fieldValue(form, name) {
             var el = form.elements.namedItem(name);
             return el ? el.value : '';
@@ -303,6 +300,10 @@
             state.muting = true;
             state.discarding = false;
             state.closed = false;
+            state.approvedSubmit = false;
+            state.confirming = false;
+            state.confirmingSchedule = false;
+            state.pendingSubmitter = null;
             state.id = null;
             var discard = state.modal.querySelector('[data-broadcast-discard]');
             if (discard) discard.disabled = false; // A new, browser-only draft can be discarded.
@@ -380,30 +381,62 @@
             if (!form) return;
             var state = {modal:modal, form:form, id:null, version:0,
                 dirty:false, timer:null, inFlight:null, muting:false,
-                closed:false, discarding:false};
+                closed:false, discarding:false, approvedSubmit:false,
+                confirming:false, confirmingSchedule:false, pendingSubmitter:null};
             states.set(modal, state);
             var select = form.querySelector('select[name="audience"]');
             if (select) select.addEventListener('change', function () { toggleRoles(form); change(state); });
-            // A manual Save/Publish uses the complete submitted form. If a
-            // background autosave is still writing, wait for it before
-            // submitting so an older HTTP response cannot overwrite the
-            // administrator's final action.
+            // A manual Save/Publish uses the complete form. Confirm Publish
+            // with SweetAlert2, not a native window.confirm dialog. Explicit
+            // submission is gated until any background autosave completes.
+            // This prevents an older async response from overwriting a newly
+            // published announcement.
             form.addEventListener('submit', function (event) {
+                var submitter = event.submitter || state.pendingSubmitter || null;
                 clearTimeout(state.timer);
-                if (state.inFlight) {
-                    event.preventDefault();
-                    var submitter = event.submitter;
-                    state.inFlight.then(function () {
-                        state.closed = true;
+                if (state.approvedSubmit && !state.inFlight) {
+                    state.closed = true;
+                    return;
+                }
+
+                event.preventDefault();
+                if (state.confirming) return;
+                state.confirming = true;
+                var publish = submitter && submitter.value === 'publish';
+                var confirmStep = publish
+                    ? (window.BrcToasts ? window.BrcToasts.confirm({
+                        title: 'Publish announcement?',
+                        text: 'Publish this announcement to the selected Users now?',
+                        icon: 'question',
+                        confirmButtonText: 'Publish announcement'
+                    }) : alertConfirm('Publish announcement?', 'Publish this announcement to the selected Users now?', false))
+                    : Promise.resolve(true);
+                confirmStep.then(function (confirmed) {
+                    if (!confirmed) return false;
+                    return Promise.resolve(state.inFlight).then(function () {
+                        state.approvedSubmit = true;
+                        state.pendingSubmitter = submitter;
                         if (form.requestSubmit) {
                             form.requestSubmit(submitter || undefined);
                         } else {
+                            // Preserve the submitter value for announcement
+                            // intent=publish on older browsers.
+                            if (submitter && submitter.name) {
+                                var field = document.createElement('input');
+                                field.type = 'hidden';
+                                field.name = submitter.name;
+                                field.value = submitter.value;
+                                form.appendChild(field);
+                            }
                             form.submit();
                         }
+                        return true;
                     });
-                } else {
-                    state.closed = true;
-                }
+                }).catch(function () {
+                    status(state, 'Could not confirm action. Your draft is preserved.', true);
+                }).finally(function () {
+                    state.confirming = false;
+                });
             });
             form.addEventListener('input', function (event) {
                 if (!event.target.classList.contains('js-broadcast-rich-editor')) change(state);
@@ -442,12 +475,28 @@
             var schedule = modal.querySelector('[data-broadcast-schedule-form]');
             if (schedule) {
                 schedule.addEventListener('submit', function (event) {
-                    if (state.dirty || state.inFlight) {
-                        event.preventDefault();
-                        save(state).then(function (ok) {
-                            if (ok) schedule.submit();
-                        });
-                    }
+                    event.preventDefault();
+                    if (state.confirmingSchedule) return;
+                    state.confirmingSchedule = true;
+                    var ask = window.BrcToasts
+                        ? window.BrcToasts.confirm({
+                            title: 'Schedule newsletter?',
+                            text: 'Schedule this newsletter for delivery at the end of its month?',
+                            icon: 'question',
+                            confirmButtonText: 'Schedule newsletter'
+                        })
+                        : alertConfirm('Schedule newsletter?', 'Schedule this newsletter for month-end delivery?', false);
+                    ask.then(function (confirmed) {
+                        if (!confirmed) return false;
+                        return (state.dirty || state.inFlight ? save(state) : Promise.resolve(true))
+                            .then(function (ok) {
+                                if (ok) schedule.submit();
+                            });
+                    }).catch(function () {
+                        status(state, 'Scheduling failed. Draft remains saved.', true);
+                    }).finally(function () {
+                        state.confirmingSchedule = false;
+                    });
                 });
             }
 

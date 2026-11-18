@@ -54,7 +54,7 @@
                         data-broadcast-save-button>Save Draft</button>
                     <button type="submit" class="btn btn-primary" name="intent" value="publish"
                         form="announcementPopupForm" data-broadcast-publish-button
-                        onclick="return confirm('Publish this announcement to the selected Users now?')">
+                        data-broadcast-confirm-publish>
                         Publish announcement
                     </button>
                 </div>
