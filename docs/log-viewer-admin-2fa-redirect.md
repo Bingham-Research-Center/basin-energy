@@ -1,9 +1,13 @@
 # LogViewer admin 2FA route redirect fix
 
-The vendor LogViewer routes live at `/log-viewer/*`, outside the `/admin/*`
-path. Before this fix, `TwoFactorAuthenticationStatus` treated those
-routes as non-administrator pages even though they carry the `admin`
-middleware group.
+Historically, the vendor LogViewer routes lived at `/log-viewer/*`,
+outside the `/admin/*` path. Before the 2FA route fix,
+`TwoFactorAuthenticationStatus` treated them as non-administrator pages
+even though they carried the `admin` middleware group.
+
+LogViewer now uses `/admin/log-viewer/*`, so the URLs follow the same
+admin route convention. The previous named-route recognition remains
+compatible with both the new URL and the optional-admin-2FA policy.
 
 When `ADMIN_REQUIRES_2FA=false`, administrators without an enrolled
 authenticator were still redirected away from the LogViewer dashboard and

@@ -31,13 +31,39 @@ class LogViewerAuthorizationTest extends TestCase
         }
     }
 
+    public function test_all_log_viewer_routes_live_beneath_the_admin_url_prefix(): void
+    {
+        $names = [
+            'log-viewer::dashboard',
+            'log-viewer::logs.list',
+            'log-viewer::logs.show',
+            'log-viewer::logs.download',
+            'log-viewer::logs.filter',
+            'log-viewer::logs.search',
+            'log-viewer::logs.delete',
+        ];
+
+        foreach ($names as $name) {
+            $route = app('router')->getRoutes()->getByName($name);
+            $this->assertNotNull($route, 'Missing LogViewer route: '.$name);
+            $this->assertTrue(
+                $route->uri() === 'admin/log-viewer'
+                    || str_starts_with($route->uri(), 'admin/log-viewer/'),
+                $name.' has an unexpected URI: '.$route->uri()
+            );
+        }
+
+        $this->assertSame('/admin/log-viewer', rtrim(parse_url(route('log-viewer::dashboard'), PHP_URL_PATH), '/'));
+        $this->assertSame('/admin/log-viewer/logs', rtrim(parse_url(route('log-viewer::logs.list'), PHP_URL_PATH), '/'));
+    }
+
     public function test_guests_cannot_view_or_download_logs(): void
     {
-        $this->get('/log-viewer')->assertRedirect('/login');
-        $this->get('/log-viewer/logs')->assertRedirect('/login');
-        $this->get('/log-viewer/logs/2026-11-17')->assertRedirect('/login');
-        $this->get('/log-viewer/logs/2026-11-17/download')->assertRedirect('/login');
-        $this->delete('/log-viewer/logs/delete', ['date' => '2026-11-17'])
+        $this->get('/admin/log-viewer')->assertRedirect('/login');
+        $this->get('/admin/log-viewer/logs')->assertRedirect('/login');
+        $this->get('/admin/log-viewer/logs/2026-11-17')->assertRedirect('/login');
+        $this->get('/admin/log-viewer/logs/2026-11-17/download')->assertRedirect('/login');
+        $this->delete('/admin/log-viewer/logs/delete', ['date' => '2026-11-17'])
             ->assertRedirect('/login');
     }
 
@@ -46,16 +72,16 @@ class LogViewerAuthorizationTest extends TestCase
         $user = User::factory()->user()->create();
         $this->actingAs($user);
 
-        $this->get('/log-viewer')->assertRedirect(route('frontend.index'));
-        $this->get('/log-viewer/logs')->assertRedirect(route('frontend.index'));
-        $this->get('/log-viewer/logs/2026-11-17')->assertRedirect(route('frontend.index'));
-        $this->get('/log-viewer/logs/2026-11-17/download')
+        $this->get('/admin/log-viewer')->assertRedirect(route('frontend.index'));
+        $this->get('/admin/log-viewer/logs')->assertRedirect(route('frontend.index'));
+        $this->get('/admin/log-viewer/logs/2026-11-17')->assertRedirect(route('frontend.index'));
+        $this->get('/admin/log-viewer/logs/2026-11-17/download')
             ->assertRedirect(route('frontend.index'));
-        $this->get('/log-viewer/logs/2026-11-17/error')
+        $this->get('/admin/log-viewer/logs/2026-11-17/error')
             ->assertRedirect(route('frontend.index'));
-        $this->get('/log-viewer/logs/2026-11-17/error/search?query=secret')
+        $this->get('/admin/log-viewer/logs/2026-11-17/error/search?query=secret')
             ->assertRedirect(route('frontend.index'));
-        $this->delete('/log-viewer/logs/delete', ['date' => '2026-11-17'])
+        $this->delete('/admin/log-viewer/logs/delete', ['date' => '2026-11-17'])
             ->assertRedirect(route('frontend.index'));
     }
 
@@ -63,13 +89,13 @@ class LogViewerAuthorizationTest extends TestCase
     {
         $this->loginAsAdmin();
 
-        $this->get('/log-viewer')
+        $this->get('/admin/log-viewer')
             ->assertOk()
             ->assertSee('id="sidebar"', false)
             ->assertSee('class="c-wrapper c-fixed-components"', false)
             ->assertSee('Application Logs');
 
-        $this->get('/log-viewer/logs')
+        $this->get('/admin/log-viewer/logs')
             ->assertOk()
             ->assertSee('id="sidebar"', false)
             ->assertSee('Log Files');
@@ -80,7 +106,7 @@ class LogViewerAuthorizationTest extends TestCase
         $admin = User::factory()->admin()->create();
         $this->actingAs($admin);
 
-        $this->get('/log-viewer')->assertOk();
-        $this->get('/log-viewer/logs')->assertOk();
+        $this->get('/admin/log-viewer')->assertOk();
+        $this->get('/admin/log-viewer/logs')->assertOk();
     }
 }
