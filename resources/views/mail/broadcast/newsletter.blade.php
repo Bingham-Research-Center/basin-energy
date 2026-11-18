@@ -5,7 +5,7 @@
         <h1 style="color:#133452;margin-top:0">BasinEnergy</h1>
         <p style="color:#64748b">{{ $newsletter->issue_month->format('F Y') }} Monthly Newsletter</p>
         <h2>{{ $newsletter->title }}</h2>
-        <div>{!! nl2br(e($newsletter->body)) !!}</div>
+        <div>{!! app(\App\Services\BroadcastRichText::class)->render($newsletter->body, $newsletter->body_format) !!}</div>
         <hr style="border:0;border-top:1px solid #d9e0e9;margin-top:28px">
         <p style="font-size:13px;color:#66768a">You received this because you subscribed on BasinEnergy.
         <a href="{{ $unsubscribeUrl }}">Unsubscribe</a>.</p>

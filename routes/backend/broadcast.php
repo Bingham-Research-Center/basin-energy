@@ -16,6 +16,10 @@ Route::prefix('broadcast')->as('broadcast.')->group(function () {
     Route::get('announcements', [BroadcastController::class, 'announcements'])->name('announcements.index');
     Route::get('announcements/create', [BroadcastController::class, 'createAnnouncement'])->name('announcements.create');
     Route::post('announcements', [BroadcastController::class, 'storeAnnouncement'])->name('announcements.store');
+    Route::get('announcements/{announcement}/edit', [BroadcastController::class, 'editAnnouncement'])->name('announcements.edit');
+    Route::put('announcements/{announcement}', [BroadcastController::class, 'updateAnnouncement'])->name('announcements.update');
+    Route::post('announcements/{announcement}/publish', [BroadcastController::class, 'publishAnnouncement'])->name('announcements.publish');
+    Route::delete('announcements/{announcement}', [BroadcastController::class, 'deleteAnnouncement'])->name('announcements.delete');
 
     Route::get('alerts', [BroadcastController::class, 'alerts'])->middleware('throttle:60,1')->name('alerts');
     Route::post('alerts/read', [BroadcastController::class, 'markAlertsRead'])->name('alerts.read');

@@ -46,7 +46,10 @@ class BroadcastNewslettersTable extends DataTableComponent
             Column::make('Recipients')
                 ->label(fn ($row) => $row->sent_recipients.' / '.$row->total_recipients),
             Column::make('Actions')->label(function ($row) {
-                $view = '<a class="btn btn-sm btn-info mr-1" href="'.e(route('admin.broadcast.newsletters.edit', $row->id)).'">View</a>';
+                $url = e(route('admin.broadcast.newsletters.edit', $row->id));
+                $view = $row->isEditable()
+                    ? '<a class="btn btn-sm btn-primary mr-1" href="'.$url.'" data-broadcast-edit="newsletter">Edit draft</a>'
+                    : '<a class="btn btn-sm btn-info mr-1" href="'.$url.'">View</a>';
                 if (! $row->isEditable()) {
                     return $view;
                 }

@@ -1,0 +1,22 @@
+/* Reuses CoreUI Bootstrap 4 modal and bundled Summernote editor. */
+.broadcast-editor-modal .modal-dialog { max-width: min(1100px, calc(100vw - 2rem)); }
+.broadcast-editor-modal .modal-body { max-height: calc(100vh - 220px); overflow-y: auto; }
+.broadcast-editor-modal .note-editor { border: 1px solid #cbd5e1; border-radius: .3rem; }
+.broadcast-editor-modal .note-editable { min-height: 260px; background: #fff; color: #253248; }
+.broadcast-editor-modal .note-toolbar { border-bottom: 1px solid #d6dde6; }
+.broadcast-editor-modal .note-btn { color: #34445d; }
+.broadcast-rich-content { overflow-wrap: anywhere; }
+.broadcast-rich-content img { max-width: 100%; height: auto; }
+.broadcast-rich-content table { width: 100%; }
+body.c-dark-theme .broadcast-editor-modal .modal-content {
+    background: #252b36; color: #e4e7ec; border-color: #343b49;
+}
+body.c-dark-theme .broadcast-editor-modal .modal-header,
+body.c-dark-theme .broadcast-editor-modal .modal-footer { border-color: #343b49; }
+body.c-dark-theme .broadcast-editor-modal .note-toolbar { background: #e9edf4; }
+body.c-dark-theme .broadcast-editor-modal .note-editable { background: #fff; color: #253248; }
+body.c-dark-theme .broadcast-editor-modal .close { color: #fff; text-shadow: none; }
+@media (max-width: 767px) {
+    .broadcast-editor-modal .modal-dialog { max-width: 100%; margin: .5rem; }
+    .broadcast-editor-modal .modal-body { max-height: calc(100vh - 180px); }
+}

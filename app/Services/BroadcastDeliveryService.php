@@ -63,6 +63,7 @@ class BroadcastDeliveryService
             });
 
         BroadcastAnnouncement::query()
+            ->where('status', BroadcastAnnouncement::PUBLISHED)
             ->whereHas('deliveries', function ($query) {
                 $query->whereIn('status', ['pending', 'failed'])
                     ->where('attempts', '<', self::MAX_ATTEMPTS);

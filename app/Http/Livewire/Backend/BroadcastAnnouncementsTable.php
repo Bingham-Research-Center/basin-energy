@@ -15,7 +15,7 @@ class BroadcastAnnouncementsTable extends DataTableComponent
         $this->setAdditionalSelects([
             'broadcast_announcements.id', 'broadcast_announcements.title',
             'broadcast_announcements.audience', 'broadcast_announcements.role_ids',
-            'broadcast_announcements.published_at',
+            'broadcast_announcements.published_at', 'broadcast_announcements.status',
         ]);
         $this->setConfigurableAreas([]);
     }
@@ -37,14 +37,28 @@ class BroadcastAnnouncementsTable extends DataTableComponent
                     ? 'All Users' : 'Selected User roles: '.implode(', ', $row->role_ids ?? [])),
             Column::make('Published', 'published_at')
                 ->sortable()
-                ->label(fn ($row) => $row->published_at->format('M j, Y H:i')),
+                ->label(fn ($row) => $row->published_at
+                    ? $row->published_at->format('M j, Y H:i') : '-'),
             Column::make('Email sent')
                 ->label(fn ($row) => $row->sent_count.' / '.$row->recipient_count),
-            Column::make('Status')
+            Column::make('Status', 'status')
+                ->sortable()
+                ->label(fn ($row) => $row->status === BroadcastAnnouncement::DRAFT
+                    ? 'Draft' : 'Published'),
+            Column::make('Actions')
                 ->label(function ($row) {
-                    $errors = $row->deliveries()->whereIn('status', ['failed', 'sending'])->count();
-                    return $errors ? 'Some emails require review' : 'Published';
-                }),
+                    $url = e(route('admin.broadcast.announcements.edit', $row->id));
+                    if (! $row->isEditable()) {
+                        return '<a class="btn btn-sm btn-info" href="'.$url.'">View</a>';
+                    }
+                    return '<a class="btn btn-sm btn-primary mr-1" href="'.$url.
+                        '" data-broadcast-edit="announcement">Edit draft</a>'.
+                        '<form class="d-inline" method="POST" action="'.
+                        e(route('admin.broadcast.announcements.delete', $row->id)).'">'.
+                        csrf_field().method_field('DELETE').
+                        '<button type="submit" class="btn btn-sm btn-outline-danger"'.
+                        ' onclick="return confirm(&quot;Delete announcement draft?&quot;)">Delete</button></form>';
+                })->html(),
         ];
     }
 }

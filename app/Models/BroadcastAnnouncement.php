@@ -6,7 +6,15 @@ use Illuminate\Database\Eloquent\Model;
 
 class BroadcastAnnouncement extends Model
 {
-    protected $fillable = ['title', 'body', 'audience', 'role_ids', 'created_by', 'published_at'];
+    public const DRAFT = 'draft';
+    public const PUBLISHED = 'published';
+
+    protected $fillable = ['title', 'body', 'body_format', 'status', 'audience', 'role_ids', 'created_by', 'published_at'];
+
+    public function isEditable(): bool
+    {
+        return $this->status === self::DRAFT;
+    }
 
     protected $casts = ['role_ids' => 'array', 'published_at' => 'datetime'];
 
