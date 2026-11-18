@@ -34,8 +34,8 @@ class BroadcastController
     {
         $data = $this->validateNewsletter($request, $richText);
         $month = Carbon::parse($data['issue_month'].'-01', self::TIMEZONE)->startOfMonth();
-        abort_if($month->copy()->endOfMonth()->endOfDay()->isPast(), 422, 'Issue month is in the past.');
-
+        // Saving an unfinished issue is safe regardless of its month.
+        // Only the explicit Schedule action is time-restricted.
         BroadcastNewsletter::create([
             'title' => $data['title'],
             'body' => $data['body'],
@@ -77,8 +77,7 @@ class BroadcastController
         abort_unless($newsletter->isEditable(), 403);
         $data = $this->validateNewsletter($request, $richText, $newsletter);
         $month = Carbon::parse($data['issue_month'].'-01', self::TIMEZONE)->startOfMonth();
-        abort_if($month->copy()->endOfMonth()->endOfDay()->isPast(), 422, 'Issue month is in the past.');
-
+        // Keep historical drafts editable; scheduling remains restricted.
         DB::transaction(function () use ($newsletter, $data, $month) {
             $locked = BroadcastNewsletter::whereKey($newsletter->id)->lockForUpdate()->firstOrFail();
             abort_unless($locked->isEditable(), 403);

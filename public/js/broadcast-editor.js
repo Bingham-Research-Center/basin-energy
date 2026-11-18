@@ -197,6 +197,7 @@
         function change(state) {
             if (state.muting || state.closed || state.discarding || state.submitting) return;
             state.version++;
+            state.validationBlocked = false;
             state.dirty = true;
             backup(state, read(state));
             status(state, 'Unsaved changes — saving shortly…');
@@ -206,7 +207,7 @@
 
         function save(state) {
             clearTimeout(state.timer);
-            if (state.discarding || state.submitting) return Promise.resolve(false);
+            if (state.discarding || state.submitting || state.validationBlocked) return Promise.resolve(false);
             if (state.inFlight) {
                 return state.inFlight.then(function () {
                     return state.dirty ? save(state) : true;
@@ -235,8 +236,22 @@
                 body: JSON.stringify(payload)
             }).then(function (response) {
                 if (!response.ok) {
+                    if (response.status === 422) {
+                        // Laravel returns the field-level validation reason.
+                        // A rejected input should not retry every five seconds.
+                        return response.json().catch(function () { return {}; }).then(function (body) {
+                            var errors = body.errors || {};
+                            var keys = Object.keys(errors);
+                            var field = keys.length ? keys[0] : null;
+                            var detail = field && errors[field] && errors[field].length
+                                ? errors[field][0] : (body.message || 'Check the issue month and newsletter content.');
+                            var problem = new Error('Cannot autosave: ' + detail);
+                            problem.validation = true;
+                            throw problem;
+                        });
+                    }
                     if (response.status === 409) {
-                        throw new Error('This draft is scheduled or published. Reload before editing.');
+                        throw new Error('This issue is already scheduled or belongs to another draft. Open the existing issue instead.');
                     }
                     throw new Error('Autosave failed (HTTP ' + response.status + ').');
                 }
@@ -277,12 +292,13 @@
                 return true;
             }).catch(function (error) {
                 state.dirty = true;
+                state.validationBlocked = Boolean(error.validation) && state.version === version;
                 backup(state, read(state));
                 status(state, error.message + ' Changes kept in this browser.', true);
                 return false;
             }).finally(function () {
                 state.inFlight = null;
-                if (state.dirty && !state.closed && !state.discarding) {
+                if (state.dirty && !state.closed && !state.discarding && !state.validationBlocked) {
                     clearTimeout(state.timer);
                     state.timer = setTimeout(function () { save(state); }, 5000);
                 }
@@ -360,6 +376,7 @@
             if (discard) discard.disabled = false; // A new, browser-only draft can be discarded.
             state.version = 0;
             state.dirty = false;
+            state.validationBlocked = false;
             clearTimeout(state.timer);
             state.form.reset();
             state.form.action = state.form.dataset.createUrl;
@@ -440,7 +457,7 @@
             var state = {modal:modal, form:form, id:null, version:0,
                 dirty:false, timer:null, inFlight:null, muting:false,
                 closed:false, discarding:false, submitting:false,
-                confirming:false, confirmingSchedule:false, pendingSubmitter:null,
+                validationBlocked:false, confirming:false, confirmingSchedule:false, pendingSubmitter:null,
                 modalShown:false, openToken:0};
             states.set(modal, state);
             var select = form.querySelector('select[name="audience"]');
