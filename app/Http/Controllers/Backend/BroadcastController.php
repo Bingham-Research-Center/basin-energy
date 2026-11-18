@@ -55,6 +55,7 @@ class BroadcastController
         if ($request->wantsJson()) {
             return response()->json([
                 'id' => $newsletter->id,
+                'updated_at' => optional($newsletter->updated_at)->toIso8601String(),
                 'title' => $newsletter->title,
                 'body_html' => $richText->render($newsletter->body, $newsletter->body_format),
                 'issue_month' => $newsletter->issue_month->format('Y-m'),
@@ -201,6 +202,7 @@ class BroadcastController
         if ($request->wantsJson()) {
             return response()->json([
                 'id' => $announcement->id,
+                'updated_at' => optional($announcement->updated_at)->toIso8601String(),
                 'title' => $announcement->title,
                 'body_html' => $richText->render($announcement->body, $announcement->body_format),
                 'audience' => $announcement->audience,
