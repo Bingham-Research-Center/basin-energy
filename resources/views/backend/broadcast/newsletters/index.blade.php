@@ -3,7 +3,7 @@
 @section('title', __('Newsletters'))
 
 @push('after-styles')
-<link rel="stylesheet" href="{{ asset('css/broadcast-editor.css') }}?v=1">
+<link rel="stylesheet" href="{{ asset('css/broadcast-editor.css') }}?v=2">
 @endpush
 
 @section('content')
@@ -28,7 +28,7 @@
 @endsection
 
 @push('after-scripts')
-<script src="{{ asset('js/broadcast-editor.js') }}?v=1" defer></script>
+<script src="{{ asset('js/broadcast-editor.js') }}?v=2" defer></script>
 @if($errors->any())
 <script>window.brcBroadcastReopen = 'newsletter';</script>
 @endif

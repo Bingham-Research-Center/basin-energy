@@ -7,6 +7,7 @@
 @endphp
 <div class="modal fade broadcast-editor-modal" id="newsletterEditorModal"
     data-broadcast-modal="newsletter" tabindex="-1" role="dialog"
+    data-backdrop="static" data-keyboard="false"
     aria-labelledby="newsletterEditorTitle" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
         <div class="modal-content">
@@ -25,13 +26,17 @@
                 </p>
                 <form id="newsletterPopupForm" action="{{ $oldAction }}" method="POST"
                     data-broadcast-editor-form="newsletter"
-                    data-create-url="{{ route('admin.broadcast.newsletters.store') }}">
+                    data-create-url="{{ route('admin.broadcast.newsletters.store') }}"
+                    data-autosave-url="{{ route('admin.broadcast.editor.autosave', ['kind' => 'newsletter']) }}"
+                    data-image-upload-url="{{ route('admin.broadcast.editor.images') }}">
                     @csrf
                     <input name="_method" type="hidden" value="PUT" data-broadcast-method {{ $oldEditId ? '' : 'disabled' }}>
                     <input name="_broadcast_edit_id" type="hidden" value="{{ $oldEditId }}">
                     @include('backend.broadcast.newsletters.fields', ['editorPrefix' => 'newsletter-popup', 'newsletter' => new \App\Models\BroadcastNewsletter()])
                 </form>
             </div>
+            <div class="px-3 pb-1 small text-muted" role="status" aria-live="polite"
+                data-broadcast-save-status>Changes are saved automatically while you work.</div>
             <div class="modal-footer d-flex flex-wrap justify-content-between">
                 <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Close</button>
                 <div class="d-flex flex-wrap align-items-center">
