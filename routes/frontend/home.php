@@ -69,3 +69,11 @@ Route::get('newsletter/unsubscribe/{user}', [\App\Http\Controllers\Frontend\User
     ->middleware('signed')->name('newsletter.unsubscribe.email');
 Route::post('newsletter/unsubscribe/{user}', [\App\Http\Controllers\Frontend\User\NewsletterSubscriptionController::class, 'emailUnsubscribe'])
     ->middleware(['signed', 'throttle:10,1'])->name('newsletter.unsubscribe.email.submit');
+
+/*
+ * Hosted images embedded in newsletter emails must be publicly readable.
+ * Uploads themselves are administrator-only; paths are random, validated IDs.
+ */
+Route::get('broadcast/images/{filename}', [\App\Http\Controllers\Backend\BroadcastEditorController::class, 'showImage'])
+    ->where('filename', '[a-f0-9]{40}\\.(jpg|png|gif|webp)')
+    ->name('broadcast.image');

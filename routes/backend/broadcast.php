@@ -3,6 +3,10 @@
 use App\Http\Controllers\Backend\BroadcastController;
 
 Route::prefix('broadcast')->as('broadcast.')->group(function () {
+    Route::post('editor/autosave/{kind}', [\App\Http\Controllers\Backend\BroadcastEditorController::class, 'autosave'])
+        ->middleware('throttle:120,1')->name('editor.autosave');
+    Route::post('editor/images', [\App\Http\Controllers\Backend\BroadcastEditorController::class, 'uploadImage'])
+        ->middleware('throttle:30,1')->name('editor.images');
     Route::redirect('/', '/admin/broadcast/newsletters')->name('index');
 
     Route::get('newsletters', [BroadcastController::class, 'newsletters'])->name('newsletters.index');
