@@ -211,7 +211,9 @@ class BroadcastController
                 'audience' => $data['audience'],
                 'role_ids' => $data['role_ids'],
                 'status' => BroadcastAnnouncement::DRAFT,
-                'published_at' => null,
+                // Historical published_at is NOT NULL. Draft status is the
+                // authoritative publication flag; publish resets this time.
+                'published_at' => now(),
                 'created_by' => $request->user()->id,
             ]);
 

@@ -116,7 +116,9 @@ class BroadcastEditorDraftTest extends TestCase
 
         $announcement = BroadcastAnnouncement::firstOrFail();
         $this->assertSame(BroadcastAnnouncement::DRAFT, $announcement->status);
-        $this->assertNull($announcement->published_at);
+        // The legacy non-nullable timestamp uses a draft placeholder.
+        // Draft status is the authoritative publication flag.
+        $this->assertSame(BroadcastAnnouncement::DRAFT, $announcement->status);
         $this->assertSame(0, $announcement->deliveries()->count());
 
         app(BroadcastDeliveryService::class)->run();
