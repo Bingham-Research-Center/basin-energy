@@ -29,6 +29,7 @@ Route::group(['as' => 'user.', 'middleware' => ['auth', '2fa.confirmed', 'passwo
     Route::group([
     'prefix' => 'data',
     'as' => 'data.',
+    'middleware' => 'is_user',
     ], function () {
 
         Route::get('/', function () {
@@ -123,6 +124,7 @@ Route::group(['as' => 'user.', 'middleware' => ['auth', '2fa.confirmed', 'passwo
     Route::group([
         'prefix' => 'carbon-mapper',
         'as' => 'carbon-mapper.',
+        'middleware' => 'is_user',
     ], function () {
 
         Route::get('/utah', [CarbonMapperController::class, 'utah'])
@@ -144,5 +146,9 @@ Route::group(['as' => 'user.', 'middleware' => ['auth', '2fa.confirmed', 'passwo
     });
 
 
-    Route::patch('profile/update', [ProfileController::class, 'update'])->name('profile.update');
+    // Personal User updates belong to User-type accounts. Administrators
+    // must use their dedicated /admin/account/profile endpoint instead.
+    Route::patch('profile/update', [ProfileController::class, 'update'])
+        ->middleware('is_user')
+        ->name('profile.update');
 });

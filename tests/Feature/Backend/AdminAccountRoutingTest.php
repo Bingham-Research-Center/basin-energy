@@ -41,15 +41,18 @@ class AdminAccountRoutingTest extends TestCase
         $this->get('/admin/account')->assertOk();
     }
 
-    public function test_legacy_frontend_profile_submission_does_not_switch_admin_into_user_dashboard(): void
+    public function test_legacy_frontend_profile_submission_cannot_modify_an_administrator(): void
     {
         $admin = $this->loginAsAdmin();
+        $originalName = $admin->name;
 
         $this->patch('/profile/update', [
             'name' => 'Admin Renamed Again',
             'email' => $admin->email,
-        ])->assertRedirect(route('admin.account.index').'#information');
+        ])->assertForbidden();
 
+        // Administrators update their profile through /admin/account/profile.
+        $this->assertSame($originalName, $admin->fresh()->name);
         $this->get('/account')->assertRedirect(route('admin.account.index'));
     }
 
