@@ -31,6 +31,12 @@ class Kernel extends ConsoleKernel
     $schedule->command('carbon-mapper:import')
         ->dailyAt('02:00')
         ->withoutOverlapping();
+
+    // Process only newsletters explicitly scheduled for month-end delivery.
+    // Continuation batches allow resuming after temporary mail provider errors.
+    $schedule->command('broadcast:deliver')
+        ->everyMinute()
+        ->withoutOverlapping(10);
 }
 
     /**

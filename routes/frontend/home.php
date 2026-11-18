@@ -64,3 +64,8 @@ Route::post('contact', [PageController::class, 'submitContact'])
 
 Route::get('api/basin-conditions', [BasinConditionsController::class, 'index'])
     ->name('api.basin-conditions');
+
+Route::get('newsletter/unsubscribe/{user}', [\App\Http\Controllers\Frontend\User\NewsletterSubscriptionController::class, 'confirmEmailUnsubscribe'])
+    ->middleware('signed')->name('newsletter.unsubscribe.email');
+Route::post('newsletter/unsubscribe/{user}', [\App\Http\Controllers\Frontend\User\NewsletterSubscriptionController::class, 'emailUnsubscribe'])
+    ->middleware(['signed', 'throttle:10,1'])->name('newsletter.unsubscribe.email.submit');
