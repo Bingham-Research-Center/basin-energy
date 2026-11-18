@@ -11,7 +11,7 @@
                 <article class="border-bottom py-3">
                     <div class="small text-muted">{{ $delivery->announcement->published_at->format('M j, Y') }}</div>
                     <h4>{{ $delivery->announcement->title }}</h4>
-                    <div style="white-space:pre-line">{{ $delivery->announcement->body }}</div>
+                    <div class="broadcast-rich-content">{!! app(\App\Services\BroadcastRichText::class)->render($delivery->announcement->body, $delivery->announcement->body_format) !!}</div>
                 </article>
             @endif
         @empty

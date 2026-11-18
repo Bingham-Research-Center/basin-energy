@@ -13,7 +13,7 @@ class BroadcastNewsletter extends Model
     public const SENT_WITH_ERRORS = 'sent_with_errors';
 
     protected $fillable = [
-        'title', 'body', 'issue_month', 'status', 'scheduled_at', 'sent_at', 'created_by',
+        'title', 'body', 'body_format', 'issue_month', 'status', 'scheduled_at', 'sent_at', 'created_by',
     ];
 
     protected $casts = [
