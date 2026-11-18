@@ -13,6 +13,22 @@ class BlogHtmlSanitizer
     {
         $config = HTMLPurifier_Config::createDefault();
 
+        // HTMLPurifier otherwise writes its serialized definitions under
+        // vendor/, which is deliberately read-only on production servers.
+        // Cache these generated definitions in Laravel's writable storage.
+        $cachePath = storage_path('framework/cache/htmlpurifier');
+        if (! is_dir($cachePath)) {
+            \Illuminate\Support\Facades\File::ensureDirectoryExists($cachePath, 0755, true);
+        }
+
+        if (! is_dir($cachePath) || ! is_writable($cachePath)) {
+            throw new \RuntimeException(
+                'HTMLPurifier definition cache is not writable: '.$cachePath.
+                '. Ensure Laravel storage/framework/cache is writable by the PHP web process.'
+            );
+        }
+
+        $config->set('Cache.SerializerPath', $cachePath);
         $config->set('Core.Encoding', 'UTF-8');
         $config->set('HTML.Doctype', 'HTML 4.01 Transitional');
 
