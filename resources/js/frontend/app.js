@@ -14,7 +14,6 @@ const app = new Vue({
     el: '#app',
 });
 
-import '../dashboard/theme';
 import '../dashboard/charts';
 import '../dashboard/admin-overview';
 import '../dashboard/horsepool';

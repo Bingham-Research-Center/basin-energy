@@ -89,6 +89,9 @@ jobs:
       - name: Build frontend assets
         run: npm run production
 
+      - name: Check shared dashboard theme script
+        run: node --check public/js/dashboard-theme.js
+
       - name: Verify Laravel Mix manifest
         run: test -f public/mix-manifest.json
 
