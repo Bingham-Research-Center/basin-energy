@@ -28,12 +28,7 @@
 @endsection
 
 @push('after-scripts')
-<script src="{{ asset('js/broadcast-editor.js') }}?v=3" defer></script>
-@if(session('broadcast_toast'))
-<script>
-window.brcBroadcastToast = @json(session('broadcast_toast'));
-</script>
-@endif
+<script src="{{ asset('js/broadcast-editor.js') }}?v=4" defer></script>
 @if($errors->any())
 <script>window.brcBroadcastReopen = 'newsletter';</script>
 @endif

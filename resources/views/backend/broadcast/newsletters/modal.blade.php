@@ -48,7 +48,7 @@
                     <form method="POST" action="#" data-broadcast-schedule-form class="mr-2 d-none">
                         @csrf
                         <button type="submit" class="btn btn-success"
-                            onclick="return confirm('Schedule this newsletter for the end of its month?')">
+                            data-broadcast-confirm-schedule>
                             Schedule newsletter
                         </button>
                     </form>

@@ -44,6 +44,7 @@
     <script src="{{ mix('js/frontend.js') }}"></script>
     <script src="{{ mix('js/backend.js') }}"></script>
     <script src="{{ asset('js/dashboard-theme.js') }}" defer></script>
+    <script src="{{ asset('js/dashboard-toasts.js') }}?v=1"></script>
     <livewire:scripts />
     @stack('after-scripts')
 
