@@ -13,6 +13,15 @@ class CreateEmissionTrendsTable extends Migration
      */
     public function up()
     {
+        // Production may already contain this imported research dataset while
+        // its migration record is missing. Reconcile the ledger only after
+        // verifying the actual table is compatible with the intended schema.
+        if (Schema::hasTable('emission_trends')) {
+            \App\Support\ExistingEmissionTrendsSchema::assertCompatible();
+
+            return;
+        }
+
         Schema::create('emission_trends', function (Blueprint $table) {
             $table->id();
 
@@ -60,6 +69,12 @@ class CreateEmissionTrendsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('emission_trends');
+        // This migration can now adopt a pre-existing production dataset.
+        // Dropping it on rollback could delete data that this migration did
+        // not create, so explicit operator review is required instead.
+        throw new \RuntimeException(
+            'Refusing to drop emission_trends during rollback: it may contain pre-existing production data. '.
+            'Back up and remove the table explicitly only if you intend to delete the dataset.'
+        );
     }
 }
