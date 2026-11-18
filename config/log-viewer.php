@@ -54,7 +54,7 @@ return [
         'enabled'    => true,
 
         'attributes' => [
-            'prefix'     => 'log-viewer',
+            'prefix'     => 'admin/log-viewer',
 
             // Protect every vendor route (dashboard, show, search, download,
             // delete) with BasinEnergy's normal admin account checks.

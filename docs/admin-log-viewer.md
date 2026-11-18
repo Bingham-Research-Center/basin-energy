@@ -4,14 +4,25 @@ BasinEnergy uses `arcanedev/log-viewer` 10.1.1. Its routes are registered
 by the package and do **not** inherit the `admin` group from
 `routes/web.php`.
 
+## Canonical URLs
+
+LogViewer is registered at `/admin/log-viewer` and
+`/admin/log-viewer/logs`, matching BasinEnergy's admin URL convention.
+All detail, download, filter, search, and delete endpoints also use this
+prefix. The existing named routes (`log-viewer::*`) remain unchanged,
+so sidebar links and generated URLs automatically use the new location.
+
+The legacy `/log-viewer` URLs are intentionally not served anymore;
+please update saved bookmarks.
+
 ## Authorization
 
 The new `config/log-viewer.php` sets
 `route.attributes.middleware` to `['web', 'admin']`.
 That applies authentication, two-factor/password policy and
 `type=admin` checking to **all** package routes:
-- `/log-viewer` (dashboard)
-- `/log-viewer/logs` (file list)
+- `/admin/log-viewer` (dashboard)
+- `/admin/log-viewer/logs` (file list)
 - Daily logs, level filters, searches, downloads and DELETE requests.
 
 Regular-user accounts and guests cannot access raw application logs.
