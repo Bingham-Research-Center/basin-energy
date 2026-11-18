@@ -1,0 +1,43 @@
+/* Only theme switches animate. Initial page paint does not transition. */
+html.brc-theme-changing body.c-app,
+html.brc-theme-changing .c-wrapper,
+html.brc-theme-changing .c-body,
+html.brc-theme-changing .c-main,
+html.brc-theme-changing .c-header,
+html.brc-theme-changing .c-subheader,
+html.brc-theme-changing .c-footer,
+html.brc-theme-changing .c-sidebar,
+html.brc-theme-changing .c-sidebar-brand,
+html.brc-theme-changing .c-sidebar-nav-link,
+html.brc-theme-changing .c-sidebar-nav-dropdown-toggle,
+html.brc-theme-changing .card,
+html.brc-theme-changing .card-header,
+html.brc-theme-changing .card-footer,
+html.brc-theme-changing .dropdown-menu,
+html.brc-theme-changing .dropdown-item,
+html.brc-theme-changing .form-control,
+html.brc-theme-changing .custom-select,
+html.brc-theme-changing .table,
+html.brc-theme-changing .dashboard-panel-card,
+html.brc-theme-changing .dashboard-chart-card,
+html.brc-theme-changing .dashboard-dataset-card {
+    transition: background-color 240ms ease, color 240ms ease,
+        border-color 240ms ease, box-shadow 240ms ease;
+}
+
+.brc-theme-menu [data-dashboard-theme-value].active {
+    font-weight: 600;
+}
+.brc-theme-menu [data-dashboard-theme-value].active::after {
+    content: '\2713';
+    margin-left: auto;
+    padding-left: 1rem;
+    font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html.brc-theme-changing body.c-app,
+    html.brc-theme-changing body.c-app * {
+        transition: none !important;
+    }
+}
