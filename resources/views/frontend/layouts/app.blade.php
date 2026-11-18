@@ -10,7 +10,7 @@
     @yield('meta')
     @stack('before-styles')
     <link href="{{ mix('css/backend.css') }}" rel="stylesheet">
-    <link href="{{ asset('css/dashboard-theme.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/dashboard-theme.css') }}?v=2" rel="stylesheet">
     <livewire:styles />
     @stack('after-styles')
 </head>

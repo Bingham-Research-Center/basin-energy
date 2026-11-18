@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="{{ asset('frontend/plugins/themify/css/themify-icons.css') }}">
     <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-bs4.min.css" rel="stylesheet">
     <link href="{{ mix('css/backend.css') }}" rel="stylesheet">
-    <link href="{{ asset('css/dashboard-theme.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/dashboard-theme.css') }}?v=2" rel="stylesheet">
     <livewire:styles />
     @stack('after-styles')
 </head>
