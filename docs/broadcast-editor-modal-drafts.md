@@ -30,6 +30,11 @@ Security and compatibility:
 - New HTML is sanitized server-side using the existing HTMLPurifier
   sanitizer, and is sanitized again before rendering in email/user views.
 - The new `body_format` and `status` fields preserve all legacy records.
+- The original `published_at` column stays non-nullable. Drafts use a
+  placeholder timestamp for legacy schema compatibility, but `status=draft`
+  is authoritative and the UI displays no publication date. Publishing
+  replaces the placeholder with the actual publication timestamp. This
+  avoids a DBAL dependency or risky ALTER TABLE.
 - No new npm packages or frontend build are required; the controller JS
   and CSS are standalone assets. The repository's existing Summernote
   CDN dependency is reused.

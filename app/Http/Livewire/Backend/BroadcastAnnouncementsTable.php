@@ -37,8 +37,8 @@ class BroadcastAnnouncementsTable extends DataTableComponent
                     ? 'All Users' : 'Selected User roles: '.implode(', ', $row->role_ids ?? [])),
             Column::make('Published', 'published_at')
                 ->sortable()
-                ->label(fn ($row) => $row->published_at
-                    ? $row->published_at->format('M j, Y H:i') : '-'),
+                ->label(fn ($row) => $row->status === BroadcastAnnouncement::PUBLISHED
+                    ? optional($row->published_at)->format('M j, Y H:i') : '-'),
             Column::make('Email sent')
                 ->label(fn ($row) => $row->sent_count.' / '.$row->recipient_count),
             Column::make('Status', 'status')

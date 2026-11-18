@@ -20,10 +20,6 @@ return new class extends Migration
             $table->string('status', 20)->default('published')->index();
         });
 
-        // A saved announcement draft is not published yet.
-        Schema::table('broadcast_announcements', function (Blueprint $table) {
-            $table->timestamp('published_at')->nullable()->change();
-        });
     }
 
     public function down(): void
