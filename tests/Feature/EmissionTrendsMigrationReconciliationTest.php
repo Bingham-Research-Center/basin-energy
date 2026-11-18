@@ -36,7 +36,8 @@ class EmissionTrendsMigrationReconciliationTest extends TestCase
     {
         // Simulate a missing historical field without altering the real
         // CI database schema, which is shared across other feature tests.
-        Schema::shouldReceive('hasTable')->once()
+        // The migration and its schema validator each check the table.
+        Schema::shouldReceive('hasTable')->twice()
             ->with('emission_trends')->andReturn(true);
         Schema::shouldReceive('getColumnListing')->once()
             ->with('emission_trends')->andReturn(['id', 'year']);
