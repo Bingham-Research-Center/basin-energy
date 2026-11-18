@@ -22,6 +22,51 @@
                 (state.id || 'new');
         }
 
+        function removeRecovery(kind, id) {
+            // Clear both the pre-autosave ('new') and persistent draft key.
+            // Other browser devices cannot be accessed, but their copies
+            // cannot update a deleted draft on the server.
+            try {
+                localStorage.removeItem('brc-broadcast-recovery:' + kind + ':new');
+                if (id) localStorage.removeItem('brc-broadcast-recovery:' + kind + ':' + id);
+            } catch (error) {
+                // Storage can be disabled, independently of server deletion.
+            }
+        }
+
+        function alertConfirm(title, message, danger) {
+            if (window.Swal && typeof window.Swal.fire === 'function') {
+                return window.Swal.fire({
+                    title: title,
+                    text: message,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: danger ? '#d33' : '#3085d6',
+                    confirmButtonText: danger ? 'Discard Draft' : 'Continue',
+                    cancelButtonText: 'Cancel'
+                }).then(function (result) { return Boolean(result.isConfirmed || result.value); });
+            }
+            return Promise.resolve(window.confirm(title + '\n' + message));
+        }
+
+        function notify(message, icon) {
+            if (window.Swal && typeof window.Swal.fire === 'function') {
+                return window.Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: icon || 'success',
+                    title: message,
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+            }
+            return Promise.resolve();
+        }
+
+        if (window.brcBroadcastToast) notify(window.brcBroadcastToast, 'success');
+
+
         function fieldValue(form, name) {
             var el = form.elements.namedItem(name);
             return el ? el.value : '';
@@ -104,7 +149,7 @@
         }
 
         function change(state) {
-            if (state.muting || state.closed) return;
+            if (state.muting || state.closed || state.discarding) return;
             state.version++;
             state.dirty = true;
             backup(state, read(state));
@@ -115,6 +160,7 @@
 
         function save(state) {
             clearTimeout(state.timer);
+            if (state.discarding) return Promise.resolve(false);
             if (state.inFlight) {
                 return state.inFlight.then(function () {
                     return state.dirty ? save(state) : true;
@@ -150,7 +196,15 @@
                 }
                 return response.json();
             }).then(function (result) {
+                if (state.discarding) {
+                    // Discard waits for this request, then deletes the saved
+                    // record; never launch another autosave in the interim.
+                    state.id = result.id;
+                    return true;
+                }
                 state.id = result.id;
+                var discard = state.modal.querySelector('[data-broadcast-discard]');
+                if (discard) discard.disabled = false;
                 var editId = state.form.elements.namedItem('_broadcast_edit_id');
                 if (editId) editId.value = String(result.id);
                 var method = state.form.querySelector('[data-broadcast-method]');
@@ -182,7 +236,7 @@
                 return false;
             }).finally(function () {
                 state.inFlight = null;
-                if (state.dirty && !state.closed) {
+                if (state.dirty && !state.closed && !state.discarding) {
                     clearTimeout(state.timer);
                     state.timer = setTimeout(function () { save(state); }, 5000);
                 }
@@ -247,8 +301,11 @@
 
         function reset(state) {
             state.muting = true;
+            state.discarding = false;
             state.closed = false;
             state.id = null;
+            var discard = state.modal.querySelector('[data-broadcast-discard]');
+            if (discard) discard.disabled = false; // A new, browser-only draft can be discarded.
             state.version = 0;
             state.dirty = false;
             clearTimeout(state.timer);
@@ -289,11 +346,19 @@
                 }
                 state.muting = true;
                 state.id = data.id;
+                var discard = state.modal.querySelector('[data-broadcast-discard]');
+                // Scheduled issues may still be edited, but Discard Draft is
+                // intentionally reserved for unscheduled drafts.
+                if (discard) discard.disabled = !data.delete_url;
                 state.form.action = data.update_url;
                 var method = state.form.querySelector('[data-broadcast-method]');
                 if (method) method.disabled = false;
                 var editId = state.form.elements.namedItem('_broadcast_edit_id');
                 if (editId) editId.value = String(data.id);
+                // Ensure Summernote is created BEFORE injecting loaded HTML.
+                // On a fast network the JSON may arrive before shown.bs.modal.
+                var rich = state.form.querySelector('textarea.js-broadcast-rich-editor');
+                if (rich) initEditor(rich, state);
                 applyData(state, data);
                 var schedule = state.modal.querySelector('[data-broadcast-schedule-form]');
                 if (schedule && data.schedule_url) {
@@ -314,7 +379,8 @@
             var form = modal.querySelector('[data-broadcast-editor-form]');
             if (!form) return;
             var state = {modal:modal, form:form, id:null, version:0,
-                dirty:false, timer:null, inFlight:null, muting:false, closed:false};
+                dirty:false, timer:null, inFlight:null, muting:false,
+                closed:false, discarding:false};
             states.set(modal, state);
             var select = form.querySelector('select[name="audience"]');
             if (select) select.addEventListener('change', function () { toggleRoles(form); change(state); });
@@ -349,17 +415,29 @@
 
             $(modal).on('shown.bs.modal', function () {
                 var el = form.querySelector('textarea.js-broadcast-rich-editor');
-                if (el) initEditor(el, state);
+                if (el) {
+                    initEditor(el, state);
+                    // Layout after the Bootstrap transition restores toolbar
+                    // measurements on reopened and freshly loaded drafts.
+                    if ($.fn.summernote && $(el).next('.note-editor').length) {
+                        $(el).summernote('code', $(el).summernote('code'));
+                    }
+                }
             });
             $(modal).on('hide.bs.modal', function () {
-                // A static backdrop + disabled Escape means only explicit Close
-                // buttons dismiss the popup. Keep a local backup if saving fails.
+                // Only explicit Close dismisses this static-backdrop modal.
+                if (state.discarding) return;
                 if (state.dirty) backup(state, read(state));
                 save(state);
             });
             $(modal).on('hidden.bs.modal', function () {
                 state.closed = true;
             });
+
+            var discardButton = modal.querySelector('[data-broadcast-discard]');
+            if (discardButton) {
+                discardButton.addEventListener('click', function () { discard(state); });
+            }
 
             var schedule = modal.querySelector('[data-broadcast-schedule-form]');
             if (schedule) {
@@ -377,6 +455,95 @@
                 $(modal).modal({backdrop:'static', keyboard:false, show:true});
             }
         });
+
+
+        function discard(state) {
+            var kind = state.modal.dataset.broadcastModal;
+            return alertConfirm('Discard this draft?', 'This permanently deletes the draft, its local recovery copy, and any unshared draft images. This cannot be undone.', true)
+                .then(function (confirmed) {
+                    if (!confirmed) return;
+                    state.discarding = true;
+                    state.closed = true;
+                    clearTimeout(state.timer);
+                    status(state, 'Discarding draft…');
+                    // Allow an already-running autosave to finish, then delete
+                    // its resulting row. No autosave is allowed to recreate it.
+                    var running = state.inFlight;
+                    return Promise.resolve(running).then(function () {
+                        var id = state.id;
+                        if (!id) {
+                            removeRecovery(kind, null);
+                            state.dirty = false;
+                            $(state.modal).modal('hide');
+                            notify('Unsaved draft discarded', 'success');
+                            return;
+                        }
+
+                        var endpoint = state.form.dataset.broadcastDeleteTemplate
+                            .replace('__ID__', encodeURIComponent(id));
+                        return fetch(endpoint, {
+                            method: 'DELETE',
+                            credentials: 'same-origin',
+                            headers: {
+                                'X-CSRF-TOKEN': token,
+                                'Accept': 'application/json'
+                            }
+                        }).then(function (response) {
+                            if (!response.ok) throw new Error('Discard failed (HTTP ' + response.status + ').');
+                            return response.json();
+                        }).then(function () {
+                            removeRecovery(kind, id);
+                            state.dirty = false;
+                            $(state.modal).modal('hide');
+                            notify('Draft permanently discarded', 'success');
+                            // Refresh the Livewire table. Do not keep a stale
+                            // row whose edit link could no longer resolve.
+                            window.setTimeout(function () { window.location.reload(); }, 600);
+                        });
+                    }).catch(function (error) {
+                        state.discarding = false;
+                        state.closed = false;
+                        status(state, error.message + ' Draft kept for recovery.', true);
+                        notify(error.message, 'error');
+                    });
+                });
+        }
+
+        function deleteFromTable(form) {
+            var kind = form.dataset.broadcastDelete;
+            var id = form.dataset.broadcastId;
+            return alertConfirm('Delete this draft?', 'This removes the saved draft and its unshared images. You cannot undo this action.', true)
+                .then(function (confirmed) {
+                    if (!confirmed) return;
+                    return fetch(form.action, {
+                        method: 'DELETE',
+                        credentials: 'same-origin',
+                        headers: {
+                            'X-CSRF-TOKEN': token,
+                            'Accept': 'application/json'
+                        }
+                    }).then(function (response) {
+                        if (!response.ok) throw new Error('Delete failed (HTTP ' + response.status + ').');
+                        return response.json();
+                    }).then(function () {
+                        removeRecovery(kind, id);
+                        return notify('Draft deleted', 'success');
+                    }).then(function () {
+                        window.location.reload();
+                    }).catch(function (error) {
+                        notify(error.message, 'error');
+                    });
+                });
+        }
+
+        // Delegated because Livewire replaces table rows after search/sort.
+        document.addEventListener('submit', function (event) {
+            var form = event.target.closest('form[data-broadcast-delete]');
+            if (!form) return;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            deleteFromTable(form);
+        }, true);
 
         document.addEventListener('click', function (event) {
             var create = event.target.closest('[data-broadcast-create]');

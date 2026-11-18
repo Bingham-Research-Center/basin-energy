@@ -9,6 +9,7 @@ use App\Models\BroadcastAnnouncementDelivery;
 use App\Models\BroadcastNewsletter;
 use App\Models\NewsletterAdminAlert;
 use App\Services\BroadcastRichText;
+use App\Services\BroadcastDraftMediaCleanup;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -46,7 +47,7 @@ class BroadcastController
         ]);
 
         return redirect()->route('admin.broadcast.newsletters.index')
-            ->withFlashSuccess(__('Newsletter draft saved. Return to the draft and click Schedule when ready.'));
+            ->with('broadcast_toast', __('Newsletter draft saved. You can continue editing later.'));
     }
 
     public function editNewsletter(Request $request, BroadcastNewsletter $newsletter, BroadcastRichText $richText)
@@ -62,6 +63,8 @@ class BroadcastController
                 'update_url' => route('admin.broadcast.newsletters.update', $newsletter),
                 'schedule_url' => $newsletter->isEditable()
                     ? route('admin.broadcast.newsletters.schedule', $newsletter) : null,
+                'delete_url' => $newsletter->status === BroadcastNewsletter::DRAFT
+                    ? route('admin.broadcast.newsletters.delete', $newsletter) : null,
             ])->header('Cache-Control', 'private, no-store');
         }
 
@@ -90,7 +93,7 @@ class BroadcastController
         });
 
         return redirect()->route('admin.broadcast.newsletters.index')
-            ->withFlashSuccess(__('Draft updated. Schedule again when ready.'));
+            ->with('broadcast_toast', __('Newsletter draft saved. Schedule again when ready.'));
     }
 
     public function scheduleNewsletter(BroadcastNewsletter $newsletter, BroadcastRichText $richText)
@@ -119,16 +122,32 @@ class BroadcastController
             ->withFlashSuccess(__('Newsletter scheduled for the last day of the month at 6 PM Mountain time.'));
     }
 
-    public function deleteNewsletter(BroadcastNewsletter $newsletter)
-    {
-        DB::transaction(function () use ($newsletter) {
+    public function deleteNewsletter(
+        Request $request,
+        BroadcastNewsletter $newsletter,
+        BroadcastDraftMediaCleanup $media
+    ) {
+        $body = DB::transaction(function () use ($newsletter) {
             $locked = BroadcastNewsletter::whereKey($newsletter->id)->lockForUpdate()->firstOrFail();
             abort_unless($locked->isEditable(), 403);
+
+            $body = $locked->body;
             $locked->delete();
+
+            return $body;
         });
 
+        // Images referenced by another announcement or newsletter must
+        // remain available, especially when included in delivered emails.
+        $media->deleteUnreferenced($body);
+
+        if ($request->expectsJson()) {
+            return response()->json(['deleted' => true, 'id' => $newsletter->id])
+                ->header('Cache-Control', 'no-store');
+        }
+
         return redirect()->route('admin.broadcast.newsletters.index')
-            ->withFlashSuccess(__('Draft or scheduled newsletter deleted.'));
+            ->with('broadcast_toast', __('Newsletter draft discarded.'));
     }
 
     private function validateNewsletter(
@@ -191,6 +210,8 @@ class BroadcastController
                 'update_url' => route('admin.broadcast.announcements.update', $announcement),
                 'publish_url' => $announcement->isEditable()
                     ? route('admin.broadcast.announcements.publish', $announcement) : null,
+                'delete_url' => $announcement->isEditable()
+                    ? route('admin.broadcast.announcements.delete', $announcement) : null,
             ])->header('Cache-Control', 'private, no-store');
         }
 
@@ -225,8 +246,8 @@ class BroadcastController
         });
 
         return redirect()->route('admin.broadcast.announcements.index')
-            ->withFlashSuccess($publish
-                ? __('Announcement published; email delivery will be processed by the scheduler.')
+            ->with('broadcast_toast', $publish
+                ? __('Announcement published.')
                 : __('Announcement draft saved. You can finish and publish it later.'));
     }
 
@@ -258,9 +279,9 @@ class BroadcastController
         });
 
         return redirect()->route('admin.broadcast.announcements.index')
-            ->withFlashSuccess($publish
+            ->with('broadcast_toast', $publish
                 ? __('Announcement published to the selected User groups.')
-                : __('Announcement draft updated.'));
+                : __('Announcement draft saved.'));
     }
 
     public function publishAnnouncement(BroadcastAnnouncement $announcement, BroadcastRichText $richText)
@@ -276,17 +297,31 @@ class BroadcastController
             ->withFlashSuccess(__('Announcement published to the selected User groups.'));
     }
 
-    public function deleteAnnouncement(BroadcastAnnouncement $announcement)
-    {
-        DB::transaction(function () use ($announcement) {
+    public function deleteAnnouncement(
+        Request $request,
+        BroadcastAnnouncement $announcement,
+        BroadcastDraftMediaCleanup $media
+    ) {
+        $body = DB::transaction(function () use ($announcement) {
             $locked = BroadcastAnnouncement::whereKey($announcement->id)
                 ->lockForUpdate()->firstOrFail();
             abort_unless($locked->isEditable(), 403);
+
+            $body = $locked->body;
             $locked->delete();
+
+            return $body;
         });
 
+        $media->deleteUnreferenced($body);
+
+        if ($request->expectsJson()) {
+            return response()->json(['deleted' => true, 'id' => $announcement->id])
+                ->header('Cache-Control', 'no-store');
+        }
+
         return redirect()->route('admin.broadcast.announcements.index')
-            ->withFlashSuccess(__('Announcement draft deleted.'));
+            ->with('broadcast_toast', __('Announcement draft discarded.'));
     }
 
     private function validateAnnouncement(

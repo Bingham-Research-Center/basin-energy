@@ -26,6 +26,7 @@
                 </p>
                 <form id="announcementPopupForm" action="{{ $oldAction }}" method="POST"
                     data-broadcast-editor-form="announcement"
+                    data-broadcast-delete-template="{{ route('admin.broadcast.announcements.delete', ['announcement' => '__ID__']) }}"
                     data-create-url="{{ route('admin.broadcast.announcements.store') }}"
                     data-autosave-url="{{ route('admin.broadcast.editor.autosave', ['kind' => 'announcement']) }}"
                     data-image-upload-url="{{ route('admin.broadcast.editor.images') }}">
@@ -42,7 +43,11 @@
             <div class="px-3 pb-1 small text-muted" role="status" aria-live="polite"
                 data-broadcast-save-status>Changes are saved automatically while you work.</div>
             <div class="modal-footer d-flex flex-wrap justify-content-between">
-                <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Close</button>
+                <div class="d-flex flex-wrap align-items-center">
+                    <button type="button" class="btn btn-outline-danger mr-2"
+                        data-broadcast-discard disabled>Discard Draft</button>
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Close</button>
+                </div>
                 <div class="d-flex flex-wrap align-items-center">
                     <button type="submit" class="btn btn-outline-primary mr-2"
                         name="intent" value="draft" form="announcementPopupForm"
