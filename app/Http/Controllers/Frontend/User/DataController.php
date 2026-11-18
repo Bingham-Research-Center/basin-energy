@@ -470,6 +470,11 @@ class DataController extends Controller
         return view('frontend.user.data.realtime_ozone');
     }
 
+        public function realtimePandora()
+    {
+        return view('frontend.user.data.realtime_pandora');
+    }
+
     public function realtimeOzoneJson(Request $request)
     {
         $token = config('services.synoptic.token', env('SYNOPTIC_TOKEN'));
