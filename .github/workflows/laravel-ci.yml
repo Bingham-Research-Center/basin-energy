@@ -92,6 +92,9 @@ jobs:
       - name: Check shared dashboard theme script
         run: node --check public/js/dashboard-theme.js
 
+      - name: Check Broadcast editor syntax
+        run: node --check public/js/broadcast-editor.js
+
       - name: Verify Laravel Mix manifest
         run: test -f public/mix-manifest.json
 

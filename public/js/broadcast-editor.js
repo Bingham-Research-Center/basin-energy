@@ -114,21 +114,70 @@
             toggleRoles(form);
         }
 
-        function recover(state) {
+        function recover(state, serverUpdatedAt) {
+            // Recovery belongs *inside an already-visible editor*, not in a
+            // blocking native dialog over the table behind the popup.
+            var recoveryKey = key(state);
+            var backupData;
             try {
-                var raw = localStorage.getItem(key(state));
-                if (!raw) return;
-                var data = JSON.parse(raw);
-                if (!data || !data.values) return;
-                if (window.confirm('Recover your unsaved Broadcast editor changes from this browser?')) {
-                    state.muting = true;
-                    applyData(state, data.values);
-                    state.muting = false;
-                    change(state);
-                }
+                var raw = localStorage.getItem(recoveryKey);
+                if (!raw) return Promise.resolve(false);
+                backupData = JSON.parse(raw);
+                if (!backupData || !backupData.values) return Promise.resolve(false);
             } catch (error) {
-                // Storage is optional. The server is the primary draft store.
+                return Promise.resolve(false);
             }
+
+            var serverValues = read(state);
+            var savedAt = Number(backupData.savedAt) || 0;
+            var serverAt = serverUpdatedAt ? Date.parse(serverUpdatedAt) : NaN;
+            var identical = JSON.stringify(backupData.values) === JSON.stringify(serverValues);
+
+            // Older autosave backups and identical copies are not unsaved
+            // changes. Clear them rather than asking on every Edit click.
+            if (identical || (Number.isFinite(serverAt) && savedAt <= serverAt)) {
+                clearBackup(state, recoveryKey);
+                return Promise.resolve(false);
+            }
+
+            var token = state.openToken;
+            function offer() {
+                if (state.openToken !== token || state.closed || state.discarding) {
+                    return Promise.resolve(false);
+                }
+                if (!window.BrcToasts || typeof window.BrcToasts.confirm !== 'function') {
+                    // Do not throw a native window.confirm while the editor is
+                    // opening. Keep the browser copy for another attempt.
+                    status(state, 'Unsaved browser changes are available for recovery.', true);
+                    return Promise.resolve(false);
+                }
+                return window.BrcToasts.confirm({
+                    title: 'Recover unsaved draft?',
+                    text: 'This browser has newer changes than the saved draft. Restore them?',
+                    icon: 'question',
+                    confirmButtonText: 'Recover changes'
+                }).then(function (accepted) {
+                    if (state.openToken !== token || state.closed) return false;
+                    if (accepted) {
+                        state.muting = true;
+                        try { applyData(state, backupData.values); }
+                        finally { state.muting = false; }
+                        change(state);
+                    } else {
+                        // Cancel means use the server version; do not prompt
+                        // again for the same stale recovery entry.
+                        clearBackup(state, recoveryKey);
+                    }
+                    return Boolean(accepted);
+                });
+            }
+
+            if (state.modalShown) return offer();
+            return new Promise(function (resolve) {
+                $(state.modal).one('shown.bs.modal', function () {
+                    Promise.resolve(offer()).then(resolve, function () { resolve(false); });
+                });
+            });
         }
 
         function backup(state, data) {
@@ -146,7 +195,7 @@
         }
 
         function change(state) {
-            if (state.muting || state.closed || state.discarding) return;
+            if (state.muting || state.closed || state.discarding || state.submitting) return;
             state.version++;
             state.dirty = true;
             backup(state, read(state));
@@ -157,7 +206,7 @@
 
         function save(state) {
             clearTimeout(state.timer);
-            if (state.discarding) return Promise.resolve(false);
+            if (state.discarding || state.submitting) return Promise.resolve(false);
             if (state.inFlight) {
                 return state.inFlight.then(function () {
                     return state.dirty ? save(state) : true;
@@ -300,11 +349,13 @@
             state.muting = true;
             state.discarding = false;
             state.closed = false;
-            state.approvedSubmit = false;
+            state.submitting = false;
             state.confirming = false;
             state.confirmingSchedule = false;
             state.pendingSubmitter = null;
             state.id = null;
+            state.openToken = (state.openToken || 0) + 1;
+            state.modalShown = false;
             var discard = state.modal.querySelector('[data-broadcast-discard]');
             if (discard) discard.disabled = false; // A new, browser-only draft can be discarded.
             state.version = 0;
@@ -332,6 +383,7 @@
 
         function load(state, url) {
             reset(state);
+            var token = state.openToken;
             status(state, 'Loading saved draft…');
             fetch(url, {
                 credentials: 'same-origin',
@@ -341,6 +393,7 @@
                 if (!r.ok) throw new Error('Cannot load draft.');
                 return r.json();
             }).then(function (data) {
+                if (token !== state.openToken || state.closed) return;
                 if (!data.editable) {
                     window.location.assign(url);
                     return;
@@ -356,21 +409,26 @@
                 if (method) method.disabled = false;
                 var editId = state.form.elements.namedItem('_broadcast_edit_id');
                 if (editId) editId.value = String(data.id);
-                // Ensure Summernote is created BEFORE injecting loaded HTML.
-                // On a fast network the JSON may arrive before shown.bs.modal.
-                var rich = state.form.querySelector('textarea.js-broadcast-rich-editor');
-                if (rich) initEditor(rich, state);
-                applyData(state, data);
-                var schedule = state.modal.querySelector('[data-broadcast-schedule-form]');
-                if (schedule && data.schedule_url) {
-                    schedule.action = data.schedule_url;
-                    schedule.classList.remove('d-none');
-                }
-                var title = state.modal.querySelector('[data-broadcast-modal-title]');
-                if (title) title.textContent = 'Edit draft: ' + (data.title || 'Untitled');
-                state.muting = false;
-                status(state, 'Saved draft loaded. Changes will autosave.');
-                recover(state);
+                var render = function () {
+                    if (token !== state.openToken || state.closed) return;
+                    // Summernote must initialize in the *visible* modal so
+                    // toolbar size and the editable area are calculated.
+                    var rich = state.form.querySelector('textarea.js-broadcast-rich-editor');
+                    if (rich) initEditor(rich, state);
+                    applyData(state, data);
+                    var schedule = state.modal.querySelector('[data-broadcast-schedule-form]');
+                    if (schedule && data.schedule_url) {
+                        schedule.action = data.schedule_url;
+                        schedule.classList.remove('d-none');
+                    }
+                    var title = state.modal.querySelector('[data-broadcast-modal-title]');
+                    if (title) title.textContent = 'Edit draft: ' + (data.title || 'Untitled');
+                    state.muting = false;
+                    status(state, 'Saved draft loaded. Changes will autosave.');
+                    recover(state, data.updated_at);
+                };
+                if (state.modalShown) render();
+                else $(state.modal).one('shown.bs.modal', render);
             }).catch(function () {
                 window.location.assign(url);
             });
@@ -381,29 +439,23 @@
             if (!form) return;
             var state = {modal:modal, form:form, id:null, version:0,
                 dirty:false, timer:null, inFlight:null, muting:false,
-                closed:false, discarding:false, approvedSubmit:false,
-                confirming:false, confirmingSchedule:false, pendingSubmitter:null};
+                closed:false, discarding:false, submitting:false,
+                confirming:false, confirmingSchedule:false, pendingSubmitter:null,
+                modalShown:false, openToken:0};
             states.set(modal, state);
             var select = form.querySelector('select[name="audience"]');
             if (select) select.addEventListener('change', function () { toggleRoles(form); change(state); });
-            // A manual Save/Publish uses the complete form. Confirm Publish
-            // with SweetAlert2, not a native window.confirm dialog. Explicit
-            // submission is gated until any background autosave completes.
-            // This prevents an older async response from overwriting a newly
-            // published announcement.
+            // Use one native form submission after any background autosave.
+            // Calling requestSubmit() from a submit listener re-enters that
+            // listener and used to swallow the administrator's first click.
+            // Always preserve intent=publish/intent=draft for Laravel.
             form.addEventListener('submit', function (event) {
-                var submitter = event.submitter || state.pendingSubmitter || null;
-                clearTimeout(state.timer);
-                if (state.approvedSubmit && !state.inFlight) {
-                    state.closed = true;
-                    return;
-                }
-
                 event.preventDefault();
-                if (state.confirming) return;
-                state.confirming = true;
-                var publish = submitter && submitter.value === 'publish';
-                var confirmStep = publish
+                if (state.submitting) return;
+
+                var submitter = event.submitter || state.pendingSubmitter || null;
+                var publishing = Boolean(submitter && submitter.value === 'publish');
+                var confirmation = publishing
                     ? (window.BrcToasts ? window.BrcToasts.confirm({
                         title: 'Publish announcement?',
                         text: 'Publish this announcement to the selected Users now?',
@@ -411,31 +463,48 @@
                         confirmButtonText: 'Publish announcement'
                     }) : alertConfirm('Publish announcement?', 'Publish this announcement to the selected Users now?', false))
                     : Promise.resolve(true);
-                confirmStep.then(function (confirmed) {
-                    if (!confirmed) return false;
+
+                state.submitting = true;
+                clearTimeout(state.timer);
+                Promise.resolve(confirmation).then(function (accepted) {
+                    if (!accepted) {
+                        state.submitting = false;
+                        return;
+                    }
+                    // A previous autosave must finish first to avoid racing
+                    // the final POST/PUT against an older database write.
                     return Promise.resolve(state.inFlight).then(function () {
-                        state.approvedSubmit = true;
-                        state.pendingSubmitter = submitter;
-                        if (form.requestSubmit) {
-                            form.requestSubmit(submitter || undefined);
-                        } else {
-                            // Preserve the submitter value for announcement
-                            // intent=publish on older browsers.
-                            if (submitter && submitter.name) {
-                                var field = document.createElement('input');
-                                field.type = 'hidden';
-                                field.name = submitter.name;
-                                field.value = submitter.value;
-                                form.appendChild(field);
-                            }
-                            form.submit();
+                        // Summernote's editor is contenteditable, while Laravel
+                        // reads the hidden textarea's submitted HTML value.
+                        var rich = form.querySelector('textarea.js-broadcast-rich-editor');
+                        if (rich && $.fn.summernote && $(rich).next('.note-editor').length) {
+                            rich.value = $(rich).summernote('code');
                         }
-                        return true;
+                        var oldIntent = form.querySelector('input[data-broadcast-submit-intent]');
+                        if (oldIntent) oldIntent.remove();
+                        if (form.dataset.broadcastEditorForm === 'announcement') {
+                            var intent = document.createElement('input');
+                            intent.type = 'hidden';
+                            intent.name = 'intent';
+                            intent.value = publishing ? 'publish' : 'draft';
+                            intent.setAttribute('data-broadcast-submit-intent', '');
+                            form.appendChild(intent);
+                        }
+                        state.closed = true;
+                        // Native submit does not re-fire this handler, so one
+                        // click leads to exactly one request.
+                        HTMLFormElement.prototype.submit.call(form);
                     });
                 }).catch(function () {
-                    status(state, 'Could not confirm action. Your draft is preserved.', true);
-                }).finally(function () {
-                    state.confirming = false;
+                    state.submitting = false;
+                    status(state, 'Could not submit. Your draft is retained for recovery.', true);
+                });
+            });
+            // Track external form-associated buttons for older browsers that
+            // do not expose SubmitEvent.submitter.
+            state.modal.querySelectorAll('button[form="' + form.id + '"]').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    state.pendingSubmitter = button;
                 });
             });
             form.addEventListener('input', function (event) {
@@ -447,6 +516,7 @@
             toggleRoles(form);
 
             $(modal).on('shown.bs.modal', function () {
+                state.modalShown = true;
                 var el = form.querySelector('textarea.js-broadcast-rich-editor');
                 if (el) {
                     initEditor(el, state);
@@ -465,6 +535,8 @@
             });
             $(modal).on('hidden.bs.modal', function () {
                 state.closed = true;
+                state.modalShown = false;
+                state.openToken++;
             });
 
             var discardButton = modal.querySelector('[data-broadcast-discard]');
@@ -603,8 +675,8 @@
                 var state = states.get(modal);
                 if (state) {
                     reset(state);
-                    recover(state);
-                    $(modal).modal({backdrop:'static', keyboard:false});
+                    $(modal).modal('show');
+                    recover(state, null);
                 }
                 event.preventDefault();
                 return;
@@ -617,7 +689,7 @@
             event.preventDefault();
             var context = states.get(current);
             if (context) {
-                $(current).modal({backdrop:'static', keyboard:false});
+                $(current).modal('show');
                 load(context, edit.href);
             }
         });
