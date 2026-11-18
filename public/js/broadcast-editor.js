@@ -318,6 +318,27 @@
             states.set(modal, state);
             var select = form.querySelector('select[name="audience"]');
             if (select) select.addEventListener('change', function () { toggleRoles(form); change(state); });
+            // A manual Save/Publish uses the complete submitted form. If a
+            // background autosave is still writing, wait for it before
+            // submitting so an older HTTP response cannot overwrite the
+            // administrator's final action.
+            form.addEventListener('submit', function (event) {
+                clearTimeout(state.timer);
+                if (state.inFlight) {
+                    event.preventDefault();
+                    var submitter = event.submitter;
+                    state.inFlight.then(function () {
+                        state.closed = true;
+                        if (form.requestSubmit) {
+                            form.requestSubmit(submitter || undefined);
+                        } else {
+                            form.submit();
+                        }
+                    });
+                } else {
+                    state.closed = true;
+                }
+            });
             form.addEventListener('input', function (event) {
                 if (!event.target.classList.contains('js-broadcast-rich-editor')) change(state);
             });

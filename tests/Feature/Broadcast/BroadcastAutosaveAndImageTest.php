@@ -139,10 +139,10 @@ class BroadcastAutosaveAndImageTest extends TestCase
         $this->actingAs(User::factory()->user()->create());
         $this->postJson(route('admin.broadcast.editor.images'), [
             'image' => UploadedFile::fake()->image('sample.jpg'),
-        ])->assertForbidden();
+        ])->assertRedirect(route('frontend.index'));
         $this->postJson(route('admin.broadcast.editor.autosave', ['kind' => 'announcement']), [
             'audience' => 'all_users', 'body' => 'Denied',
-        ])->assertForbidden();
+        ])->assertRedirect(route('frontend.index'));
     }
 
     public function test_editor_popups_cannot_be_dismissed_by_clicking_backdrop(): void
