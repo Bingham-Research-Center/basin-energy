@@ -159,7 +159,9 @@ class BroadcastController
 
     public function announcements()
     {
-        return view('backend.broadcast.announcements.index');
+        return view('backend.broadcast.announcements.index', [
+            'roles' => $this->userRoles(),
+        ]);
     }
 
     private function userRoles()
