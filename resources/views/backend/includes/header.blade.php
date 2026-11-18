@@ -34,6 +34,13 @@
     <ul class="c-header-nav ml-auto mr-4">
         @include('includes.partials.dashboard-theme-switcher')
         @php
+            $newsletterAlertCount = \App\Models\NewsletterAdminAlert::where('admin_id', $logged_in_user->id)
+                ->whereNull('read_at')->count();
+            $newsletterAlerts = \App\Models\NewsletterAdminAlert::where('admin_id', $logged_in_user->id)
+                ->whereNull('read_at')->with('subscriber:id,name')
+                ->latest('id')->take(5)->get();
+        @endphp
+        @php
             $unreadContactMessages = \App\Models\ContactMessage::where('is_read', false)
                 ->latest()
                 ->take(5)
@@ -47,8 +54,9 @@
                 <i class="c-icon c-icon-lg cil-bell"></i>
                 <span id="contactNotificationBadge"
                     class="badge badge-danger"
-                    style="{{ $unreadContactCount ? '' : 'display:none;' }}">
-                    {{ $unreadContactCount }}
+                    data-contact-count="{{ $unreadContactCount }}"
+                    style="{{ ($unreadContactCount + $newsletterAlertCount) ? '' : 'display:none;' }}">
+                    {{ $unreadContactCount + $newsletterAlertCount }}
                 </span>
             </a>
 
@@ -70,6 +78,26 @@
                             No new contact messages
                         </div>
                     @endforelse
+                </div>
+                <div class="dropdown-header bg-light py-2">
+                    <strong>Newsletter subscriptions</strong>
+                    <span class="badge badge-info" id="newsletterAlertsCount">{{ $newsletterAlertCount }}</span>
+                </div>
+                <div id="newsletterAlertList">
+                    @forelse($newsletterAlerts as $alert)
+                        <div class="dropdown-item border-bottom">
+                            <strong>{{ $alert->subscriber->name ?? 'Deleted user' }}</strong>
+                            <div class="small">Subscribed to the monthly newsletter</div>
+                        </div>
+                    @empty
+                        <div class="dropdown-item text-muted">No new subscriptions</div>
+                    @endforelse
+                </div>
+                <div class="dropdown-item">
+                    <form method="POST" action="{{ route('admin.broadcast.alerts.read') }}">
+                        @csrf
+                        <button type="submit" class="btn btn-outline-primary btn-sm btn-block">Mark newsletter alerts as read</button>
+                    </form>
                 </div>
             </div>
         </li>
@@ -130,7 +158,9 @@
 
                 let count = parseInt(badge.textContent || '0', 10);
                 count += 1;
-                badge.textContent = count;
+                badge.dataset.contactCount = String((parseInt(badge.dataset.contactCount || '0', 10) || 0) + 1);
+                badge.textContent = (parseInt(badge.dataset.contactCount, 10) || 0) +
+                    (parseInt(document.getElementById('newsletterAlertsCount').textContent, 10) || 0);
                 badge.style.display = 'inline-block';
 
                 const item = document.createElement('a');
@@ -149,5 +179,62 @@
                 }
             });
     });
+</script>
+@endpush
+@push('after-scripts')
+<script>
+(function () {
+    const badge = document.getElementById('contactNotificationBadge');
+    const list = document.getElementById('newsletterAlertList');
+    const countNode = document.getElementById('newsletterAlertsCount');
+    if (!badge || !list || !countNode) return;
+
+    const url = @json(route('admin.broadcast.alerts'));
+    async function refresh() {
+        try {
+            const response = await fetch(url, {
+                credentials: 'same-origin',
+                headers: {'Accept': 'application/json'},
+                cache: 'no-store'
+            });
+            if (!response.ok) return;
+            const payload = await response.json();
+            const newsletterCount = Number(payload.count) || 0;
+            countNode.textContent = String(newsletterCount);
+            const total = (Number(badge.dataset.contactCount) || 0) + newsletterCount;
+            badge.textContent = String(total);
+            badge.style.display = total ? 'inline-block' : 'none';
+            list.replaceChildren();
+            if (!payload.items || !payload.items.length) {
+                const empty = document.createElement('div');
+                empty.className = 'dropdown-item text-muted';
+                empty.textContent = 'No new subscriptions';
+                list.appendChild(empty);
+                return;
+            }
+            payload.items.forEach(function (item) {
+                const row = document.createElement('div');
+                row.className = 'dropdown-item border-bottom';
+                const name = document.createElement('strong');
+                name.textContent = item.name;
+                const description = document.createElement('div');
+                description.className = 'small';
+                description.textContent = 'Subscribed to the monthly newsletter';
+                row.append(name, description);
+                list.appendChild(row);
+            });
+        } catch (error) {
+            // Continue trying on the next poll.
+        }
+    }
+    if (window.Echo) {
+        window.Echo.private('admin.newsletters.' + @json($logged_in_user->id))
+            .listen('.newsletter.subscription.created', refresh);
+    }
+    refresh();
+    setInterval(function () {
+        if (!document.hidden) refresh();
+    }, 20000);
+}());
 </script>
 @endpush

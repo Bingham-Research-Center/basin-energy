@@ -98,6 +98,26 @@
             </ul>
         </li>
 
+        <li class="c-sidebar-nav-title">@lang('Broadcast')</li>
+        <li class="c-sidebar-nav-dropdown {{ activeClass(Route::is('admin.broadcast.*'), 'c-open c-show') }}">
+            <x-utils.link href="#" icon="c-sidebar-nav-icon cil-envelope-closed"
+                class="c-sidebar-nav-dropdown-toggle" :text="__('Broadcast')" />
+            <ul class="c-sidebar-nav-dropdown-items">
+                <li class="c-sidebar-nav-item">
+                    <x-utils.link :href="route('admin.broadcast.newsletters.index')"
+                        class="c-sidebar-nav-link"
+                        :active="activeClass(Route::is('admin.broadcast.newsletters.*'), 'c-active')"
+                        :text="__('Newsletters')" />
+                </li>
+                <li class="c-sidebar-nav-item">
+                    <x-utils.link :href="route('admin.broadcast.announcements.index')"
+                        class="c-sidebar-nav-link"
+                        :active="activeClass(Route::is('admin.broadcast.announcements.*'), 'c-active')"
+                        :text="__('Announcements')" />
+                </li>
+            </ul>
+        </li>
+
         {{-- Personal account settings are for every Administrator-type account,
              including those without the master Administrator role. --}}
             <li class="c-sidebar-nav-title">Admin</li>

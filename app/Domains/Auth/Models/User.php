@@ -85,6 +85,11 @@ class User extends Authenticatable implements MustVerifyEmail, TwoFactorAuthenti
         'roles',
     ];
 
+    public function newsletterSubscription()
+    {
+        return $this->hasOne(\App\Models\NewsletterSubscription::class);
+    }
+
     public function sendPasswordResetNotification($token): void
     {
         $this->notify(new ResetPasswordNotification($token));
