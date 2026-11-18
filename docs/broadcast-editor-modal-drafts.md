@@ -43,6 +43,8 @@ Deployment (after CI and merge):
 ```bash
 cd /var/www/brc_site
 git pull --ff-only origin master
+# Ensure vendor/ matches the committed composer.lock in the PHP runtime.
+docker exec -it brc_site composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
 docker exec -it brc_site php artisan migrate \
   --path=database/migrations/2026_11_21_000000_add_broadcast_draft_and_richtext_columns.php \
   --force
@@ -53,3 +55,46 @@ docker exec -it brc_site php artisan config:cache
 Before the migration, take a backup. Test opening, closing, saving,
 resuming, editing, scheduling and publishing in Light/Dark/Auto and verify
 the resulting email in a staging mail transport.
+
+### Production: HTMLPurifier class missing (500 on Broadcast page)
+
+If `/admin/broadcast/announcements` or Newsletters throws
+`Class "HTMLPurifier_Config" not found`, the application's PHP container
+is running outdated or missing Composer dependencies.
+
+`ezyang/htmlpurifier` **is already in `composer.json` require and locked
+in `composer.lock`**. It is **not** a `require-dev` package. A Git pull
+does not update `vendor/`. Do not change or downgrade the HTML sanitizer
+and do not use `composer update` for this issue.
+
+To diagnose the actual PHP runtime:
+
+```bash
+docker exec -it brc_site php -r "require 'vendor/autoload.php'; var_export(class_exists('HTMLPurifier_Config')); echo PHP_EOL;"
+docker exec -it brc_site composer --version
+```
+
+If the first command is false, install from the lockfile **in the actual
+container/runtime used to serve the website**:
+
+```bash
+docker exec -it brc_site composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
+docker exec -it brc_site php artisan optimize:clear
+docker exec -it brc_site php artisan config:cache
+```
+
+Verify that the first command now returns `true`. If Composer is not
+present in the running PHP container, rebuild its Docker image with
+`composer install` as an image build step or use the site's existing
+Composer deployment mechanism. Do not install `vendor/` on a different
+filesystem and assume the running PHP service will see it. Confirm any
+persistent/bind mount behavior before recreating containers.
+
+The BroadcastRichText service now resolves the sanitizer **lazily**,
+so empty form pages and legacy plain-text messages do not unnecessarily
+depend on it. Saving/rendering rich HTML always requires HTMLPurifier and
+never falls back to unsanitized markup.
+
+The CI workflow additionally tests availability of both HTMLPurifier
+classes after a `composer install --no-dev` to prevent accidental
+future dependency misclassification.
