@@ -87,6 +87,10 @@ Route::group(['as' => 'user.', 'middleware' => ['auth', '2fa.confirmed', 'passwo
         Route::get('oil-well-pad-emissions/options/json', [DataController::class, 'oilWellPadEmissionsOptionsJson'])
             ->name('oil-well-pad-emissions.options.json');
 
+        /* NASA Pandora Project - Uintah Basin */
+        Route::get('realtime/pandora', [DataController::class, 'realtimePandora'])
+            ->name('realtime.pandora');
+
         /* Realtime Data */
         Route::get('realtime/ozone', [DataController::class, 'realtimeOzone'])
             ->name('realtime.ozone');

@@ -160,6 +160,12 @@
                             class="c-sidebar-nav-link"
                             :text="__('Uinta Ozone')"
                             :active="activeClass(Route::is('frontend.user.data.realtime.ozone*'), 'c-active')" />
+                    <li class="c-sidebar-nav-item">
+                        <x-utils.link
+                            :href="route('frontend.user.data.realtime.pandora')"
+                            class="c-sidebar-nav-link"
+                            :text="__('NASA Pandora Project')"
+                            :active="activeClass(Route::is('frontend.user.data.realtime.pandora'), 'c-active')" />
                     </li>
 
                     <li class="c-sidebar-nav-title">@lang('Campbell Loggers')</li>
