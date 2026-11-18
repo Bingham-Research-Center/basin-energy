@@ -54,11 +54,12 @@ class BroadcastNewslettersTable extends DataTableComponent
                     return $view;
                 }
 
-                return $view.'<form class="d-inline" method="POST" action="'.
+                return $view.'<form class="d-inline" data-broadcast-delete="newsletter"'.
+                    ' data-broadcast-id="'.$row->id.'" method="POST" action="'.
                     e(route('admin.broadcast.newsletters.delete', $row->id)).'">'.
                     csrf_field().method_field('DELETE').
                     '<button class="btn btn-sm btn-outline-danger" type="submit"'.
-                    ' onclick="return confirm(\'Delete this newsletter?\')">Delete</button></form>';
+                    '>Delete</button></form>';
             })->html(),
         ];
     }

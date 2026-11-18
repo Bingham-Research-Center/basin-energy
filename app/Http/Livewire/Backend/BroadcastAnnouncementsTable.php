@@ -53,11 +53,12 @@ class BroadcastAnnouncementsTable extends DataTableComponent
                     }
                     return '<a class="btn btn-sm btn-primary mr-1" href="'.$url.
                         '" data-broadcast-edit="announcement">Edit draft</a>'.
-                        '<form class="d-inline" method="POST" action="'.
+                        '<form class="d-inline" data-broadcast-delete="announcement"'.
+                        ' data-broadcast-id="'.$row->id.'" method="POST" action="'.
                         e(route('admin.broadcast.announcements.delete', $row->id)).'">'.
                         csrf_field().method_field('DELETE').
                         '<button type="submit" class="btn btn-sm btn-outline-danger"'.
-                        ' onclick="return confirm(&quot;Delete announcement draft?&quot;)">Delete</button></form>';
+                        '>Delete</button></form>';
                 })->html(),
         ];
     }

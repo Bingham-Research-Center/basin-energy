@@ -66,6 +66,7 @@ class BroadcastEditorController
                 'status' => 'draft',
                 'edit_url' => route('admin.broadcast.newsletters.edit', $draft),
                 'schedule_url' => route('admin.broadcast.newsletters.schedule', $draft),
+                'delete_url' => route('admin.broadcast.newsletters.delete', $draft),
                 'saved_at' => now()->toIso8601String(),
             ])->header('Cache-Control', 'no-store');
         }
@@ -112,6 +113,7 @@ class BroadcastEditorController
             'id' => $draft->id,
             'status' => 'draft',
             'edit_url' => route('admin.broadcast.announcements.edit', $draft),
+            'delete_url' => route('admin.broadcast.announcements.delete', $draft),
             'saved_at' => now()->toIso8601String(),
         ])->header('Cache-Control', 'no-store');
     }

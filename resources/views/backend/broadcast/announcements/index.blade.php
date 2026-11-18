@@ -3,7 +3,7 @@
 @section('title', __('Announcements'))
 
 @push('after-styles')
-<link rel="stylesheet" href="{{ asset('css/broadcast-editor.css') }}?v=2">
+<link rel="stylesheet" href="{{ asset('css/broadcast-editor.css') }}?v=3">
 @endpush
 
 @section('content')
@@ -27,7 +27,12 @@
 @endsection
 
 @push('after-scripts')
-<script src="{{ asset('js/broadcast-editor.js') }}?v=2" defer></script>
+<script src="{{ asset('js/broadcast-editor.js') }}?v=3" defer></script>
+@if(session('broadcast_toast'))
+<script>
+window.brcBroadcastToast = @json(session('broadcast_toast'));
+</script>
+@endif
 @if($errors->any())
 <script>window.brcBroadcastReopen = 'announcement';</script>
 @endif
