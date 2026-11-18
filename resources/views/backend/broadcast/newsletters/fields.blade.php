@@ -5,8 +5,8 @@
     <label for="{{ $editorPrefix }}-issue-month">Issue month <span class="text-danger">*</span></label>
     <input id="{{ $editorPrefix }}-issue-month" type="month" name="issue_month"
         class="form-control" required
-        value="{{ old('issue_month', optional($issue->issue_month)->format('Y-m')) }}">
-    <small class="form-text text-muted">One draft per month. Nothing is sent unless you explicitly schedule it.</small>
+        value="{{ old('issue_month', optional($issue->issue_month)->format('Y-m') ?: now('America/Denver')->format('Y-m')) }}">
+    <small class="form-text text-muted">One draft per month. Drafts may be saved for any month, but past-month issues cannot be scheduled. Nothing is sent unless you explicitly schedule it.</small>
 </div>
 <div class="form-group">
     <label for="{{ $editorPrefix }}-title">Newsletter title</label>

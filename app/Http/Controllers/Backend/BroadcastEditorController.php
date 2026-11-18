@@ -31,9 +31,9 @@ class BroadcastEditorController
                 'body' => ['nullable', 'string', 'max:30000'],
             ]);
             $month = Carbon::createFromFormat('!Y-m-d', $data['issue_month'].'-01', 'America/Denver');
-            if ($month->copy()->endOfMonth()->endOfDay()->isPast()) {
-                throw ValidationException::withMessages(['issue_month' => 'Select the current or a future month.']);
-            }
+            // Autosave only creates/updates a DRAFT. Historical or expired
+            // issue months may still be edited without any email delivery.
+            // scheduleNewsletter() is the sole gate for a send date.
             $draft = DB::transaction(function () use ($data, $month, $richText, $request) {
                 $issue = isset($data['id'])
                     ? BroadcastNewsletter::whereKey($data['id'])->lockForUpdate()->firstOrFail()
