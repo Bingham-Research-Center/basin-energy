@@ -41,3 +41,65 @@ html.brc-theme-changing .dashboard-dataset-card {
         transition: none !important;
     }
 }
+
+
+/*
+ * Rappasoft/Livewire management grids: the package's Bootstrap striped
+ * backgrounds can remain bright while CoreUI inherits white text in dark
+ * mode. Apply paired surface/text colors to the cells, not the entire app.
+ * Scoped to the Users/Roles tables to protect charts, badges and other tables.
+ */
+body.c-app:not(.c-dark-theme) .brc-admin-data-table table > thead > tr > th {
+    color: #34445a !important;
+    background-color: #ffffff !important;
+    border-color: #dce3ec !important;
+}
+body.c-app:not(.c-dark-theme) .brc-admin-data-table table > tbody > tr > td,
+body.c-app:not(.c-dark-theme) .brc-admin-data-table table > tbody > tr > th {
+    color: #26364a !important;
+    background-color: #ffffff !important;
+    border-color: #dce3ec !important;
+}
+body.c-app:not(.c-dark-theme) .brc-admin-data-table table > tbody > tr:nth-of-type(odd) > td,
+body.c-app:not(.c-dark-theme) .brc-admin-data-table table > tbody > tr:nth-of-type(odd) > th {
+    background-color: #f3f6fa !important;
+}
+body.c-app:not(.c-dark-theme) .brc-admin-data-table table > tbody > tr:hover > td,
+body.c-app:not(.c-dark-theme) .brc-admin-data-table table > tbody > tr:hover > th {
+    background-color: #e8eef7 !important;
+}
+
+body.c-app.c-dark-theme .brc-admin-data-table table > thead > tr > th {
+    color: #edf1f7 !important;
+    background-color: #252b36 !important;
+    border-color: #3a4352 !important;
+}
+body.c-app.c-dark-theme .brc-admin-data-table table > tbody > tr > td,
+body.c-app.c-dark-theme .brc-admin-data-table table > tbody > tr > th {
+    color: #edf1f7 !important;
+    background-color: #252b36 !important;
+    border-color: #3a4352 !important;
+}
+body.c-app.c-dark-theme .brc-admin-data-table table > tbody > tr:nth-of-type(odd) > td,
+body.c-app.c-dark-theme .brc-admin-data-table table > tbody > tr:nth-of-type(odd) > th {
+    background-color: #2d3542 !important;
+}
+body.c-app.c-dark-theme .brc-admin-data-table table > tbody > tr:hover > td,
+body.c-app.c-dark-theme .brc-admin-data-table table > tbody > tr:hover > th {
+    background-color: #364356 !important;
+}
+
+/* The existing 240ms theme animation should include management-grid cells. */
+html.brc-theme-changing .brc-admin-data-table table > thead > tr > th,
+html.brc-theme-changing .brc-admin-data-table table > tbody > tr > td,
+html.brc-theme-changing .brc-admin-data-table table > tbody > tr > th {
+    transition: color 240ms ease, background-color 240ms ease,
+        border-color 240ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+    html.brc-theme-changing .brc-admin-data-table table > thead > tr > th,
+    html.brc-theme-changing .brc-admin-data-table table > tbody > tr > td,
+    html.brc-theme-changing .brc-admin-data-table table > tbody > tr > th {
+        transition: none !important;
+    }
+}

@@ -13,7 +13,9 @@
         </x-slot>
 
         <x-slot name="body">
+            <div class="brc-admin-data-table">
             <livewire:backend.users-table status="deleted" />
+            </div>
         </x-slot>
     </x-backend.card>
 @endsection
