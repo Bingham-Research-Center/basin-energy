@@ -66,7 +66,7 @@ class BroadcastEditorModalRegressionTest extends TestCase
 
         $this->get(route('admin.broadcast.newsletters.index'))
             ->assertOk()
-            ->assertSee('broadcast-editor.js?v=5')
+            ->assertSee('broadcast-editor.js?v=6')
             ->assertSee('data-broadcast-save-button', false);
     }
 }
