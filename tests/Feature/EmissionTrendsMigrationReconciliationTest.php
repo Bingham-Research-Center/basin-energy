@@ -47,6 +47,36 @@ class EmissionTrendsMigrationReconciliationTest extends TestCase
         $this->historicalMigration()->up();
     }
 
+    public function test_legacy_mysql_integer_display_widths_are_normalized_without_weakening_schema_checks(): void
+    {
+        $this->assertSame(
+            'bigint unsigned',
+            ExistingEmissionTrendsSchema::canonicalMySqlColumnType('bigint(20) unsigned')
+        );
+        $this->assertSame(
+            'smallint unsigned',
+            ExistingEmissionTrendsSchema::canonicalMySqlColumnType('smallint(5) unsigned')
+        );
+        $this->assertSame(
+            'int unsigned',
+            ExistingEmissionTrendsSchema::canonicalMySqlColumnType('int(10) unsigned')
+        );
+
+        // The normalizer must never hide a real signedness or scale difference.
+        $this->assertSame(
+            'bigint',
+            ExistingEmissionTrendsSchema::canonicalMySqlColumnType('bigint(20)')
+        );
+        $this->assertSame(
+            'decimal(12,4)',
+            ExistingEmissionTrendsSchema::canonicalMySqlColumnType('decimal(12,4)')
+        );
+        $this->assertSame(
+            'int(10) unsigned zerofill',
+            ExistingEmissionTrendsSchema::canonicalMySqlColumnType('int(10) unsigned zerofill')
+        );
+    }
+
     public function test_existing_table_schema_has_a_unique_year_constraint(): void
     {
         // Validation includes column definitions and the UNIQUE year index.
