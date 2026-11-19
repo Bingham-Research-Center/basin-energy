@@ -8,6 +8,7 @@ use App\Models\BroadcastAnnouncement;
 use App\Models\BroadcastAnnouncementDelivery;
 use App\Models\BroadcastNewsletter;
 use App\Services\BroadcastRichText;
+use App\Services\BroadcastDeliveryService;
 use App\Services\BroadcastDraftMediaCleanup;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -226,7 +227,7 @@ class BroadcastController
         $publish = $request->input('intent', 'publish') === 'publish';
         $data = $this->validateAnnouncement($request, $richText, $publish);
 
-        DB::transaction(function () use ($data, $publish, $request, $richText) {
+        $announcementId = DB::transaction(function () use ($data, $publish, $request, $richText) {
             $announcement = BroadcastAnnouncement::create([
                 'title' => $data['title'],
                 'body' => $data['body'],
@@ -243,7 +244,13 @@ class BroadcastController
             if ($publish) {
                 $this->publishDraft($announcement, $richText);
             }
+
+            return $announcement->id;
         });
+
+        if ($publish) {
+            app(BroadcastDeliveryService::class)->dispatchAnnouncement($announcementId);
+        }
 
         return redirect()->route('admin.broadcast.announcements.index')
             ->with('broadcast_toast', $publish
@@ -278,6 +285,10 @@ class BroadcastController
             }
         });
 
+        if ($publish) {
+            app(BroadcastDeliveryService::class)->dispatchAnnouncement($announcement->id);
+        }
+
         return redirect()->route('admin.broadcast.announcements.index')
             ->with('broadcast_toast', $publish
                 ? __('Announcement published to the selected User groups.')
@@ -292,6 +303,8 @@ class BroadcastController
             abort_unless($locked->isEditable(), 403);
             $this->publishDraft($locked, $richText);
         });
+
+        app(BroadcastDeliveryService::class)->dispatchAnnouncement($announcement->id);
 
         return redirect()->route('admin.broadcast.announcements.index')
             ->withFlashSuccess(__('Announcement published to the selected User groups.'));
