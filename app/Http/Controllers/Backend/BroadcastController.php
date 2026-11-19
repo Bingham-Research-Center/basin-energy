@@ -7,7 +7,6 @@ use App\Domains\Auth\Models\User;
 use App\Models\BroadcastAnnouncement;
 use App\Models\BroadcastAnnouncementDelivery;
 use App\Models\BroadcastNewsletter;
-use App\Models\NewsletterAdminAlert;
 use App\Services\BroadcastRichText;
 use App\Services\BroadcastDraftMediaCleanup;
 use Carbon\Carbon;
@@ -408,29 +407,4 @@ class BroadcastController
         ]);
     }
 
-    public function alerts(Request $request)
-    {
-        return response()->json([
-            'count' => NewsletterAdminAlert::where('admin_id', $request->user()->id)
-                ->whereNull('read_at')->count(),
-            'items' => NewsletterAdminAlert::where('admin_id', $request->user()->id)
-                ->whereNull('read_at')->with('subscriber:id,name')
-                ->latest('id')->take(5)->get()->map(function ($alert) {
-                    return [
-                        'id' => $alert->id,
-                        'name' => $alert->subscriber->name ?? __('Deleted user'),
-                        'created_at' => $alert->created_at->format('Y-m-d H:i'),
-                    ];
-                }),
-        ])->header('Cache-Control', 'no-store, private');
-    }
-
-    public function markAlertsRead(Request $request)
-    {
-        NewsletterAdminAlert::where('admin_id', $request->user()->id)
-            ->whereNull('read_at')->update(['read_at' => now()]);
-
-        return redirect()->route('admin.broadcast.newsletters.index')
-            ->withFlashSuccess(__('Subscription notifications marked as read.'));
-    }
 }
