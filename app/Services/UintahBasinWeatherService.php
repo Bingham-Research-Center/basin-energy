@@ -13,7 +13,7 @@ use Throwable;
  * Read-only, cached NWS station observation for the admin overview.
  *
  * KVEL is Vernal Regional Airport: one representative location in the
- * Uintah Basin, not a basin-wide weather average. No API key is required.
+ * Uinta Basin, not a basin-wide weather average. No API key is required.
  */
 class UintahBasinWeatherService
 {
@@ -97,7 +97,7 @@ class UintahBasinWeatherService
             $result = [
                 'ok' => true,
                 'station' => 'Vernal Regional Airport (KVEL)',
-                'location' => 'Uintah Basin, Utah',
+                'location' => 'Uinta Basin, Utah',
                 'observed_at' => $observedAt->toIso8601String(),
                 'temperature_f' => $temperatureF,
                 'wind_mph' => $windMph,
@@ -129,7 +129,7 @@ class UintahBasinWeatherService
                 $result = [
                     'ok' => false,
                     'station' => 'Vernal Regional Airport (KVEL)',
-                    'location' => 'Uintah Basin, Utah',
+                    'location' => 'Uinta Basin, Utah',
                     'observed_at' => null,
                     'temperature_f' => null,
                     'wind_mph' => null,
