@@ -51,6 +51,60 @@ test command only once and assume it remains active after shell exit.
 The `database` queue has `retry_after=90`, greater than the worker's
 60-second timeout; the SMTP timeout is bounded at 30 seconds.
 
+## Keep the worker running with systemd (existing Docker host)
+
+For a deployment where the long-running PHP container is named `brc_site`,
+host-level systemd can supervise `docker exec` without adding a container,
+rebuilding an image, or publishing an extra port. On the **Ubuntu host**
+(as root), confirm the binary path with `command -v docker` (the unit below
+expects `/usr/bin/docker`) and create:
+
+```sh
+cat > /etc/systemd/system/brc-broadcast-queue.service <<'EOF'
+[Unit]
+Description=BasinEnergy Broadcast Laravel queue worker
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/docker exec brc_site php artisan queue:work database --queue=broadcast-mail --sleep=2 --tries=1 --timeout=60 --max-time=3600
+ExecStop=/usr/bin/docker exec brc_site php artisan queue:restart
+Restart=always
+RestartSec=10
+TimeoutStopSec=90
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+systemctl enable --now brc-broadcast-queue.service
+systemctl status brc-broadcast-queue.service --no-pager
+journalctl -u brc-broadcast-queue.service -n 30 --no-pager
+```
+
+The service monitors the foreground `docker exec` process. It restarts it
+if the worker exits normally after one hour, crashes, or loses the container
+connection. The initial `Processing jobs from...` line followed by no
+further output means it is idle and waiting, **not stuck**.
+
+Use `systemctl restart brc-broadcast-queue.service` when you deploy
+updated code. The stop hook also issues Laravel's graceful
+`queue:restart` command; this requires a functioning shared cache driver.
+Use `systemctl stop brc-broadcast-queue.service` before container
+replacement, and `systemctl start brc-broadcast-queue.service` afterward.
+Avoid starting other persistent Broadcast workers manually; check running
+workers using `docker top brc_site`.
+
+If the host uses another Docker binary path, container name, or non-systemd
+init system, adjust these instructions. A standalone Docker Compose worker
+service with `restart: unless-stopped` is a longer-term alternative and
+must reuse the exact app environment, network, code and storage mounts.
+
 ## Monitoring and recovery
 
 ```sh
