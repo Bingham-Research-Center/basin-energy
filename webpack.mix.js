@@ -17,6 +17,8 @@ mix.setPublicPath('public')
     .sass('resources/sass/frontend/app.scss', 'css/frontend.css')
     .sass('resources/sass/backend/app.scss', 'css/backend.css')
     .js('resources/js/frontend/app.js', 'js/frontend.js')
+    // Page-scoped chart module shared between Admin and User dashboards.
+    .js('resources/js/research-data.js', 'js/research-data.js')
     .js('resources/js/backend/app.js', 'js/backend.js')
     .extract([
         'alpinejs',
