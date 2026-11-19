@@ -1,9 +1,16 @@
-document.addEventListener('DOMContentLoaded', async function () {
+import L from 'leaflet';
+import 'leaflet.markercluster';
+
+// Leaflet and MarkerCluster are installed in package-lock.json and now
+// bundled locally instead of relying on unpkg on the Admin dashboard.
+async function initialiseCarbonMapperMap() {
     const mapElement = document.getElementById('map');
 
-    if (!mapElement) {
+    if (!mapElement || mapElement.dataset.brcMapInitialized === 'true') {
         return;
     }
+
+    const status = document.getElementById('carbonMapperFilterStatus');
 
     // The view supplies the correct admin or User-scoped endpoints.
     // Avoid absolute /carbon-mapper URLs: those are User-only.
@@ -14,10 +21,18 @@ document.addEventListener('DOMContentLoaded', async function () {
         plumeTemplate: mapElement.dataset.plumeUrlTemplate
     };
 
-    if (typeof L === 'undefined') {
-        console.error('Carbon Mapper: Leaflet has not loaded.');
+    if (!api.observations || !api.boundary || !api.sources || !api.plumeTemplate) {
+        if (status) status.textContent = 'Carbon Mapper endpoints are not configured.';
         return;
     }
+
+    if (typeof L.markerClusterGroup !== 'function') {
+        if (status) status.textContent = 'Carbon Mapper map library is unavailable.';
+        console.error('Carbon Mapper: local MarkerCluster dependency has not initialized.');
+        return;
+    }
+
+    mapElement.dataset.brcMapInitialized = 'true';
 
     // Initialize the map.
     const map = L.map('map').setView([40.15, -110.2], 8);
@@ -897,4 +912,12 @@ if (detections.length === 0) {
     window.setTimeout(function () {
         map.invalidateSize();
     }, 200);
-});
+}
+
+// Robust to this bundle loading after DOMContentLoaded, including
+// Livewire navigation, while preventing a second map on the same element.
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialiseCarbonMapperMap, { once: true });
+} else {
+    initialiseCarbonMapperMap();
+}
