@@ -185,8 +185,10 @@ Route::group(['as' => 'user.', 'middleware' => ['auth', '2fa.confirmed', 'passwo
             Route::get('/utah/boundary', [CarbonMapperController::class, 'utahBoundary'])
     ->name('utah.boundary');
 
-        Route::get('/utah/detections', [CarbonMapperController::class, 'utahDetections']);
-        Route::get('/utah/sources', [CarbonMapperController::class, 'utahSources']);
+        Route::get('/utah/detections', [CarbonMapperController::class, 'utahDetections'])
+            ->name('utah.detections');
+        Route::get('/utah/sources', [CarbonMapperController::class, 'utahSources'])
+            ->name('utah.sources');
 
 
     });
