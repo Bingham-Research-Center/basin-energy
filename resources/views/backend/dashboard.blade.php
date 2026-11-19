@@ -23,7 +23,7 @@
         aria-labelledby="adminWeatherTitle">
         <div class="d-flex justify-content-between align-items-start flex-wrap mb-2">
             <div>
-                <h2 id="adminWeatherTitle" class="dashboard-chart-title mb-1">@lang('Uintah Basin weather')</h2>
+                <h2 id="adminWeatherTitle" class="dashboard-chart-title mb-1">@lang('Uinta Basin weather')</h2>
                 <p class="dashboard-chart-subtitle mb-1">
                     @lang('Vernal Regional Airport (KVEL) observations — National Weather Service')
                 </p>
