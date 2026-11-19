@@ -1,3 +1,5 @@
+import Chart from 'chart.js/auto';
+
 document.addEventListener('DOMContentLoaded', () => {
     const page = document.getElementById('subsurfaceLeakDashboard');
 
@@ -10,11 +12,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!urls) {
         console.error('Subsurface leak endpoint URLs are not defined.');
-        return;
-    }
-
-    if (typeof Chart === 'undefined') {
-        console.error('Chart.js is not available.');
         return;
     }
 
