@@ -14,7 +14,7 @@ class DashboardBrandIdentityTest extends TestCase
         $this->get('/admin/dashboard')
             ->assertOk()
             ->assertSee('img/brand/brc-usu-logo.png')
-            ->assertSee('css/dashboard-brand.css?v=1')
+            ->assertSee('css/dashboard-brand.css?v=2')
             ->assertSee('Bingham Research Center, Utah State University')
             ->assertSee('brc-dashboard-brand-minimized', false)
             ->assertSee('brc-mobile-brand', false)
@@ -28,7 +28,7 @@ class DashboardBrandIdentityTest extends TestCase
         $this->get('/dashboard')
             ->assertOk()
             ->assertSee('img/brand/brc-usu-logo.png')
-            ->assertSee('css/dashboard-brand.css?v=1')
+            ->assertSee('css/dashboard-brand.css?v=2')
             ->assertSee('Bingham Research Center, Utah State University')
             ->assertSee('brc-dashboard-brand-minimized', false)
             ->assertSee('brc-mobile-brand', false)
@@ -68,4 +68,20 @@ class DashboardBrandIdentityTest extends TestCase
             );
         }
     }
+    public function test_dashboard_logo_has_no_white_tile_and_adapts_to_dark_surfaces(): void
+    {
+        $css = file_get_contents(public_path('css/dashboard-brand.css'));
+        $blade = file_get_contents(resource_path('views/includes/partials/dashboard-brand.blade.php'));
+
+        $this->assertStringContainsString('background: transparent;', $css);
+        $this->assertStringNotContainsString('background: #fff;', $css);
+        $this->assertStringContainsString('.brc-sidebar-brand .brc-brand-image', $css);
+        $this->assertStringContainsString('filter: brightness(0) invert(1);', $css);
+        $this->assertStringContainsString('html[data-brc-resolved-theme="dark"] .brc-mobile-brand', $css);
+        // The original transparent blue PNG is rendered once at each size.
+        // CSS controls white/dark appearance; no duplicate black image.
+        $this->assertSame(2, substr_count($blade, "asset('img/brand/brc-usu-logo.png')"));
+        $this->assertStringNotContainsString('brc-brand-black', $blade);
+    }
+
 }
