@@ -34,8 +34,8 @@ Route::prefix('broadcast')->as('broadcast.')->group(function () {
         ->name('newsletters.edit')
         ->breadcrumbs(function (Trail $trail, BroadcastNewsletter $newsletter) {
             $trail->parent('admin.broadcast.newsletters.index')
-                ->push($newsletter->title, route('admin.broadcast.newsletters.edit', $newsletter))
-                ->push(__('Edit'), route('admin.broadcast.newsletters.edit', $newsletter));
+                ->push(__('Edit: :title', ['title' => $newsletter->title]),
+                    route('admin.broadcast.newsletters.edit', $newsletter));
         });
     Route::put('newsletters/{newsletter}', [BroadcastController::class, 'updateNewsletter'])->name('newsletters.update');
     Route::post('newsletters/{newsletter}/schedule', [BroadcastController::class, 'scheduleNewsletter'])->name('newsletters.schedule');
@@ -58,8 +58,8 @@ Route::prefix('broadcast')->as('broadcast.')->group(function () {
         ->name('announcements.edit')
         ->breadcrumbs(function (Trail $trail, BroadcastAnnouncement $announcement) {
             $trail->parent('admin.broadcast.announcements.index')
-                ->push($announcement->title, route('admin.broadcast.announcements.edit', $announcement))
-                ->push(__('Edit'), route('admin.broadcast.announcements.edit', $announcement));
+                ->push(__('Edit: :title', ['title' => $announcement->title]),
+                    route('admin.broadcast.announcements.edit', $announcement));
         });
     Route::put('announcements/{announcement}', [BroadcastController::class, 'updateAnnouncement'])->name('announcements.update');
     Route::post('announcements/{announcement}/publish', [BroadcastController::class, 'publishAnnouncement'])->name('announcements.publish');
