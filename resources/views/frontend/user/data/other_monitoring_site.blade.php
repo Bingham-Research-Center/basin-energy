@@ -3,7 +3,7 @@
 @php
     // Render the same dataset in the matching dashboard and fetch from
     // that dashboard's protected JSON routes (no User-only URL bypass).
-    $dataRoutePrefix = request()->routeIs('admin.data.*') ? 'admin.data.' : $dataRoutePrefix.'';
+    $dataRoutePrefix = request()->routeIs('admin.data.*') ? 'admin.data.' : 'frontend.user.data.';
 @endphp
 
 @section('title', $site['name'] ?? 'Other Monitoring Site')
