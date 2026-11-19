@@ -414,6 +414,16 @@ class BroadcastController
                 }
             });
 
+        // Announcements freeze their audience at publication time. If no
+        // active, verified User matches, no delivery jobs can be created
+        // later, even after users join the selected role. Do not silently
+        // publish a broadcast that can never reach a recipient.
+        if (! $announcement->deliveries()->exists()) {
+            throw ValidationException::withMessages([
+                'audience' => __('No active, email-verified User accounts match the selected audience. Add eligible users or choose another audience before publishing.'),
+            ]);
+        }
+
         $announcement->update([
             'status' => BroadcastAnnouncement::PUBLISHED,
             'published_at' => now(),
