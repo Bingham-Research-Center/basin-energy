@@ -52,7 +52,7 @@ class AdminResearchDataRoutesTest extends TestCase
 
         $this->get(route('admin.data.subsurface-natural-gas-leaks'))
             ->assertOk()
-            ->assertSee(route('admin.data.subsurface-natural-gas-leaks.overview.json'));
+            ->assertSee(str_replace('/', '\\/', route('admin.data.subsurface-natural-gas-leaks.overview.json')), false);
 
         $this->get(route('admin.data.oil-well-pad-emissions'))
             ->assertOk()
