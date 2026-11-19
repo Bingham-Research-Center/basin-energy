@@ -113,7 +113,7 @@
                     <x-utils.link :href="route('admin.data.carbon-mapper.utah')"
                         class="c-sidebar-nav-link"
                         :active="activeClass(Route::is('admin.data.carbon-mapper.*'), 'c-active')"
-                        :text="__('Carbon Mapper — Utah Super-Emitters')" />
+                        :text="__('Carbon Mapper')" />
                 </li>
                 <li class="c-sidebar-nav-item">
                     <x-utils.link :href="route('admin.data.produced-water')"
