@@ -55,7 +55,7 @@ class AdminOverviewAndCarbonMapperTest extends TestCase
             ->assertSee('Research Stakeholder')
             ->assertSee('27th Aug 16:24')
             ->assertSee('Last seen')
-            ->assertSee('Uintah Basin weather')
+            ->assertSee('Uinta Basin weather')
             ->assertSee('Vernal Regional Airport (KVEL)')
             ->assertSee('adminWeatherSummary')
             ->assertSee(route('admin.weather.current'))
@@ -81,7 +81,7 @@ class AdminOverviewAndCarbonMapperTest extends TestCase
         $this->get(route('admin.dashboard'))
             ->assertOk()
             ->assertDontSee('Private Researcher')
-            ->assertSee('Uintah Basin weather')
+            ->assertSee('Uinta Basin weather')
             ->assertSee('requires the User Management viewing permission')
             ->assertSee('adminOzoneChart');
     }
