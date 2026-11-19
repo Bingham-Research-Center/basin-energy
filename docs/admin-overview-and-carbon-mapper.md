@@ -3,10 +3,12 @@
 ## Admin overview
 
 `/admin/dashboard` now shows:
-- Database-backed counters for registered, active and awaiting-email-verification
-  **regular User** accounts (not Admin accounts).
-- Number of published announcements.
-- Compact table of the eight latest recorded sign-ins, sorted by
+- Four National Weather Service **KVEL (Vernal Regional Airport)** weather
+  cards: temperature (°F), wind (mph plus direction), relative humidity (%),
+  and observed conditions. These represent one station, not a whole-basin
+  weather average.
+- Compact table of the eight latest sign-ins from **regular Users only**
+  (`users.type = 'user'`); administrator accounts never appear. Sorted by
   `users.last_login_at` descending: **Name, Active, Roles, Last seen**.
   Last seen is the **recorded login time**, shown in `America/Denver`
   as `27th Aug 16:24`. We do not claim to track continuous online
@@ -26,7 +28,42 @@ that permission see a neutral placeholder instead. The dashboard
 retains the existing `admin` middleware; regular Users cannot access it.
 
 The dashboard uses `public/css/admin-dashboard.css` (standalone)
-and a small widget module imported into `resources/js/backend/app.js`.
+and small widget modules imported into `resources/js/backend/app.js`.
+
+### Weather.gov integration
+
+`GET /admin/weather/current` is protected by the existing Admin middleware.
+`app/Services/UintahBasinWeatherService.php` fetches the public
+`https://api.weather.gov/stations/KVEL/observations/latest` endpoint on
+the server. The Admin HTML response is fast and independent of NWS
+availability: `resources/js/dashboard/admin-weather.js` loads normalized
+weather JSON asynchronously and supports manual refresh.
+
+- **Units:** NWS station observation values use SI units. The service
+  converts °C to °F and km/h or m/s to mph, with unknown/missing
+  measurements rendered as unavailable (not zero).
+- **Attribution:** weather cards label Vernal Regional Airport (KVEL) and
+  the observation timestamp in Mountain time. The timestamp reflects
+  when the observation was recorded; weather can arrive with delays.
+- **Caching:** 10-minute successful response cache; a known-good result
+  is retained for up to two hours to survive brief NWS outages. Failed
+  responses have a one-minute cache to avoid retry storms. When serving
+  the fallback, `stale` and a message are returned explicitly.
+- **User-Agent:** NWS requests an identifying `User-Agent` header.
+  The default identifies BasinEnergy and uses the application's configured
+  outgoing email as contact when available. Set a production override
+  in `.env`, for example
+  `NWS_USER_AGENT="BasinEnergy.info (YOUR_OPERATIONS_EMAIL)"`
+  (replace the placeholder with your real contact address), then run
+  `docker exec brc_site php artisan optimize:clear`.
+- **Errors:** On an NWS outage with no usable cache the endpoint
+  responds HTTP 503 with `ok=false`; the cards show a clear unavailable
+  message and do not invent weather data.
+- **Security:** the endpoint's URL is fixed in code, with no user-supplied
+  URL or API token and no external NWS calls from the browser.
+- **Source:** https://www.weather.gov/documentation/services-web-api
+
+No new dependency, queue worker, cron job, or database migration is required.
 
 ## Carbon Mapper fixes
 
@@ -56,8 +93,10 @@ Regular Users retain their original protected routes.
 ## Verification
 
 CI tests:
-- Admin dashboard response includes counters, roles, last sign-in
-  formatting, station history URL and permission guards.
+- Admin dashboard response includes weather cards, roles, last sign-in
+  formatting and permission guards; the User roster excludes admins.
+- NWS fake-response tests cover conversions, 10-minute caching, null
+  values, unavailable responses, last-good fallback, and admin-only access.
 - Users without user-list permission do not see user names or counts.
 - Carbon Mapper Admin boundary and observation JSON contain expected
   data from a seeded in-basin observation.
@@ -67,8 +106,10 @@ CI tests:
   MarkerCluster, and `backend.css` with Leaflet styles.
 
 Browser checks:
-1. Open Admin Dashboard. Verify four metric cards, recent user table,
-   and the ozone trend with up to four lines.
+1. Open Admin Dashboard. Verify four NWS weather cards, the recent
+   **regular-user-only** table, and the ozone trend with up to four lines.
+   The weather cards show station/time context and gracefully handle NWS
+   outages.
 2. In Firefox F12 > Network, look for
    `/admin/data/realtime/logger/<station>/history/json` responses.
    A station with 502/422 is treated as temporarily unavailable.
