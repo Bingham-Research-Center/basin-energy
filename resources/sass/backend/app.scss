@@ -6,3 +6,9 @@
 
 // resources/sass/backend/app.scss
 @import "../dashboard";
+
+// Carbon Mapper's map must not depend on external CDN CSS. Laravel Mix
+// resolves these assets from node_modules alongside the JS bundle.
+@import "~leaflet/dist/leaflet.css";
+@import "~leaflet.markercluster/dist/MarkerCluster.css";
+@import "~leaflet.markercluster/dist/MarkerCluster.Default.css";
