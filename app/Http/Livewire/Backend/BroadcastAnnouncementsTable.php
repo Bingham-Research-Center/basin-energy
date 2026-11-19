@@ -2,6 +2,8 @@
 
 namespace App\Http\Livewire\Backend;
 
+use App\Domains\Auth\Models\Role;
+use App\Domains\Auth\Models\User;
 use App\Models\BroadcastAnnouncement;
 use Illuminate\Database\Eloquent\Builder;
 use Rappasoft\LaravelLivewireTables\DataTableComponent;
@@ -9,6 +11,36 @@ use Rappasoft\LaravelLivewireTables\Views\Column;
 
 class BroadcastAnnouncementsTable extends DataTableComponent
 {
+    /**
+     * Role names are resolved once per Livewire request, rather than
+     * querying the roles table for every announcement row.
+     */
+    private ?array $userRoleNames = null;
+
+    private function audienceLabel(BroadcastAnnouncement $announcement): string
+    {
+        if ($announcement->audience === 'all_users') {
+            return 'All Users';
+        }
+
+        if ($this->userRoleNames === null) {
+            $this->userRoleNames = Role::query()
+                ->where('type', User::TYPE_USER)
+                ->pluck('name', 'id')
+                ->all();
+        }
+
+        $names = [];
+        foreach ($announcement->role_ids ?? [] as $id) {
+            $id = (int) $id;
+            $names[] = $this->userRoleNames[$id] ?? 'Unavailable role (ID '.$id.')';
+        }
+
+        $names = array_values(array_unique($names));
+
+        return 'Selected User roles: '.($names ? implode(', ', $names) : 'None');
+    }
+
     public function configure(): void
     {
         $this->setPrimaryKey('id');
@@ -35,8 +67,7 @@ class BroadcastAnnouncementsTable extends DataTableComponent
         return [
             Column::make('Title', 'title')->searchable()->sortable(),
             Column::make('Audience', 'audience')
-                ->label(fn ($row) => $row->audience === 'all_users'
-                    ? 'All Users' : 'Selected User role IDs: '.implode(', ', $row->role_ids ?? [])),
+                ->label(fn ($row) => $this->audienceLabel($row)),
             Column::make('Published', 'published_at')
                 ->sortable()
                 ->label(fn ($row) => $row->status === BroadcastAnnouncement::PUBLISHED
