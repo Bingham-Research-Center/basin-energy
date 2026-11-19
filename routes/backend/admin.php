@@ -14,6 +14,11 @@ Route::get('dashboard', [DashboardController::class, 'index'])
         $trail->push(__('Home'), route('admin.dashboard'));
     });
 
+// The containing admin route group protects this normalized NWS response.
+// Keep third-party requests server-side and cache them in the weather service.
+Route::get('weather/current', [DashboardController::class, 'currentWeather'])
+    ->name('weather.current');
+
 Route::get('sensors/dashboard', [SensorController::class, 'index'])
     ->name('sensors.dashboard')
     ->breadcrumbs(function (Trail $trail) {
