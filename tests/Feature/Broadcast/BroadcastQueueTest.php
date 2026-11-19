@@ -39,7 +39,20 @@ class BroadcastQueueTest extends TestCase
         $service->queueAnnouncement($announcement->id);
         $service->queueAnnouncement($announcement->id);
 
-        Queue::assertPushed(SendBroadcastDelivery::class, 1);
+        // The test seeder creates another active User. "All Users" must
+        // enqueue one job for each actual recipient, not just our new user.
+        Queue::assertPushed(
+            SendBroadcastDelivery::class,
+            $announcement->deliveries()->count()
+        );
+        $jobsForRecipient = Queue::pushed(
+            SendBroadcastDelivery::class,
+            function (SendBroadcastDelivery $job) use ($delivery) {
+                return $job->kind === 'announcement'
+                    && $job->deliveryId === $delivery->id;
+            }
+        );
+        $this->assertCount(1, $jobsForRecipient);
         $this->assertSame('queued', $delivery->fresh()->status);
 
         $service->sendDelivery('announcement', $delivery->id);
