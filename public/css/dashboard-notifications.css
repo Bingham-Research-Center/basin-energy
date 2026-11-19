@@ -1,0 +1,133 @@
+/* Admin notification center, inspired by the provided compact card feed. */
+.brc-notification-trigger {
+    position: relative;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    padding: .55rem .75rem;
+}
+.brc-notification-trigger .c-icon { vertical-align: middle; }
+.brc-notification-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    border-radius: 999px;
+    background: #21b8dc;
+    color: #fff;
+    font-size: .68rem;
+    font-weight: 700;
+    padding: .12rem .38rem;
+    min-width: 1.3rem;
+    text-align: center;
+}
+.brc-notification-badge[hidden] { display: none !important; }
+.brc-notification-panel {
+    width: min(430px, calc(100vw - 24px));
+    min-width: 320px;
+    max-width: calc(100vw - 24px);
+    padding: 0;
+    overflow: hidden;
+    border-radius: 12px;
+    box-shadow: 0 12px 35px rgba(0,0,0,.16);
+}
+.brc-notification-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .4rem;
+    padding: 1rem 1rem .85rem;
+    border-bottom: 1px solid #e0e5ed;
+}
+.brc-notification-heading strong {
+    font-size: 1.05rem;
+    color: #1e2e46;
+}
+.brc-notification-unread-count {
+    font-size: .7rem;
+    border-radius: 999px;
+    padding: .12rem .4rem;
+    background: #e1f5fa;
+    color: #0b728f;
+}
+.brc-notification-mark-read {
+    background: none;
+    padding: .2rem 0;
+    border: 0;
+    color: #32547a;
+    text-decoration: underline;
+    white-space: nowrap;
+    font-size: .83rem;
+}
+.brc-notification-mark-read:disabled {
+    opacity: .48;
+    text-decoration: none;
+    cursor: default;
+}
+.brc-notification-items {
+    max-height: min(480px, 58vh);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+.brc-notification-item {
+    display: block;
+    color: #34445a;
+    padding: .9rem 1rem 1rem;
+    border-bottom: 1px solid #e0e5ed;
+    text-decoration: none !important;
+}
+.brc-notification-item.is-unread { background: #f0f6ff; }
+.brc-notification-item:hover,
+.brc-notification-item:focus { color: #162c46; background: #e7f0fc; }
+.brc-notification-item-head { display: flex; justify-content: space-between; gap: 12px; }
+.brc-notification-item-title { font-size: .88rem; font-weight: 600; }
+.brc-notification-item-time { font-size: .75rem; color: #728097; white-space: nowrap; }
+.brc-notification-item-message {
+    margin-top: .2rem;
+    font-size: .85rem;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.brc-notification-empty { padding: 1.5rem 1rem; text-align: center; color: #687588; }
+.brc-notification-footer { padding: .65rem .75rem; }
+.brc-notification-load-more {
+    width: 100%;
+    border: 0;
+    border-radius: 9px;
+    background: #f2f4f7;
+    color: #3d5070;
+    font-weight: 600;
+    padding: .65rem;
+}
+.brc-notification-load-more:hover { background: #e7eef8; }
+.brc-notification-load-more[hidden] { display: none !important; }
+.brc-notification-toast {
+    position: fixed;
+    z-index: 20000;
+    bottom: 20px;
+    right: 20px;
+    padding: .75rem 1rem;
+    border-radius: 8px;
+    background: #2c4966;
+    color: white;
+    box-shadow: 0 6px 20px rgba(0,0,0,.2);
+}
+body.c-dark-theme .brc-notification-panel { background: #252b36; border-color: #3a4352; }
+body.c-dark-theme .brc-notification-heading { border-color: #3a4352; }
+body.c-dark-theme .brc-notification-heading strong { color: #f2f5f8; }
+body.c-dark-theme .brc-notification-unread-count { color: #8ddcf2; background: #204357; }
+body.c-dark-theme .brc-notification-mark-read { color: #93c5fd; }
+body.c-dark-theme .brc-notification-item { color: #e3eaf3; border-color: #3a4352; }
+body.c-dark-theme .brc-notification-item.is-unread { background: #303f54; }
+body.c-dark-theme .brc-notification-item:hover { color: #fff; background: #394c64; }
+body.c-dark-theme .brc-notification-item-time { color: #b1bed0; }
+body.c-dark-theme .brc-notification-empty { color: #b7c3d3; }
+body.c-dark-theme .brc-notification-load-more { color: #d6e4f4; background: #354154; }
+body.c-dark-theme .brc-notification-load-more:hover { background: #40536e; }
+@media (max-width: 380px) {
+    .brc-notification-panel { min-width: 0; }
+    .brc-notification-heading { flex-wrap: wrap; }
+}

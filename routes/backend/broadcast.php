@@ -25,6 +25,8 @@ Route::prefix('broadcast')->as('broadcast.')->group(function () {
     Route::post('announcements/{announcement}/publish', [BroadcastController::class, 'publishAnnouncement'])->name('announcements.publish');
     Route::delete('announcements/{announcement}', [BroadcastController::class, 'deleteAnnouncement'])->name('announcements.delete');
 
-    Route::get('alerts', [BroadcastController::class, 'alerts'])->middleware('throttle:60,1')->name('alerts');
-    Route::post('alerts/read', [BroadcastController::class, 'markAlertsRead'])->name('alerts.read');
+    Route::get('alerts', [\App\Http\Controllers\Backend\DashboardNotificationController::class, 'index'])
+        ->middleware('throttle:60,1')->name('alerts');
+    Route::post('alerts/read', [\App\Http\Controllers\Backend\DashboardNotificationController::class, 'markAllRead'])
+        ->middleware('throttle:30,1')->name('alerts.read');
 });
