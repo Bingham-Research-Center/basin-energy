@@ -53,5 +53,6 @@
     <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-bs4.min.js"></script>
     <livewire:scripts />
     @stack('after-scripts')
+    @include('includes.partials.research-data-assets')
 </body>
 </html>
