@@ -98,6 +98,11 @@ jobs:
           grep -q 'subsurfaceLeakDashboard' public/js/research-data.js
           grep -q 'oilWellPadDashboard' public/js/research-data.js
 
+      - name: Verify full-width dashboard visualization CSS
+        run: |
+          grep -Fq '.dashboard-page-pro.dashboard-fill-page' public/css/backend.css
+          grep -Fq '.dashboard-page-pro.dashboard-fill-page' public/css/frontend.css
+
       - name: Check shared dashboard theme script
         run: node --check public/js/dashboard-theme.js
 
