@@ -11,7 +11,7 @@ class AdminWeatherTest extends TestCase
 {
     private const WEATHER_URL = 'https://api.weather.gov/stations/KVEL/observations/latest';
 
-    protected function setUp(): void
+    public function setUp(): void
     {
         parent::setUp();
 
