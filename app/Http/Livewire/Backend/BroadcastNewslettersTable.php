@@ -38,7 +38,16 @@ class BroadcastNewslettersTable extends DataTableComponent
                 ->label(fn ($row) => $row->issue_month->format('F Y')),
             Column::make('Title', 'title')->searchable()->sortable(),
             Column::make('Status', 'status')->sortable()
-                ->label(fn ($row) => ucfirst(str_replace('_', ' ', $row->status))),
+                ->label(fn ($row) => view('backend.includes.table-pill', [
+                    'text' => ucfirst(str_replace('_', ' ', $row->status)),
+                    'tone' => match ($row->status) {
+                        BroadcastNewsletter::SENT => 'success',
+                        BroadcastNewsletter::SCHEDULED => 'info',
+                        BroadcastNewsletter::SENDING => 'warning',
+                        BroadcastNewsletter::SENT_WITH_ERRORS => 'danger',
+                        default => 'neutral',
+                    },
+                ])->render())->html(),
             Column::make('Scheduled', 'scheduled_at')
                 ->sortable()
                 ->label(fn ($row) => $row->scheduled_at
@@ -67,7 +76,7 @@ class BroadcastNewslettersTable extends DataTableComponent
                     csrf_field().method_field('DELETE').
                     '<button class="btn btn-sm btn-outline-danger" type="submit"'.
                     '>Delete</button></form>';
-            })->html(),
+            })->html()->excludeFromColumnSelect(),
         ];
     }
 }
