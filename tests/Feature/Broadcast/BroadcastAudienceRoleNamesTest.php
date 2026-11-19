@@ -42,8 +42,9 @@ class BroadcastAudienceRoleNamesTest extends TestCase
 
         $this->get(route('admin.broadcast.announcements.index'))
             ->assertOk()
-            ->assertSee('Selected User roles: Research Scientists, Community Stakeholders')
+            ->assertSee('Research Scientists, Community Stakeholders')
             ->assertSee('All Users')
+            ->assertDontSee('Selected User roles:')
             ->assertDontSee('Selected User role IDs:');
     }
 
@@ -62,6 +63,6 @@ class BroadcastAudienceRoleNamesTest extends TestCase
 
         $this->get(route('admin.broadcast.announcements.index'))
             ->assertOk()
-            ->assertSee('Selected User roles: Unavailable role (ID 999999)');
+            ->assertSee('Unavailable role (ID 999999)');
     }
 }
