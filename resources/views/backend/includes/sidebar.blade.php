@@ -96,6 +96,77 @@
             </ul>
         </li>
 
+        {{-- Same research datasets as the regular User dashboard, using
+             separate admin-protected pages and JSON endpoints. --}}
+        <li class="c-sidebar-nav-title">@lang('Research')</li>
+        <li class="c-sidebar-nav-dropdown {{ activeClass(Route::is('admin.data.*') && ! Route::is('admin.data.realtime.*'), 'c-open c-show') }}">
+            <x-utils.link href="#" icon="c-sidebar-nav-icon cil-chart-line"
+                class="c-sidebar-nav-dropdown-toggle" :text="__('Data')" />
+            <ul class="c-sidebar-nav-dropdown-items">
+                <li class="c-sidebar-nav-item">
+                    <x-utils.link :href="route('admin.data.emission-trends')"
+                        class="c-sidebar-nav-link"
+                        :active="activeClass(Route::is('admin.data.emission-trends*'), 'c-active')"
+                        :text="__('Emission Trends')" />
+                </li>
+                <li class="c-sidebar-nav-item">
+                    <x-utils.link :href="route('admin.data.carbon-mapper.utah')"
+                        class="c-sidebar-nav-link"
+                        :active="activeClass(Route::is('admin.data.carbon-mapper.*'), 'c-active')"
+                        :text="__('Carbon Mapper — Utah Super-Emitters')" />
+                </li>
+                <li class="c-sidebar-nav-item">
+                    <x-utils.link :href="route('admin.data.produced-water')"
+                        class="c-sidebar-nav-link"
+                        :active="activeClass(Route::is('admin.data.produced-water*'), 'c-active')"
+                        :text="__('Produced Water')" />
+                </li>
+                <li class="c-sidebar-nav-item">
+                    <x-utils.link :href="route('admin.data.subsurface-natural-gas-leaks')"
+                        class="c-sidebar-nav-link"
+                        :active="activeClass(Route::is('admin.data.subsurface-natural-gas-leaks*'), 'c-active')"
+                        :text="__('Natural Gas Leaks')" />
+                </li>
+                <li class="c-sidebar-nav-item">
+                    <x-utils.link :href="route('admin.data.oil-well-pad-emissions')"
+                        class="c-sidebar-nav-link"
+                        :active="activeClass(Route::is('admin.data.oil-well-pad-emissions*'), 'c-active')"
+                        :text="__('Oil Well Pad Emissions')" />
+                </li>
+            </ul>
+        </li>
+
+        <li class="c-sidebar-nav-dropdown {{ activeClass(Route::is('admin.data.realtime.*'), 'c-open c-show') }}">
+            <x-utils.link href="#" icon="c-sidebar-nav-icon cil-clock"
+                class="c-sidebar-nav-dropdown-toggle" :text="__('Real-Time Data')" />
+            <ul class="c-sidebar-nav-dropdown-items">
+                <li class="c-sidebar-nav-item">
+                    <x-utils.link :href="route('admin.data.realtime.ozone')"
+                        class="c-sidebar-nav-link"
+                        :active="activeClass(Route::is('admin.data.realtime.ozone*'), 'c-active')"
+                        :text="__('Uinta Ozone')" />
+                </li>
+                <li class="c-sidebar-nav-title">@lang('Campbell Loggers')</li>
+                @foreach (config('services.campbell_sites', []) as $key => $site)
+                    <li class="c-sidebar-nav-item">
+                        <x-utils.link :href="route('admin.data.realtime.logger', ['site' => $key])"
+                            class="c-sidebar-nav-link"
+                            :active="activeClass(Route::is('admin.data.realtime.logger*') && request()->route('site') === $key, 'c-active')"
+                            :text="$site['name'] ?? \Illuminate\Support\Str::headline($key)" />
+                    </li>
+                @endforeach
+                <li class="c-sidebar-nav-title">@lang('Other Sites')</li>
+                @foreach (config('services.other_monitoring_sites', []) as $key => $site)
+                    <li class="c-sidebar-nav-item">
+                        <x-utils.link :href="route('admin.data.realtime.other', ['site' => $key])"
+                            class="c-sidebar-nav-link"
+                            :active="activeClass(Route::is('admin.data.realtime.other') && request()->route('site') === $key, 'c-active')"
+                            :text="$site['name'] ?? \Illuminate\Support\Str::headline($key)" />
+                    </li>
+                @endforeach
+            </ul>
+        </li>
+
         <li class="c-sidebar-nav-title">@lang('Broadcast')</li>
         <li class="c-sidebar-nav-dropdown {{ activeClass(Route::is('admin.broadcast.*'), 'c-open c-show') }}">
             <x-utils.link href="#" icon="c-sidebar-nav-icon cil-envelope-closed"
