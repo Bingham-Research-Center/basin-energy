@@ -18,7 +18,7 @@
     <div class="card-body">
         <p class="text-muted">Save announcements as drafts and continue later. Publishing freezes the target User groups,
             adds the announcement to recipients' dashboards and queues email delivery.</p>
-        <div class="brc-admin-data-table">
+        <div class="brc-admin-data-table" wire:poll.10s>
             <livewire:backend.broadcast-announcements-table />
         </div>
     </div>
