@@ -77,6 +77,76 @@ class AdminResearchDataRoutesTest extends TestCase
         $this->getJson(route('admin.data.emission-trends.json'))->assertOk();
     }
 
+    public function test_research_charts_load_the_single_shared_bundle_after_page_dependencies(): void
+    {
+        $this->loginAsAdmin();
+
+        $researchPages = [
+            'admin.data.emission-trends',
+            'admin.data.produced-water',
+            'admin.data.subsurface-natural-gas-leaks',
+            'admin.data.oil-well-pad-emissions',
+            'admin.data.carbon-mapper.utah',
+        ];
+
+        foreach ($researchPages as $routeName) {
+            $html = $this->get(route($routeName))->assertOk()->getContent();
+            $this->assertSame(
+                1,
+                substr_count($html, '/js/research-data.js'),
+                'Expected exactly one versioned research bundle on '.$routeName
+            );
+        }
+
+        // Inline URLs and external Leaflet dependencies are declared
+        // before the shared chart module executes.
+        $leaks = $this->get(route('admin.data.subsurface-natural-gas-leaks'))
+            ->assertOk()->getContent();
+        $this->assertLessThan(
+            strpos($leaks, '/js/research-data.js'),
+            strpos($leaks, 'window.subsurfaceLeakUrls')
+        );
+
+        $mapper = $this->get(route('admin.data.carbon-mapper.utah'))
+            ->assertOk()->getContent();
+        $this->assertLessThan(
+            strpos($mapper, '/js/research-data.js'),
+            strpos($mapper, 'leaflet.markercluster.js')
+        );
+
+        // The existing independent real-time dashboards should not
+        // download the extra chart bundle.
+        $this->get(route('admin.data.realtime.ozone'))
+            ->assertOk()->assertDontSee('/js/research-data.js', false);
+        $this->get(route('admin.dashboard'))
+            ->assertOk()->assertDontSee('/js/research-data.js', false);
+    }
+
+    public function test_regular_user_charts_use_the_same_bundle_once(): void
+    {
+        $this->actingAs(User::factory()->user()->create());
+
+        $pages = [
+            'frontend.user.data.emission-trends',
+            'frontend.user.data.produced-water',
+            'frontend.user.data.subsurface-natural-gas-leaks',
+            'frontend.user.data.oil-well-pad-emissions',
+            'frontend.user.carbon-mapper.utah',
+        ];
+
+        foreach ($pages as $routeName) {
+            $html = $this->get(route($routeName))->assertOk()->getContent();
+            $this->assertSame(
+                1,
+                substr_count($html, '/js/research-data.js'),
+                'Expected one research chart bundle on '.$routeName
+            );
+        }
+
+        $this->get(route('frontend.user.data.realtime.ozone'))
+            ->assertOk()->assertDontSee('/js/research-data.js', false);
+    }
+
     public function test_admin_and_regular_user_data_endpoints_remain_isolated(): void
     {
         $admin = User::factory()->admin()->create();
