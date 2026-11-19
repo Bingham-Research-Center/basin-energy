@@ -18,7 +18,7 @@
     <div class="card-body">
         <p class="text-muted">Save announcements as drafts and continue later. Publishing freezes the target User groups,
             adds the announcement to recipients' dashboards and queues email delivery.</p>
-        <div class="brc-admin-data-table" wire:poll.10s>
+        <div class="brc-admin-data-table" data-broadcast-progress-table>
             <livewire:backend.broadcast-announcements-table />
         </div>
     </div>
@@ -28,6 +28,7 @@
 
 @push('after-scripts')
 <script src="{{ asset('js/broadcast-editor.js') }}?v=5" defer></script>
+<script src="{{ asset('js/broadcast-delivery-progress.js') }}?v=1" defer></script>
 @if($errors->any())
 <script>window.brcBroadcastReopen = 'announcement';</script>
 @endif
