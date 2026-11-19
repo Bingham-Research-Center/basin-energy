@@ -25,6 +25,8 @@ class BroadcastNewslettersTable extends DataTableComponent
         return BroadcastNewsletter::query()->withCount([
             'deliveries as total_recipients',
             'deliveries as sent_recipients' => fn ($q) => $q->where('status', 'sent'),
+            'deliveries as failed_recipients' => fn ($q) => $q->where('status', 'failed'),
+            'deliveries as skipped_recipients' => fn ($q) => $q->where('status', 'skipped'),
         ]);
     }
 
@@ -44,7 +46,12 @@ class BroadcastNewslettersTable extends DataTableComponent
             Column::make('Sent', 'sent_at')->sortable()
                 ->label(fn ($row) => optional($row->sent_at)->format('M j, Y H:i') ?: '-'),
             Column::make('Recipients')
-                ->label(fn ($row) => $row->sent_recipients.' / '.$row->total_recipients),
+                ->label(fn ($row) => view('backend.broadcast.partials.delivery-progress', [
+                    'sent' => $row->sent_recipients,
+                    'total' => $row->total_recipients,
+                    'failed' => $row->failed_recipients,
+                    'skipped' => $row->skipped_recipients,
+                ])->render())->html(),
             Column::make('Actions')->label(function ($row) {
                 $url = e(route('admin.broadcast.newsletters.edit', $row->id));
                 $view = $row->isEditable()
