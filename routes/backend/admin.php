@@ -25,15 +25,27 @@ Route::get('sensors/dashboard', [SensorController::class, 'index'])
 Route::prefix('website-update')->as('website-update.')->group(function () {
     Route::get('/', [WebUpdateController::class, 'index'])
         ->middleware(WebsiteContentPermissions::middlewareForAny())
-        ->name('index');
+        ->name('index')
+        ->breadcrumbs(function (Trail $trail) {
+            $trail->parent('admin.dashboard')
+                ->push(__('Website Updates'), route('admin.website-update.index'));
+        });
 
     Route::middleware(WebsiteContentPermissions::middlewareFor('home'))->group(function () {
-    Route::get('/home', [WebUpdateController::class, 'home'])->name('home');
+    Route::get('/home', [WebUpdateController::class, 'home'])->name('home')
+        ->breadcrumbs(function (Trail $trail) {
+            $trail->parent('admin.website-update.index')
+                ->push(__('Home'), route('admin.website-update.home'));
+        });
     Route::post('/home', [WebUpdateController::class, 'updateHome'])->name('home.update');
     });
 
     Route::middleware(WebsiteContentPermissions::middlewareFor('about'))->group(function () {
-    Route::get('/about', [WebUpdateController::class, 'about'])->name('about');
+    Route::get('/about', [WebUpdateController::class, 'about'])->name('about')
+        ->breadcrumbs(function (Trail $trail) {
+            $trail->parent('admin.website-update.index')
+                ->push(__('About'), route('admin.website-update.about'));
+        });
     Route::post('/about', [WebUpdateController::class, 'updateAbout'])->name('about.update');
     Route::post('/about/team-members', [WebUpdateController::class, 'storeTeamMember'])->name('about.team-members.store');
     Route::put('/about/team-members/{teamMember}', [WebUpdateController::class, 'updateTeamMember'])->name('about.team-members.update');
@@ -41,7 +53,11 @@ Route::prefix('website-update')->as('website-update.')->group(function () {
     });
 
     Route::middleware(WebsiteContentPermissions::middlewareFor('service'))->group(function () {
-    Route::get('/service', [WebUpdateController::class, 'service'])->name('service');
+    Route::get('/service', [WebUpdateController::class, 'service'])->name('service')
+        ->breadcrumbs(function (Trail $trail) {
+            $trail->parent('admin.website-update.index')
+                ->push(__('Service'), route('admin.website-update.service'));
+        });
     Route::post('/service', [WebUpdateController::class, 'updateService'])->name('service.update');
     Route::post('/service/items', [WebUpdateController::class, 'storeServiceItem'])->name('service.items.store');
     Route::put('/service/items/{serviceItem}', [WebUpdateController::class, 'updateServiceItem'])->name('service.items.update');
@@ -49,7 +65,11 @@ Route::prefix('website-update')->as('website-update.')->group(function () {
     });
 
     Route::middleware(WebsiteContentPermissions::middlewareFor('portfolio'))->group(function () {
-    Route::get('/portfolio', [WebUpdateController::class, 'portfolio'])->name('portfolio');
+    Route::get('/portfolio', [WebUpdateController::class, 'portfolio'])->name('portfolio')
+        ->breadcrumbs(function (Trail $trail) {
+            $trail->parent('admin.website-update.index')
+                ->push(__('Portfolio'), route('admin.website-update.portfolio'));
+        });
     Route::post('/portfolio', [WebUpdateController::class, 'updatePortfolio'])->name('portfolio.update');
     Route::post('/portfolio/items', [WebUpdateController::class, 'storePortfolioItem'])->name('portfolio.items.store');
     Route::put('/portfolio/items/{portfolioItem}', [WebUpdateController::class, 'updatePortfolioItem'])->name('portfolio.items.update');
@@ -60,7 +80,11 @@ Route::prefix('website-update')->as('website-update.')->group(function () {
     });
 
     Route::middleware(WebsiteContentPermissions::middlewareFor('blog'))->group(function () {
-    Route::get('/blog', [WebUpdateController::class, 'blog'])->name('blog');
+    Route::get('/blog', [WebUpdateController::class, 'blog'])->name('blog')
+        ->breadcrumbs(function (Trail $trail) {
+            $trail->parent('admin.website-update.index')
+                ->push(__('Blog'), route('admin.website-update.blog'));
+        });
     Route::post('/blog', [WebUpdateController::class, 'updateBlog'])->name('blog.update');
     Route::post('/blog/categories', [WebUpdateController::class, 'storeBlogCategory'])->name('blog.categories.store');
     Route::put('/blog/categories/{blogCategory}', [WebUpdateController::class, 'updateBlogCategory'])->name('blog.categories.update');
@@ -72,7 +96,11 @@ Route::prefix('website-update')->as('website-update.')->group(function () {
     });
 
     Route::middleware(WebsiteContentPermissions::middlewareFor('contact'))->group(function () {
-    Route::get('/contact', [WebUpdateController::class, 'contact'])->name('contact');
+    Route::get('/contact', [WebUpdateController::class, 'contact'])->name('contact')
+        ->breadcrumbs(function (Trail $trail) {
+            $trail->parent('admin.website-update.index')
+                ->push(__('Contacts'), route('admin.website-update.contact'));
+        });
     Route::post('/contact', [WebUpdateController::class, 'updateContact'])->name('contact.update');
     Route::delete('/contact/messages/{contactMessage}', [WebUpdateController::class, 'deleteContactMessage'])->name('contact.messages.delete');
     });
