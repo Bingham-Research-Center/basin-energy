@@ -1,4 +1,9 @@
-@extends('frontend.layouts.app')
+@extends(request()->routeIs('admin.data.*') ? 'backend.layouts.app' : 'frontend.layouts.app')
+
+@php
+    $carbonRoutePrefix = request()->routeIs('admin.data.*')
+        ? 'admin.data.carbon-mapper.' : 'frontend.user.carbon-mapper.';
+@endphp
 
 @section('title', __('Methane Emissions'))
 
@@ -424,6 +429,10 @@
     <div
     id="map"
     class="dashboard-leaflet-map"
+    data-json-url="{{ route($carbonRoutePrefix.'utah.json') }}"
+    data-boundary-url="{{ route($carbonRoutePrefix.'utah.boundary') }}"
+    data-sources-url="{{ route($carbonRoutePrefix.'utah.sources') }}"
+    data-plume-url-template="{{ route($carbonRoutePrefix.'utah.plume', ['observationId' => '__OBSERVATION_ID__']) }}"
     role="region"
     aria-label="Interactive Carbon Mapper gas emissions map of Utah"
 ></div>
