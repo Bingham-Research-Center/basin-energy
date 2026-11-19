@@ -1,40 +1,32 @@
-# Dashboard logo update — Bingham Research Center / USU
+# Transparent BRC/USU dashboard branding
 
-## Changes
+This updates the branding introduced by PR #56. The supplied Aggie Blue
+PNG has a transparent background; the former white tile was an explicit
+CSS background, not part of the image.
 
-Replace CoreUI placeholder branding with the supplied **Bingham Research
-Center / Utah State University** horizontal wordmark in these places:
+## Behavior
 
-- Administrator sidebar (expanded and minimized)
-- Administrator mobile header
-- Authenticated User sidebar (expanded and minimized)
-- Authenticated User mobile header
+- **Admin and User dark sidebars:** white logo, including the minimized
+  USU emblem, with no surrounding card/tile. The sidebar remains dark
+  even when the user selects Light.
+- **Mobile headers in Light mode:** transparent Aggie Blue logo.
+- **Mobile headers in Dark mode:** transparent white logo.
+- **Auto mode:** follows the resolved theme from `dashboard-theme.js` and
+  the existing `data-brc-resolved-theme` HTML attribute.
+- The same transparent image is reused for all variants. CSS
+  `filter: brightness(0) invert(1)` converts all non-transparent pixels
+  to white while retaining each pixel's alpha transparency.
 
-The single shared Blade partial at
-`resources/views/includes/partials/dashboard-brand.blade.php`
-renders the supplied logo from `public/img/brand/brc-usu-logo.png`.
-The source artwork is the supplied Aggie Blue PNG, resized to a
-web-appropriate resolution. The Dark-mode version uses the same
-transparent logo with a black filter, matching the black supplied
-variant without duplicating binary assets.
+Both authenticated dashboards use the existing
+`resources/views/includes/partials/dashboard-brand.blade.php`.
+No public marketing-site logo, navigation, or favicon changes.
 
-`public/css/dashboard-brand.css` gives the horizontal mark a
-light background against the default dark CoreUI sidebar, crops the
-left USU symbol (rather than shrinking unreadable text) in minimized
-sidebar mode, and scales the full name in the responsive header.
-Light/Dark/Auto themes remain supported. Logo links navigate to the
-appropriate Admin or User dashboard, not a placeholder URL.
+## Deployment
 
-The marketing/front-facing BasinEnergy header and favicon are not
-changed; only authenticated dashboard branding is in scope.
+This is a standalone CSS and Blade update. The CSS URL is cache-busted
+to `?v=2`. No migration, Composer update or npm build is needed.
 
-The old `public/img/brand/coreui.svg` remains in the repo as a
-legacy asset for compatibility, but is no longer used in those
-dashboard layouts.
-
-## Production deployment
-
-After GitHub Actions passes and the PR merges:
+After CI and merge:
 
 ```bash
 cd /var/www/brc_site
@@ -43,10 +35,6 @@ docker exec -it brc_site php artisan optimize:clear
 docker exec -it brc_site php artisan config:cache
 ```
 
-No database migration, Composer update, or npm build is required;
-the new image and CSS are committed to GitHub. The stylesheet uses
-`?v=1` cache busting.
-
-Check both roles in Light/Dark/Auto, collapsed and expanded sidebar,
-and a narrow phone-width viewport. Verify the logo does not overlap
-the menu controls, and clicking it returns to the correct dashboard.
+Check Admin and User dashboards in Light/Dark/Auto, collapsed/expanded
+sidebars, and narrow mobile widths. The logo must have no white box
+and must remain legible against the actual sidebar/header color.
