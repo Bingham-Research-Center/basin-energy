@@ -19,7 +19,7 @@
         <p class="text-muted">Create monthly issues in the rich-text editor. Drafts can be reopened and edited at any time.
             <strong>Only explicitly scheduled issues are sent</strong> on the final day of the month at 6:00 PM Mountain time.
             Months without a scheduled issue have no delivery.</p>
-        <div class="brc-admin-data-table" wire:poll.10s>
+        <div class="brc-admin-data-table" data-broadcast-progress-table>
             <livewire:backend.broadcast-newsletters-table />
         </div>
     </div>
@@ -29,6 +29,7 @@
 
 @push('after-scripts')
 <script src="{{ asset('js/broadcast-editor.js') }}?v=6" defer></script>
+<script src="{{ asset('js/broadcast-delivery-progress.js') }}?v=1" defer></script>
 @if($errors->any())
 <script>window.brcBroadcastReopen = 'newsletter';</script>
 @endif
