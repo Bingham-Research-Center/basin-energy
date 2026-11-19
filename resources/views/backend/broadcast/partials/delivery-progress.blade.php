@@ -17,8 +17,12 @@
     </div>
     @if ($failed > 0 || $skipped > 0)
         <div class="broadcast-progress__note">
-            @if ($failed > 0){{ $failed }} failed@endif
-            @if ($skipped > 0){{ $failed > 0 ? ' · ' : '' }}{{ $skipped }} skipped@endif
+            @if ($failed > 0)
+                <span>{{ $failed }} failed</span>
+            @endif
+            @if ($skipped > 0)
+                <span>{{ $skipped }} skipped</span>
+            @endif
         </div>
     @endif
 </div>
