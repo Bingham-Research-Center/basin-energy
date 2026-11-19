@@ -84,8 +84,12 @@ class BroadcastAnnouncementsTable extends DataTableComponent
                     ])->render())->html(),
             Column::make('Status', 'status')
                 ->sortable()
-                ->label(fn ($row) => $row->status === BroadcastAnnouncement::DRAFT
-                    ? 'Draft' : 'Published'),
+                ->label(fn ($row) => view('backend.includes.table-pill', [
+                    'text' => $row->status === BroadcastAnnouncement::DRAFT
+                        ? 'Draft' : 'Published',
+                    'tone' => $row->status === BroadcastAnnouncement::DRAFT
+                        ? 'neutral' : 'success',
+                ])->render())->html(),
             Column::make('Actions')
                 ->label(function ($row) {
                     $url = e(route('admin.broadcast.announcements.edit', $row->id));
@@ -100,7 +104,7 @@ class BroadcastAnnouncementsTable extends DataTableComponent
                         csrf_field().method_field('DELETE').
                         '<button type="submit" class="btn btn-sm btn-outline-danger"'.
                         '>Delete</button></form>';
-                })->html(),
+                })->html()->excludeFromColumnSelect(),
         ];
     }
 }
