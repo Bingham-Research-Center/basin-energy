@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Domains\Auth\Models\User;
+use App\Models\BroadcastAnnouncement;
+use App\Models\BroadcastNewsletter;
 use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
@@ -115,4 +117,47 @@ class DashboardBreadcrumbCoverageTest extends TestCase
             ['Home', 'Dashboard', 'Data', 'Real-Time Data', 'Dinosaur NM']
         );
     }
+    public function test_broadcast_edit_routes_include_the_content_title(): void
+    {
+        $this->loginAsAdmin();
+
+        $newsletter = BroadcastNewsletter::create([
+            'title' => 'November Research Digest',
+            'body' => '<p>Draft newsletter</p>',
+            'body_format' => 'html',
+            'issue_month' => now()->addMonth()->startOfMonth(),
+            'status' => BroadcastNewsletter::DRAFT,
+        ]);
+
+        $this->assertTrail(
+            $this->get(route('admin.broadcast.newsletters.edit', $newsletter)),
+            ['Home', 'Broadcast', 'Newsletters', 'Edit: November Research Digest']
+        );
+
+        $announcement = BroadcastAnnouncement::create([
+            'title' => 'Field Campaign Notice',
+            'body' => '<p>Draft notice</p>',
+            'body_format' => 'html',
+            'audience' => 'all_users',
+            'role_ids' => [],
+            'status' => BroadcastAnnouncement::DRAFT,
+            'published_at' => now(),
+        ]);
+
+        $this->assertTrail(
+            $this->get(route('admin.broadcast.announcements.edit', $announcement)),
+            ['Home', 'Broadcast', 'Announcements', 'Edit: Field Campaign Notice']
+        );
+    }
+
+    public function test_log_viewer_uses_the_shared_backend_breadcrumb_display(): void
+    {
+        $this->loginAsAdmin();
+
+        $this->assertTrail(
+            $this->get(route('log-viewer::dashboard')),
+            ['Home', 'Application Logs']
+        );
+    }
+
 }
