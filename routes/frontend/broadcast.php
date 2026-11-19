@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Frontend\User\NewsletterSubscriptionController;
+use Tabuna\Breadcrumbs\Trail;
 
 Route::middleware(['auth', '2fa.confirmed', 'password.expires', config('boilerplate.access.middleware.verified'), 'is_user'])
     ->prefix('broadcast')->as('broadcast.')->group(function () {
@@ -9,5 +10,9 @@ Route::middleware(['auth', '2fa.confirmed', 'password.expires', config('boilerpl
         Route::delete('newsletter/subscribe', [NewsletterSubscriptionController::class, 'destroy'])
             ->name('newsletter.unsubscribe');
         Route::get('announcements', [NewsletterSubscriptionController::class, 'announcements'])
-            ->name('announcements');
+            ->name('announcements')
+            ->breadcrumbs(function (Trail $trail) {
+                $trail->parent('frontend.user.dashboard')
+                    ->push(__('My Announcements'), route('frontend.broadcast.announcements'));
+            });
     });
