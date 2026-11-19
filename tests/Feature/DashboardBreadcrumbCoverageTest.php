@@ -16,14 +16,14 @@ class DashboardBreadcrumbCoverageTest extends TestCase
         $this->assertSame(
             1,
             preg_match(
-                '/<ol class="breadcrumb border-0 m-0" aria-label="Breadcrumb">(.*?)<\\/ol>/s',
+                '/<ol class="breadcrumb border-0 m-0" aria-label="Breadcrumb">(.*?)<\/ol>/s',
                 $html,
                 $matches
             ),
             'Expected a breadcrumb in the shared dashboard header.'
         );
 
-        $text = preg_replace('/\\s+/u', ' ', html_entity_decode(
+        $text = preg_replace('/\s+/u', ' ', html_entity_decode(
             strip_tags($matches[1]), ENT_QUOTES | ENT_HTML5, 'UTF-8'
         ));
 
