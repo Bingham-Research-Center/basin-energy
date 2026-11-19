@@ -15,6 +15,12 @@ use Tests\TestCase;
 
 class BroadcastEditorDraftTest extends TestCase
 {
+    public function setUp(): void
+    {
+        parent::setUp();
+        config()->set('broadcast.queue_connection', 'sync');
+    }
+
     public function test_newsletter_index_has_summernote_modal_and_resume_draft_link(): void
     {
         $this->loginAsAdmin();
