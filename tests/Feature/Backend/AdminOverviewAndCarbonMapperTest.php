@@ -37,6 +37,11 @@ class AdminOverviewAndCarbonMapperTest extends TestCase
             'published_at' => now(),
         ]);
 
+        User::factory()->admin()->create([
+            'name' => 'Internal Admin Latest Login',
+            'last_login_at' => now(),
+        ]);
+
         $this->loginAsAdmin();
 
         // Rendering the dashboard must not request external ozone data:
@@ -50,9 +55,13 @@ class AdminOverviewAndCarbonMapperTest extends TestCase
             ->assertSee('Research Stakeholder')
             ->assertSee('27th Aug 16:24')
             ->assertSee('Last seen')
-            ->assertSee('Registered users')
-            ->assertSee('Awaiting verification')
-            ->assertSee('Published announcements')
+            ->assertSee('Uintah Basin weather')
+            ->assertSee('Vernal Regional Airport (KVEL)')
+            ->assertSee('adminWeatherSummary')
+            ->assertSee(route('admin.weather.current'))
+            ->assertDontSee('Registered users')
+            ->assertDontSee('Published announcements')
+            ->assertDontSee('Internal Admin Latest Login')
             ->assertSee('adminOzoneChart')
             ->assertSee('Last 24 records')
             ->assertSee(route('admin.data.realtime.logger.history.json', [
@@ -72,7 +81,8 @@ class AdminOverviewAndCarbonMapperTest extends TestCase
         $this->get(route('admin.dashboard'))
             ->assertOk()
             ->assertDontSee('Private Researcher')
-            ->assertDontSee('Registered users')
+            ->assertDontSee('Private Researcher')
+            ->assertSee('Uintah Basin weather')
             ->assertSee('requires the User Management viewing permission')
             ->assertSee('adminOzoneChart');
     }
