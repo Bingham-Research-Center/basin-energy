@@ -98,6 +98,14 @@ jobs:
           grep -q 'subsurfaceLeakDashboard' public/js/research-data.js
           grep -q 'oilWellPadDashboard' public/js/research-data.js
 
+      - name: Verify admin overview and bundled Carbon Mapper assets
+        run: |
+          test -s public/js/backend.js
+          test -s public/js/research-data.js
+          grep -q 'adminOzoneTrend' public/js/backend.js
+          grep -q 'markerClusterGroup' public/js/research-data.js
+          grep -q 'leaflet-container' public/css/backend.css
+
       - name: Verify full-width dashboard visualization CSS
         run: |
           grep -Fq '.dashboard-page-pro.dashboard-fill-page' public/css/backend.css
