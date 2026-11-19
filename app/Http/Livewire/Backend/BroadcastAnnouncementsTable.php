@@ -38,7 +38,7 @@ class BroadcastAnnouncementsTable extends DataTableComponent
 
         $names = array_values(array_unique($names));
 
-        return 'Selected User roles: '.($names ? implode(', ', $names) : 'None');
+        return $names ? implode(', ', $names) : 'None';
     }
 
     public function configure(): void
