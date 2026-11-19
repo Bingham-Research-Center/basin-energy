@@ -36,18 +36,21 @@ class BroadcastAnnouncementsTable extends DataTableComponent
             Column::make('Title', 'title')->searchable()->sortable(),
             Column::make('Audience', 'audience')
                 ->label(fn ($row) => $row->audience === 'all_users'
-                    ? 'All Users' : 'Selected User roles: '.implode(', ', $row->role_ids ?? [])),
+                    ? 'All Users' : 'Selected User role IDs: '.implode(', ', $row->role_ids ?? [])),
             Column::make('Published', 'published_at')
                 ->sortable()
                 ->label(fn ($row) => $row->status === BroadcastAnnouncement::PUBLISHED
                     ? optional($row->published_at)->format('M j, Y H:i') : '-'),
             Column::make('Email sent')
-                ->label(fn ($row) => view('backend.broadcast.partials.delivery-progress', [
-                    'sent' => $row->sent_count,
-                    'total' => $row->recipient_count,
-                    'failed' => $row->failed_count,
-                    'skipped' => $row->skipped_count,
-                ])->render())->html(),
+                ->label(fn ($row) => $row->status === BroadcastAnnouncement::PUBLISHED
+                    && (int) $row->recipient_count === 0
+                    ? '<span class="text-warning" role="status">No eligible recipients</span>'
+                    : view('backend.broadcast.partials.delivery-progress', [
+                        'sent' => $row->sent_count,
+                        'total' => $row->recipient_count,
+                        'failed' => $row->failed_count,
+                        'skipped' => $row->skipped_count,
+                    ])->render())->html(),
             Column::make('Status', 'status')
                 ->sortable()
                 ->label(fn ($row) => $row->status === BroadcastAnnouncement::DRAFT
