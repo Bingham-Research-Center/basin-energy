@@ -105,6 +105,41 @@ init system, adjust these instructions. A standalone Docker Compose worker
 service with `restart: unless-stopped` is a longer-term alternative and
 must reuse the exact app environment, network, code and storage mounts.
 
+## Published announcement with 0 / 0 recipients
+
+`DispatchBroadcastAnnouncement DONE` only means the orchestration job
+finished. It does not imply a recipient email was queued or sent.
+The original recipient snapshot is taken *when the announcement is
+published*. It includes only active, email-verified regular User
+accounts with an email address, and (when targeting roles) membership
+in a selected User role. Role numbers displayed in the admin table are
+role **IDs**, not recipient counts.
+
+Starting with this change, an empty eligible audience prevents publication
+and produces a validation error, preserving the draft. Legacy already-
+published announcements with zero delivery records display
+`No eligible recipients` instead of a misleading 0% loading bar.
+
+An old published announcement cannot be re-targeted by assigning roles
+after publication. To reach users who were not eligible at the original
+publish time, first correct their role assignment/activation/verification
+through the normal account workflow, then create a **new** announcement
+and publish to those users. Do not manually backfill or replay old
+delivery rows without reconciling recipient consent and duplication risk.
+
+For read-only diagnosis in `php artisan tinker`:
+
+```php
+$a = \\App\\Models\\BroadcastAnnouncement::where('title', 'Test Announcement')->latest('id')->first();
+$a?->only(['id', 'status', 'audience', 'role_ids']);
+$a?->deliveries()->count();
+$role = \\App\\Domains\\Auth\\Models\\Role::find(3);
+$role?->only(['id', 'name', 'type']);
+$userQuery = \\App\\Domains\\Auth\\Models\\User::query()->whereHas('roles', fn ($q) => $q->where('roles.id', 3));
+$userQuery->count();
+$userQuery->where('type', 'user')->where('active', true)->whereNotNull('email')->whereNotNull('email_verified_at')->count();
+```
+
 ## Monitoring and recovery
 
 ```sh
