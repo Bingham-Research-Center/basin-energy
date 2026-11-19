@@ -103,6 +103,7 @@ jobs:
           test -s public/js/backend.js
           test -s public/js/research-data.js
           grep -q 'adminOzoneTrend' public/js/backend.js
+          grep -q 'adminWeatherSummary' public/js/backend.js
           grep -q 'markerClusterGroup' public/js/research-data.js
           grep -q 'leaflet-container' public/css/backend.css
 
