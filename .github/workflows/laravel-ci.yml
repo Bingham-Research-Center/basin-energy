@@ -89,6 +89,15 @@ jobs:
       - name: Build frontend assets
         run: npm run production
 
+      - name: Verify compiled research chart modules
+        run: |
+          test -s public/js/research-data.js
+          node --check public/js/research-data.js
+          grep -q 'emissionTrendsChartRoot' public/js/research-data.js
+          grep -q 'producedWaterFluxRoot' public/js/research-data.js
+          grep -q 'subsurfaceLeakDashboard' public/js/research-data.js
+          grep -q 'oilWellPadDashboard' public/js/research-data.js
+
       - name: Check shared dashboard theme script
         run: node --check public/js/dashboard-theme.js
 
