@@ -48,6 +48,7 @@
     <script src="{{ asset('js/dashboard-toasts.js') }}?v=1"></script>
     <livewire:scripts />
     @stack('after-scripts')
+    @include('includes.partials.research-data-assets')
 
 
 </body>
