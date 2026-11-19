@@ -93,7 +93,9 @@ jobs:
         run: node --check public/js/dashboard-theme.js
 
       - name: Check Broadcast editor syntax
-        run: node --check public/js/broadcast-editor.js
+        run: |
+          node --check public/js/broadcast-editor.js
+          node --check public/js/broadcast-delivery-progress.js
 
       - name: Verify Laravel Mix manifest
         run: test -f public/mix-manifest.json
