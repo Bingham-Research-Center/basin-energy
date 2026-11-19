@@ -3,11 +3,12 @@
         <i class="c-icon c-icon-lg cil-menu"></i>
     </button>
 
-    <a class="c-header-brand d-lg-none" href="#">
-        <svg width="118" height="46" alt="CoreUI Logo">
-            <use xlink:href="{{ asset('img/brand/coreui.svg#full') }}"></use>
-        </svg>
-    </a>
+    <div class="c-header-brand d-lg-none brc-mobile-brand">
+        @include('includes.partials.dashboard-brand', [
+            'destination' => route('admin.dashboard'),
+            'compact' => false,
+        ])
+    </div>
 
     <button class="c-header-toggler c-class-toggler mfs-3 d-md-down-none" type="button" data-target="#sidebar" data-class="c-sidebar-lg-show" responsive="true">
         <i class="c-icon c-icon-lg cil-menu"></i>

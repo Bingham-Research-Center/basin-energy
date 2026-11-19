@@ -1,0 +1,93 @@
+/* Dashboard-only Bingham Research Center / Utah State University identity.
+ * Source artwork is transparent; the light tile preserves contrast against
+ * CoreUI's dark sidebar in Light, Dark and Auto modes.
+ */
+.brc-sidebar-brand {
+    min-height: 70px;
+    padding: 6px 8px;
+}
+.brc-dashboard-brand-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    max-width: 100%;
+    min-width: 0;
+    padding: 5px 7px;
+    border-radius: 4px;
+    background: #fff;
+    text-decoration: none;
+    line-height: 1;
+}
+.brc-dashboard-brand-link:focus-visible {
+    outline: 2px solid #59a8fa;
+    outline-offset: 2px;
+}
+.brc-dashboard-brand-full {
+    display: block;
+    min-width: 0;
+    line-height: 0;
+}
+.brc-dashboard-brand-full .brc-brand-image {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-width: 233px;
+}
+.brc-dashboard-brand-link .brc-brand-black {
+    display: none;
+    filter: brightness(0);
+}
+html[data-brc-resolved-theme="dark"] .brc-dashboard-brand-link .brc-brand-blue {
+    display: none;
+}
+html[data-brc-resolved-theme="dark"] .brc-dashboard-brand-link .brc-brand-black {
+    display: block;
+}
+.brc-sidebar-brand .brc-dashboard-brand-minimized {
+    display: none;
+}
+.c-sidebar-minimized .brc-sidebar-brand {
+    padding: 6px 3px;
+    min-height: 58px;
+}
+.c-sidebar-minimized .brc-sidebar-brand .brc-dashboard-brand-full {
+    display: none;
+}
+.c-sidebar-minimized .brc-sidebar-brand .brc-dashboard-brand-minimized {
+    display: block;
+}
+.c-sidebar-minimized .brc-dashboard-brand-link {
+    padding: 4px 3px;
+}
+.brc-brand-symbol-crop {
+    display: block;
+    width: 47px;
+    height: 36px;
+    overflow: hidden;
+}
+.brc-brand-symbol-crop img {
+    width: 194px;
+    min-width: 194px;
+    max-width: none;
+    height: auto;
+}
+.brc-mobile-brand {
+    padding: 0 5px;
+}
+.brc-mobile-brand .brc-dashboard-brand-link {
+    padding: 3px 5px;
+}
+.brc-mobile-brand .brc-dashboard-brand-full .brc-brand-image {
+    width: 165px;
+    max-width: 100%;
+}
+@media (max-width: 440px) {
+    .brc-mobile-brand .brc-dashboard-brand-full .brc-brand-image {
+        width: 132px;
+    }
+}
+
+/* Keep the minimized emblem crisp within CoreUI's narrow sidebar. */
+.c-sidebar-minimized .brc-brand-symbol-crop .brc-brand-black {
+    filter: brightness(0);
+}

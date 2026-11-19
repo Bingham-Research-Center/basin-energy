@@ -14,6 +14,7 @@
     <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-bs4.min.css" rel="stylesheet">
     <link href="{{ mix('css/backend.css') }}" rel="stylesheet">
     <link href="{{ asset('css/dashboard-theme.css') }}?v=2" rel="stylesheet">
+    <link href="{{ asset('css/dashboard-brand.css') }}?v=1" rel="stylesheet">
     <livewire:styles />
     @stack('after-styles')
 </head>
