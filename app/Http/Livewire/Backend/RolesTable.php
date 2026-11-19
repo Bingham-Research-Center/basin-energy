@@ -33,7 +33,11 @@ class RolesTable extends DataTableComponent
     {
         return [
             Column::make(__('Type'), 'type')
-                ->sortable(),
+                ->sortable()
+                ->label(fn ($row) => view('backend.includes.table-pill', [
+                    'text' => ucfirst((string) $row->type),
+                    'tone' => $row->type === 'admin' ? 'admin' : 'neutral',
+                ])->render())->html(),
 
             Column::make(__('Name'), 'name')
                 ->searchable()
@@ -43,7 +47,10 @@ class RolesTable extends DataTableComponent
                 ->label(fn ($row) => $row->permissions->pluck('name')->join(', ') ?: '-'),
 
             Column::make(__('Number of Users'))
-                ->label(fn ($row) => (string) $row->users_count)
+                ->label(fn ($row) => view('backend.includes.table-pill', [
+                    'text' => (string) $row->users_count,
+                    'tone' => 'info',
+                ])->render())->html()
                 ->sortable(fn (Builder $query, string $direction) => $query->orderBy('users_count', $direction)),
 
             Column::make(__('Actions'))
@@ -56,7 +63,8 @@ class RolesTable extends DataTableComponent
 
                     return '<a href="' . e(route('admin.auth.role.edit', ['role' => $id])) . '" class="btn btn-primary btn-sm mr-1">Edit</a>';
                 })
-                ->html(),
+                ->html()
+                ->excludeFromColumnSelect(),
         ];
     }
 }
