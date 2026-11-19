@@ -5,6 +5,15 @@ document.addEventListener('DOMContentLoaded', async function () {
         return;
     }
 
+    // The view supplies the correct admin or User-scoped endpoints.
+    // Avoid absolute /carbon-mapper URLs: those are User-only.
+    const api = {
+        observations: mapElement.dataset.jsonUrl,
+        boundary: mapElement.dataset.boundaryUrl,
+        sources: mapElement.dataset.sourcesUrl,
+        plumeTemplate: mapElement.dataset.plumeUrlTemplate
+    };
+
     if (typeof L === 'undefined') {
         console.error('Carbon Mapper: Leaflet has not loaded.');
         return;
@@ -50,7 +59,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     // Load the Uintah Basin coverage boundary.
     try {
         const boundaryResponse = await fetch(
-            '/carbon-mapper/utah/boundary'
+            api.boundary
         );
 
         if (!boundaryResponse.ok) {
@@ -136,7 +145,7 @@ async function showObservationPlume(point) {
 
     try {
         const response = await fetch(
-            `/carbon-mapper/utah/plume/${encodeURIComponent(point.observation_id)}`,
+            api.plumeTemplate.replace('__OBSERVATION_ID__', encodeURIComponent(point.observation_id)),
             {
                 signal: controller.signal,
                 headers: {
@@ -542,7 +551,7 @@ detectionLayer.addLayer(marker);
 
         try {
             const url = new URL(
-                '/carbon-mapper/utah/json',
+                api.observations,
                 window.location.origin
             );
 
@@ -645,7 +654,7 @@ if (detections.length === 0) {
     // Load the initial observations.
     try {
         const initialResponse = await fetch(
-            '/carbon-mapper/utah/json',
+            api.observations,
             {
                 headers: {
                     'Accept': 'application/json'
@@ -830,7 +839,7 @@ if (detections.length === 0) {
     // Load locations that have repeated methane observations.
     try {
         const sourcesResponse = await fetch(
-            '/carbon-mapper/utah/sources'
+            api.sources
         );
 
         if (!sourcesResponse.ok) {
