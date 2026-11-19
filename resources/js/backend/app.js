@@ -23,3 +23,4 @@ import '../dashboard/charts';
 import '../dashboard/admin-overview';
 import '../dashboard/horsepool';
 import '../dashboard/realtime-ozone';
+import '../dashboard/admin-home';
