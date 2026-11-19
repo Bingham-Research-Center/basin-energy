@@ -15,6 +15,7 @@
     <link href="{{ mix('css/backend.css') }}" rel="stylesheet">
     <link href="{{ asset('css/dashboard-theme.css') }}?v=2" rel="stylesheet">
     <link href="{{ asset('css/dashboard-brand.css') }}?v=2" rel="stylesheet">
+    <link href="{{ asset('css/dashboard-tables.css') }}?v=1" rel="stylesheet">
     <link href="{{ asset('css/dashboard-notifications.css') }}?v=1" rel="stylesheet">
     <livewire:styles />
     @stack('after-styles')
