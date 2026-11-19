@@ -20,3 +20,12 @@ body.c-dark-theme .broadcast-editor-modal .close { color: #fff; text-shadow: non
     .broadcast-editor-modal .modal-dialog { max-width: 100%; margin: .5rem; }
     .broadcast-editor-modal .modal-body { max-height: calc(100vh - 180px); }
 }
+
+/* Compact delivery progress shared by both Broadcast tables. */
+.broadcast-progress { min-width: 154px; max-width: 240px; font-size: .8rem; }
+.broadcast-progress__label { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.broadcast-progress__track { height: 7px; background: #e9edf2; border-radius: 20px; overflow: hidden; }
+.broadcast-progress__fill { height: 100%; background: #cf5d5d; border-radius: inherit; transition: width .35s ease; }
+.broadcast-progress__note { margin-top: 3px; font-size: .73rem; color: #8a4c4c; }
+body.c-dark-theme .broadcast-progress__track { background: #485465; }
+body.c-dark-theme .broadcast-progress__note { color: #efa6a6; }
