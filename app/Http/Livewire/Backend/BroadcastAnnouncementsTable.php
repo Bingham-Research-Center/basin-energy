@@ -25,6 +25,8 @@ class BroadcastAnnouncementsTable extends DataTableComponent
         return BroadcastAnnouncement::query()->withCount([
             'deliveries as recipient_count',
             'deliveries as sent_count' => fn ($q) => $q->where('status', 'sent'),
+            'deliveries as failed_count' => fn ($q) => $q->where('status', 'failed'),
+            'deliveries as skipped_count' => fn ($q) => $q->where('status', 'skipped'),
         ]);
     }
 
@@ -40,7 +42,12 @@ class BroadcastAnnouncementsTable extends DataTableComponent
                 ->label(fn ($row) => $row->status === BroadcastAnnouncement::PUBLISHED
                     ? optional($row->published_at)->format('M j, Y H:i') : '-'),
             Column::make('Email sent')
-                ->label(fn ($row) => $row->sent_count.' / '.$row->recipient_count),
+                ->label(fn ($row) => view('backend.broadcast.partials.delivery-progress', [
+                    'sent' => $row->sent_count,
+                    'total' => $row->recipient_count,
+                    'failed' => $row->failed_count,
+                    'skipped' => $row->skipped_count,
+                ])->render())->html(),
             Column::make('Status', 'status')
                 ->sortable()
                 ->label(fn ($row) => $row->status === BroadcastAnnouncement::DRAFT
