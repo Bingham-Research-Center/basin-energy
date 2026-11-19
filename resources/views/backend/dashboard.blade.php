@@ -13,43 +13,65 @@
             <div class="dashboard-eyebrow">@lang('Bingham Research Center')</div>
             <h1 class="dashboard-title mb-1">@lang('Administration Overview')</h1>
             <p class="dashboard-muted mb-0">
-                @lang('Accounts, broadcast activity and Uinta Basin monitoring in one place.')
+                @lang('Local weather, Uinta Basin ozone observations and recent user activity.')
             </p>
         </div>
     </div>
 
-    <div class="row mb-2">
-        @if ($canViewUsers)
+    <section class="brc-weather-section mb-4" id="adminWeatherSummary"
+        data-weather-url="{{ route('admin.weather.current') }}"
+        aria-labelledby="adminWeatherTitle">
+        <div class="d-flex justify-content-between align-items-start flex-wrap mb-2">
+            <div>
+                <h2 id="adminWeatherTitle" class="dashboard-chart-title mb-1">@lang('Uintah Basin weather')</h2>
+                <p class="dashboard-chart-subtitle mb-1">
+                    @lang('Vernal Regional Airport (KVEL) observations — National Weather Service')
+                </p>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-primary" id="adminWeatherRefresh">
+                <i class="c-icon cil-reload mr-1" aria-hidden="true"></i>@lang('Refresh weather')
+            </button>
+        </div>
+        <div class="row brc-weather-card-grid">
             <div class="col-6 col-xl-3 mb-3">
-                <div class="brc-overview-metric">
-                    <div class="brc-overview-metric-label">@lang('Registered users')</div>
-                    <div class="brc-overview-metric-number">{{ number_format($stats['registered_users']) }}</div>
-                    <div class="brc-overview-metric-note">@lang('Regular user accounts')</div>
+                <div class="brc-overview-metric h-100">
+                    <div class="brc-overview-metric-label">@lang('Temperature')</div>
+                    <div class="brc-overview-metric-number" id="adminWeatherTemperature">—</div>
+                    <div class="brc-overview-metric-note">@lang('Air temperature')</div>
                 </div>
             </div>
             <div class="col-6 col-xl-3 mb-3">
-                <div class="brc-overview-metric">
-                    <div class="brc-overview-metric-label">@lang('Active users')</div>
-                    <div class="brc-overview-metric-number">{{ number_format($stats['active_users']) }}</div>
-                    <div class="brc-overview-metric-note">@lang('Enabled user accounts')</div>
+                <div class="brc-overview-metric h-100">
+                    <div class="brc-overview-metric-label">@lang('Wind')</div>
+                    <div class="brc-overview-metric-number" id="adminWeatherWind">—</div>
+                    <div class="brc-overview-metric-note" id="adminWeatherWindDirection">@lang('Station wind speed')</div>
                 </div>
             </div>
             <div class="col-6 col-xl-3 mb-3">
-                <div class="brc-overview-metric">
-                    <div class="brc-overview-metric-label">@lang('Awaiting verification')</div>
-                    <div class="brc-overview-metric-number">{{ number_format($stats['unverified_users']) }}</div>
-                    <div class="brc-overview-metric-note">@lang('Active accounts without verified email')</div>
+                <div class="brc-overview-metric h-100">
+                    <div class="brc-overview-metric-label">@lang('Humidity')</div>
+                    <div class="brc-overview-metric-number" id="adminWeatherHumidity">—</div>
+                    <div class="brc-overview-metric-note">@lang('Relative humidity')</div>
                 </div>
             </div>
-        @endif
-        <div class="col-6 col-xl-3 mb-3">
-            <div class="brc-overview-metric">
-                <div class="brc-overview-metric-label">@lang('Published announcements')</div>
-                <div class="brc-overview-metric-number">{{ number_format($publishedAnnouncements) }}</div>
-                <div class="brc-overview-metric-note">@lang('Total published updates')</div>
+            <div class="col-6 col-xl-3 mb-3">
+                <div class="brc-overview-metric brc-weather-conditions h-100">
+                    <div class="brc-overview-metric-label">@lang('Conditions')</div>
+                    <div class="brc-overview-metric-number" id="adminWeatherConditions">—</div>
+                    <div class="brc-overview-metric-note">@lang('Reported at KVEL')</div>
+                </div>
             </div>
         </div>
-    </div>
+        <p class="small dashboard-muted mb-0" id="adminWeatherStatus" role="status" aria-live="polite">
+            @lang('Loading National Weather Service station observations...')
+        </p>
+        <p class="small dashboard-muted mt-1 mb-0">
+            @lang('Station measurements represent conditions near Vernal, not a basin-wide average.')
+            <a href="https://www.weather.gov/documentation/services-web-api" target="_blank" rel="noopener noreferrer">
+                @lang('Source: NWS')
+            </a>
+        </p>
+    </section>
 
     <section class="card dashboard-chart-card mb-4" id="adminOzoneTrend"
         data-history-url-template="{{ route('admin.data.realtime.logger.history.json', ['site' => '__STATION__']) }}"
@@ -87,7 +109,7 @@
                 <div class="card-header d-flex align-items-center justify-content-between">
                     <div>
                         <h2 class="dashboard-chart-title mb-0" id="recentUsersHeading">@lang('Recently signed-in users')</h2>
-                        <small class="dashboard-chart-subtitle">@lang('Most recent recorded sign-ins')</small>
+                        <small class="dashboard-chart-subtitle">@lang('Latest sign-ins from regular user accounts only')</small>
                     </div>
                     @if ($canViewUsers)
                         <a href="{{ route('admin.auth.user.index') }}" class="btn btn-sm btn-outline-primary">
