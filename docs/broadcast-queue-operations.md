@@ -130,12 +130,12 @@ delivery rows without reconciling recipient consent and duplication risk.
 For read-only diagnosis in `php artisan tinker`:
 
 ```php
-$a = \\App\\Models\\BroadcastAnnouncement::where('title', 'Test Announcement')->latest('id')->first();
+$a = \App\Models\BroadcastAnnouncement::where('title', 'Test Announcement')->latest('id')->first();
 $a?->only(['id', 'status', 'audience', 'role_ids']);
 $a?->deliveries()->count();
-$role = \\App\\Domains\\Auth\\Models\\Role::find(3);
+$role = \App\Domains\Auth\Models\Role::find(3);
 $role?->only(['id', 'name', 'type']);
-$userQuery = \\App\\Domains\\Auth\\Models\\User::query()->whereHas('roles', fn ($q) => $q->where('roles.id', 3));
+$userQuery = \App\Domains\Auth\Models\User::query()->whereHas('roles', fn ($q) => $q->where('roles.id', 3));
 $userQuery->count();
 $userQuery->where('type', 'user')->where('active', true)->whereNotNull('email')->whereNotNull('email_verified_at')->count();
 ```
