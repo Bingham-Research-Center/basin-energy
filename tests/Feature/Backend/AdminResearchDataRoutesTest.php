@@ -109,9 +109,14 @@ class AdminResearchDataRoutesTest extends TestCase
 
         $mapper = $this->get(route('admin.data.carbon-mapper.utah'))
             ->assertOk()->getContent();
+
+        $this->assertStringContainsString('data-json-url="'.route('admin.data.carbon-mapper.utah.json').'"', $mapper);
+        $this->assertStringContainsString('data-boundary-url="'.route('admin.data.carbon-mapper.utah.boundary').'"', $mapper);
+        $this->assertStringContainsString('data-sources-url="'.route('admin.data.carbon-mapper.utah.sources').'"', $mapper);
+        $this->assertStringNotContainsString('unpkg.com/leaflet', $mapper);
         $this->assertLessThan(
             strpos($mapper, '/js/research-data.js'),
-            strpos($mapper, 'leaflet.markercluster.js')
+            strpos($mapper, 'data-json-url=')
         );
 
         // The existing independent real-time dashboards should not
