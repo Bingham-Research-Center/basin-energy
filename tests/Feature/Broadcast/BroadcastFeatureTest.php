@@ -18,6 +18,13 @@ use Tests\TestCase;
 
 class BroadcastFeatureTest extends TestCase
 {
+    public function setUp(): void
+    {
+        parent::setUp();
+        // Existing end-to-end tests execute jobs inline without a worker.
+        config()->set('broadcast.queue_connection', 'sync');
+    }
+
     public function tearDown(): void
     {
         Carbon::setTestNow();
