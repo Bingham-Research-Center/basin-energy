@@ -89,7 +89,7 @@ final class ExistingEmissionTrendsSchema
 
         foreach (self::TYPES as $name => $type) {
             $column = $seen[$name] ?? null;
-            if (! $column || strtolower($column->column_type) !== $type) {
+            if (! $column || self::canonicalMySqlColumnType($column->column_type) !== $type) {
                 self::reject($name.' type is '.
                     ($column ? $column->column_type : 'missing').' (expected '.$type.')');
             }
@@ -126,6 +126,27 @@ final class ExistingEmissionTrendsSchema
         if (! in_array(['year'], array_values($unique), true)) {
             self::reject('year requires a single-column UNIQUE index');
         }
+    }
+
+    /**
+     * MySQL 5.7 and some historical MySQL 8 tables expose integer display
+     * widths in information_schema (e.g. bigint(20) unsigned), whereas
+     * recent versions omit them (bigint unsigned). Integer display width
+     * changes formatting only; it does not change integer storage or range.
+     *
+     * Normalize only the optional display width of integer types. Preserve
+     * unsigned, precision/scale of decimal columns, and all other modifiers
+     * so incompatible schemas still fail closed without data loss.
+     */
+    public static function canonicalMySqlColumnType(string $type): string
+    {
+        $type = strtolower(trim($type));
+
+        return preg_replace(
+            '/^(tinyint|smallint|mediumint|int|bigint)\\([0-9]+\\)( unsigned)?$/',
+            '$1$2',
+            $type
+        );
     }
 
     private static function verifySqlite(): void
