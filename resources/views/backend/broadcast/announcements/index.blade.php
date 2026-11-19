@@ -3,7 +3,7 @@
 @section('title', __('Announcements'))
 
 @push('after-styles')
-<link rel="stylesheet" href="{{ asset('css/broadcast-editor.css') }}?v=3">
+<link rel="stylesheet" href="{{ asset('css/broadcast-editor.css') }}?v=4">
 @endpush
 
 @section('content')
