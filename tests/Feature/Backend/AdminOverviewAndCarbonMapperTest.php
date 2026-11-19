@@ -81,7 +81,6 @@ class AdminOverviewAndCarbonMapperTest extends TestCase
         $this->get(route('admin.dashboard'))
             ->assertOk()
             ->assertDontSee('Private Researcher')
-            ->assertDontSee('Private Researcher')
             ->assertSee('Uintah Basin weather')
             ->assertSee('requires the User Management viewing permission')
             ->assertSee('adminOzoneChart');
