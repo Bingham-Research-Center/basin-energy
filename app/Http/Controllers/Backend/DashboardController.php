@@ -3,7 +3,8 @@
 namespace App\Http\Controllers\Backend;
 
 use App\Domains\Auth\Models\User;
-use App\Models\BroadcastAnnouncement;
+use App\Services\UintahBasinWeatherService;
+use Illuminate\Http\JsonResponse;
 
 class DashboardController
 {
@@ -11,23 +12,11 @@ class DashboardController
     {
         $canViewUsers = auth()->user()->can('admin.access.user.list');
 
-        $stats = $canViewUsers ? [
-            'registered_users' => User::query()->where('type', User::TYPE_USER)->count(),
-            'active_users' => User::query()
-                ->where('type', User::TYPE_USER)->where('active', true)->count(),
-            'unverified_users' => User::query()
-                ->where('type', User::TYPE_USER)->where('active', true)
-                ->whereNull('email_verified_at')->count(),
-        ] : [];
-
-        $publishedAnnouncements = BroadcastAnnouncement::query()
-            ->where('status', BroadcastAnnouncement::PUBLISHED)
-            ->count();
-
-        // The admin overview is deliberately small and read-only.
-        // Keep records with a known login ahead of never-signed-in accounts.
+        // Never show administrator accounts in the recent User roster.
+        // Keep login timestamps before never-signed-in accounts.
         $recentUsers = $canViewUsers
             ? User::query()
+                ->where('type', User::TYPE_USER)
                 ->select(['id', 'name', 'type', 'active', 'timezone', 'last_login_at', 'created_at'])
                 ->with('roles:id,name')
                 ->orderByRaw('last_login_at IS NULL')
@@ -37,8 +26,15 @@ class DashboardController
                 ->get()
             : collect();
 
-        return view('backend.dashboard', compact(
-            'stats', 'recentUsers', 'canViewUsers', 'publishedAnnouncements'
-        ));
+        // The dashboard HTML is never blocked on external NWS requests.
+        return view('backend.dashboard', compact('recentUsers', 'canViewUsers'));
+    }
+
+    public function currentWeather(UintahBasinWeatherService $weather): JsonResponse
+    {
+        $result = $weather->current();
+
+        return response()->json($result, $result['ok'] ? 200 : 503)
+            ->header('Cache-Control', 'private, no-store');
     }
 }
