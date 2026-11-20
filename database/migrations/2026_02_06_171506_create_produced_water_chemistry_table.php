@@ -13,6 +13,13 @@ class CreateProducedWaterChemistryTable extends Migration
      */
     public function up()
     {
+        // Adopt historical imports only after strictly validating their schema.
+        if (Schema::hasTable('produced_water_chemistry')) {
+            \App\Support\ExistingProducedWaterChemistrySchema::assertCompatible();
+
+            return;
+        }
+
         Schema::create('produced_water_chemistry', function (Blueprint $table) {
             $table->id();
 
@@ -62,6 +69,10 @@ class CreateProducedWaterChemistryTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('produced_water_chemistry');
+        throw new \RuntimeException(
+            'Refusing to drop produced_water_chemistry during rollback: '.
+            'it may contain imported research data. Back up and remove the '.
+            'table explicitly only if you intend to delete the dataset.'
+        );
     }
 }
