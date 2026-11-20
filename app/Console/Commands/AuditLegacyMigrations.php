@@ -44,6 +44,7 @@ class AuditLegacyMigrations extends Command
         '2026_09_23_153859_create_home_page_contents_table' => 'home_page_contents',
         '2026_11_04_162803_create_carbon_mapper_source_measurements_table' => 'carbon_mapper_source_measurements',
         '2026_11_04_172430_create_carbon_mapper_plume_outlines_table' => 'carbon_mapper_plume_outlines',
+        '2026_11_23_000001_create_default_user_role_settings_table' => 'default_user_role_settings',
     ];
 
     private const ALTERATIONS = [
@@ -211,6 +212,21 @@ class AuditLegacyMigrations extends Command
             } elseif ($status === 'pending') {
                 $status = 'review';
                 $detail = 'Not a catalogued historical create/alter; inspect before migration.';
+            }
+
+            // The default-role migration also inserts its fixed setting row.
+            // A table without that row cannot be safely marked as complete.
+            if ($name === '2026_11_23_000001_create_default_user_role_settings_table'
+                && Schema::hasTable('default_user_role_settings')
+                && $status !== 'BLOCKED') {
+                $count = DB::table('default_user_role_settings')
+                    ->where('setting_key', 'registration')->count();
+
+                if ($count !== 1) {
+                    $status = 'BLOCKED';
+                    $detail = 'The registration singleton setting row is missing; '.
+                        'do not adopt the migration until it is explicitly repaired.';
+                }
             }
 
             $report[] = [
