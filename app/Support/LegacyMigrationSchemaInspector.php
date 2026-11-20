@@ -326,11 +326,17 @@ final class LegacyMigrationSchemaInspector
     private function indexMetadata(string $table): array
     {
         if (DB::getDriverName() === 'sqlite') {
-            $map = ['PRIMARY' => ['columns' => ['id'], 'unique' => true]];
-            // sync_states uses a string primary key instead of id.
-            if ($table === 'sync_states') {
-                $map['PRIMARY']['columns'] = ['key'];
+            // Inspect the actual primary key instead of assuming every
+            // table uses id (singleton setting and sync_states do not).
+            $primary = [];
+            foreach (DB::select("PRAGMA table_info('".$table."')") as $column) {
+                if ((int) $column->pk > 0) {
+                    $primary[(int) $column->pk] = $column->name;
+                }
             }
+            ksort($primary);
+            $map = ['PRIMARY' => ['columns' => array_values($primary), 'unique' => true]];
+
             foreach (DB::select("PRAGMA index_list('".$table."')") as $row) {
                 $escaped = str_replace("'", "''", $row->name);
                 $columns = DB::select("PRAGMA index_info('".$escaped."')");
