@@ -151,3 +151,58 @@ covers parser behavior, valid/invalid JSON constraint shapes and schema drift.
 
 Passing CI does not replace the production audit: the actual server is
 MariaDB 11.8.3 with historical imported data, not CI's clean MySQL 8.
+
+
+## Follow-up: MariaDB quoted defaults and an existing Laragear 2FA table
+
+A live production audit on November 20, 2026 identified two remaining
+false-positive blockers that prevented **all** 18 adoptable migrations from
+being recorded:
+
+- The imported `carbon_mapper_source_measurements.gas` field already has
+  `DEFAULT 'CH4'` in MariaDB, but `information_schema.COLUMN_DEFAULT`
+  includes SQL quotes where the Laravel compiler reports `CH4`. The schema
+  inspector now compares the unquoted *literal value*, without accepting a
+  different gas default.
+- The **2026** Laragear two-factor migration explicitly does nothing if
+  `two_factor_authentications` exists. The older 2021 table in production has
+  `shared_secret TEXT` and `recovery_codes TEXT` instead of the original
+  `VARCHAR` and JSON. The audit previously required exact matching with the
+  2021 migration even though it was already recorded as Ran. The replacement
+  guard checks the existing table's required fields, key/index, authentication
+  identity column types, algorithm default, and validated `safe_devices`
+  JSON alias. It permits known VARCHAR/TEXT variants for secrets and recovery
+  codes without changing, converting, or exposing any 2FA data.
+
+Neither difference requires altering production database columns. The fix
+changes the **audit code only**; the original migration files and application
+authentication behavior remain unchanged.
+
+After the follow-up PR has passed CI, merged, and been pulled:
+
+```bash
+cd /var/www/brc_site
+git pull --ff-only origin master
+
+# Read-only: verify BLOCKED = 0 and review = 0.
+docker exec brc_site php artisan schema:audit-migrations
+docker exec brc_site php artisan schema:reconcile-migrations
+
+# Writes only completed records to the migrations table.
+docker exec brc_site php artisan schema:reconcile-migrations --apply
+
+# Then let the original Laravel migrations create or alter genuinely missing schema.
+docker exec brc_site php artisan migrate --force
+docker exec brc_site php artisan migrate:status
+docker exec brc_site php artisan schema:audit-migrations
+```
+
+Note: the previous `php artisan migrate --force` invocation already
+recorded `2026_02_06_222324_create_carbon_mapper_observations_table` as
+completed. A subsequent preview should list **18** (not 19) adoptable
+migrations unless other independently applied migrations changed that count.
+
+Do not rerun `schema:repair-carbon-json --apply` simply to resolve these
+false-positive audit findings. If the Carbon Mapper observation creation
+migration is already recorded as Ran and passes its schema audit, the JSON
+repair is not part of this step. Preserve the verified DB backup.
