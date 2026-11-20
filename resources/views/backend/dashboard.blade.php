@@ -12,9 +12,6 @@
         <div>
             <div class="dashboard-eyebrow">@lang('Bingham Research Center')</div>
             <h1 class="dashboard-title mb-1">@lang('Administration Overview')</h1>
-            <p class="dashboard-muted mb-0">
-                @lang('Local weather, Uinta Basin ozone observations and recent user activity.')
-            </p>
         </div>
     </div>
 
@@ -25,7 +22,10 @@
             <div>
                 <h2 id="adminWeatherTitle" class="dashboard-chart-title mb-1">@lang('Uinta Basin weather')</h2>
                 <p class="dashboard-chart-subtitle mb-1">
-                    @lang('Vernal Regional Airport (KVEL) observations — National Weather Service')
+                    @lang('Vernal Regional Airport')
+                    (<span id="adminWeatherObservedAt">@lang('As of latest observation pending')</span>,
+                    <a href="https://www.weather.gov/documentation/services-web-api"
+                        target="_blank" rel="noopener noreferrer">@lang('Source NWS')</a>)
                 </p>
             </div>
             <button type="button" class="btn btn-sm btn-outline-primary" id="adminWeatherRefresh">
@@ -62,15 +62,10 @@
                 </div>
             </div>
         </div>
-        <p class="small dashboard-muted mb-0" id="adminWeatherStatus" role="status" aria-live="polite">
-            @lang('Loading National Weather Service station observations...')
-        </p>
-        <p class="small dashboard-muted mt-1 mb-0">
-            @lang('Station measurements represent conditions near Vernal, not a basin-wide average.')
-            <a href="https://www.weather.gov/documentation/services-web-api" target="_blank" rel="noopener noreferrer">
-                @lang('Source: NWS')
-            </a>
-        </p>
+        {{-- Only show warnings or stale-data notices below cards; the
+             observation timestamp and NWS attribution live in the subtitle. --}}
+        <p class="small dashboard-muted mb-0 d-none" id="adminWeatherStatus"
+            role="status" aria-live="polite"></p>
     </section>
 
     <section class="card dashboard-chart-card mb-4" id="adminOzoneTrend"
