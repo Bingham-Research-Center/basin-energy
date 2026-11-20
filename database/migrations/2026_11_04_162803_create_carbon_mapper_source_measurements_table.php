@@ -8,14 +8,6 @@ class CreateCarbonMapperSourceMeasurementsTable extends Migration
 {
     public function up()
     {
-        if (Schema::hasTable('carbon_mapper_source_measurements')) {
-            \App\Support\LegacyMigrationSchemaInspector::assertCompatible(
-                '2026_11_04_162803_create_carbon_mapper_source_measurements_table', 'carbon_mapper_source_measurements'
-            );
-
-            return;
-        }
-
         Schema::create('carbon_mapper_source_measurements', function (Blueprint $table) {
             $table->id();
 
@@ -47,9 +39,6 @@ class CreateCarbonMapperSourceMeasurementsTable extends Migration
 
     public function down()
     {
-        throw new \RuntimeException(
-            'Refusing rollback: carbon_mapper_source_measurements may contain historical imported data. '.
-            'Back up and remove it only by an explicit administrator operation.'
-        );
+        Schema::dropIfExists('carbon_mapper_source_measurements');
     }
 }
