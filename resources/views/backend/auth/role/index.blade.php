@@ -31,3 +31,7 @@
         </x-slot>
     </x-backend.card>
 @endsection
+
+@push('after-scripts')
+    <script src="{{ asset('js/role-default-switch.js') }}?v=1"></script>
+@endpush
