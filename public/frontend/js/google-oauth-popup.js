@@ -13,7 +13,11 @@
     var messageNode = null;
     var errorNode = null;
     var feedbackTimer = null;
+    var completionChannel = null;
     var MAX_WAIT_MS = 15 * 60 * 1000;
+    var CONFIRM_WAIT_MS = 15 * 1000;
+    var CONFIRM_GRACE_MS = 500;
+    var CONFIRM_INTERVAL_MS = 900;
 
     function waitingPanel() {
         if (panel) return panel;
@@ -84,9 +88,37 @@
         }
     }
 
+    // Laravel writes Socialite's OAuth state and regenerates the login
+    // session in the popup. Never poll the same session while Google/Terms/2FA
+    // is in progress: overlapping requests can overwrite session data and
+    // turn a successful callback into a redirect back to Login.
     async function check() {
         if (!active || runningCheck) return;
         var current = active;
+        var now = Date.now();
+
+        if (now >= timeoutAt) {
+            closeChild();
+            stop();
+            update('Google sign-in timed out. Please try again.', true, true);
+            return;
+        }
+
+        // A same-origin completion message is only a hint. Laravel must still
+        // verify the resulting authenticated session before navigation.
+        // The opener does NOT issue requests during the OAuth redirect.
+        if (!current.completedAt || now < current.completedAt + CONFIRM_GRACE_MS ||
+            now < current.nextCheckAt) {
+            return;
+        }
+
+        if (now - current.completedAt > CONFIRM_WAIT_MS) {
+            stop();
+            update('Could not confirm Google sign-in. Please try again.', true, true);
+            return;
+        }
+
+        current.nextCheckAt = now + CONFIRM_INTERVAL_MS;
         runningCheck = true;
         try {
             var response = await fetch(current.status, {
@@ -95,39 +127,66 @@
                 cache: 'no-store'
             });
             if (current !== active) return;
+
             if (!response.ok) {
-                if (response.status === 404 || response.status === 401 || response.status === 403) {
+                if (response.status === 404 || response.status === 401 ||
+                    response.status === 403) {
                     stop();
                     update('Unable to verify Google sign-in. Please try again.', true, true);
                 }
                 return;
             }
+
             var data = await response.json();
             if (current !== active) return;
             if (data.complete === true && typeof data.redirect === 'string' && data.redirect) {
-                // Only the authenticated Laravel session may authorize completion.
                 var target = new URL(data.redirect, location.origin);
-                if (target.origin !== location.origin) throw new Error('Invalid redirect origin');
+                if (target.origin !== location.origin) {
+                    throw new Error('Invalid redirect origin');
+                }
                 closeChild();
                 stop();
                 window.location.assign(target.href);
-                return;
-            }
-            if (current.window.closed) {
-                stop();
-                update('Google window closed before sign-in was completed. Try again.', true, true);
-            } else if (Date.now() > timeoutAt) {
-                closeChild();
-                stop();
-                update('Google sign-in timed out. Please try again.', true, true);
             }
         } catch (e) {
-            if (current === active && (current.window.closed || Date.now() > timeoutAt)) {
+            if (current === active && Date.now() - current.completedAt >= CONFIRM_WAIT_MS) {
                 stop();
                 update('Could not confirm Google sign-in. Please try again.', true, true);
             }
         } finally {
             runningCheck = false;
+        }
+    }
+
+    function processCompletion(result) {
+        if (!active || !result ||
+            result.type !== 'basinenergy.google.oauth.result') return;
+
+        if (result.success === true) {
+            if (!active.completedAt) {
+                active.completedAt = Date.now();
+                active.nextCheckAt = 0;
+                update('Confirming Google sign-in', true);
+            }
+            // check() intentionally waits for the callback's session cookie
+            // to become visible before requesting the status endpoint.
+        } else {
+            closeChild();
+            stop();
+            update(result.message || 'Google sign-in was not completed.', true, true);
+        }
+    }
+
+    // Same-origin BroadcastChannel works even when Cross-Origin-Opener-Policy
+    // severs window.opener after returning from Google's consent screen.
+    if (typeof window.BroadcastChannel === 'function') {
+        try {
+            completionChannel = new window.BroadcastChannel('basinenergy-google-oauth');
+            completionChannel.onmessage = function (event) {
+                processCompletion(event.data);
+            };
+        } catch (e) {
+            completionChannel = null;
         }
     }
 
@@ -160,24 +219,20 @@
         }
         active = {
             window: child,
-            status: link.getAttribute('data-google-oauth-status')
+            status: link.getAttribute('data-google-oauth-status'),
+            completedAt: 0,
+            nextCheckAt: 0
         };
         timeoutAt = Date.now() + MAX_WAIT_MS;
         update('Waiting for Google sign-in', true);
         try { child.focus(); } catch (e) {}
-        timer = window.setInterval(check, 1200);
-        // Don't poll immediately: the popup needs to establish its server-side marker.
+        timer = window.setInterval(check, 400);
+        // No status requests are made until a same-origin completion signal.
+        // This avoids racing Socialite's OAuth state and auth cookie writes.
     });
 
     window.addEventListener('message', function (event) {
         if (event.origin !== location.origin || !active || event.source !== active.window) return;
-        if (!event.data || event.data.type !== 'basinenergy.google.oauth.result') return;
-        if (event.data.success === true) {
-            // Hint only: the server-side status endpoint decides whether to log in.
-            check();
-        } else {
-            stop();
-            update(event.data.message || 'Google sign-in was not completed.', true, true);
-        }
+        processCompletion(event.data);
     });
 }());
