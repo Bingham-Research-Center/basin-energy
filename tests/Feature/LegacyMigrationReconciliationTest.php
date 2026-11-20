@@ -12,7 +12,12 @@ class LegacyMigrationReconciliationTest extends TestCase
 {
     private function migration(string $file)
     {
-        return app('migrator')->resolvePath(database_path('migrations/'.$file.'.php'));
+        $path = database_path('migrations/'.$file.'.php');
+        if (preg_match('/\\breturn\\s+new\\s+class\\b/', file_get_contents($path))) {
+            return require $path;
+        }
+        require_once $path;
+        return app('migrator')->resolve($file);
     }
 
     public function test_expected_create_sql_parser_handles_integer_decimal_and_defaults(): void
