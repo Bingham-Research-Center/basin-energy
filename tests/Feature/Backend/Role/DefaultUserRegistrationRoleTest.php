@@ -172,6 +172,40 @@ class DefaultUserRegistrationRoleTest extends TestCase
         $this->assertNull(app(DefaultUserRoleService::class)->currentRoleId());
     }
 
+    public function test_audit_knows_an_unapplied_settings_migration_is_a_normal_creation(): void
+    {
+        \Illuminate\Support\Facades\DB::table('migrations')
+            ->where('migration', '2026_11_23_000001_create_default_user_role_settings_table')
+            ->delete();
+        \Illuminate\Support\Facades\Schema::dropIfExists('default_user_role_settings');
+
+        $rows = app(\App\Console\Commands\AuditLegacyMigrations::class)
+            ->buildReport(app(\App\Support\LegacyMigrationSchemaInspector::class));
+
+        $row = collect($rows)->firstWhere(
+            'migration', '2026_11_23_000001_create_default_user_role_settings_table'
+        );
+        $this->assertSame('create', $row['state']);
+    }
+
+    public function test_audit_refuses_to_adopt_settings_table_without_its_singleton_row(): void
+    {
+        \Illuminate\Support\Facades\DB::table('migrations')
+            ->where('migration', '2026_11_23_000001_create_default_user_role_settings_table')
+            ->delete();
+        \Illuminate\Support\Facades\DB::table('default_user_role_settings')
+            ->where('setting_key', 'registration')->delete();
+
+        $rows = app(\App\Console\Commands\AuditLegacyMigrations::class)
+            ->buildReport(app(\App\Support\LegacyMigrationSchemaInspector::class));
+
+        $row = collect($rows)->firstWhere(
+            'migration', '2026_11_23_000001_create_default_user_role_settings_table'
+        );
+        $this->assertSame('BLOCKED', $row['state']);
+        $this->assertStringContainsString('singleton setting row', $row['detail']);
+    }
+
     public function test_role_management_renders_a_switch_only_for_user_type_roles(): void
     {
         $role = $this->userRole('Example Researcher');
