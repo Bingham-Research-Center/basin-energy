@@ -81,6 +81,58 @@ class ProducedWaterFluxesMigrationReconciliationTest extends TestCase
             ExistingProducedWaterFluxesSchema::canonicalMySqlType('int(11) unsigned zerofill'));
     }
 
+    public function test_mariadb_json_alias_matches_production_show_create_table(): void
+    {
+        // Exact column shape observed in the production SHOW CREATE TABLE
+        // for all 398 existing produced-water research records.
+        $ddl = <<<'SQL'
+CREATE TABLE `produced_water_fluxes` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `species_fluxes` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`species_fluxes`)),
+  `notes` text DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+SQL;
+
+        $this->assertTrue(ExistingProducedWaterFluxesSchema::isValidatedMariaDbJsonAlias(
+            'longtext', 'utf8mb4_bin', $ddl
+        ));
+        $this->assertTrue(ExistingProducedWaterFluxesSchema::isValidatedMariaDbJsonAlias(
+            'LONGTEXT', 'UTF8MB4_BIN', $ddl
+        ));
+    }
+
+    public function test_unvalidated_or_incorrect_mariadb_longtext_is_not_silently_adopted(): void
+    {
+        $column = '`species_fluxes` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL';
+        $validCheck = ' CHECK (json_valid(`species_fluxes`))';
+        $table = static fn (string $definition): string =>
+            "CREATE TABLE `produced_water_fluxes` (\n  ".$definition."\n)";
+
+        $invalidDefinitions = [
+            $column,                                     // No JSON_VALID constraint
+            $column.' CHECK (json_valid(`notes`))',        // Validates wrong column
+            $column.' CHECK (length(`species_fluxes`) > 0)', // Not JSON validation
+            $column."\n  , `notes` text CHECK (json_valid(`species_fluxes`))",
+        ];
+
+        foreach ($invalidDefinitions as $definition) {
+            $this->assertFalse(
+                ExistingProducedWaterFluxesSchema::isValidatedMariaDbJsonAlias(
+                    'longtext', 'utf8mb4_bin', $table($definition)
+                ),
+                'An unsafe LONGTEXT definition must not pass.'
+            );
+        }
+
+        $this->assertFalse(ExistingProducedWaterFluxesSchema::isValidatedMariaDbJsonAlias(
+            'longtext', 'utf8mb4_unicode_ci', $table($column.$validCheck)
+        ));
+        $this->assertFalse(ExistingProducedWaterFluxesSchema::isValidatedMariaDbJsonAlias(
+            'text', 'utf8mb4_bin', $table($column.$validCheck)
+        ));
+    }
+
     public function test_normal_migration_schema_is_compatible(): void
     {
         ExistingProducedWaterFluxesSchema::assertCompatible();
