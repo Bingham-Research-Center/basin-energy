@@ -19,6 +19,15 @@ class PasswordExpires
      */
     public function handle($request, Closure $next)
     {
+        // Google-only accounts have no local password to expire or change.
+        // Without this, they are redirected to the password-expired form
+        // after 180 days even after successful OAuth authentication.
+        // Social accounts WITH a local password keep the normal policy.
+        $user = $request->user();
+        if ($user && $user->isSocial() && $user->password === null) {
+            return $next($request);
+        }
+
         if (is_numeric(config('boilerplate.access.user.password_expires_days'))) {
             $password_changed_at = new Carbon($request->user()->password_changed_at ?? $request->user()->created_at);
 
