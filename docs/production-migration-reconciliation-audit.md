@@ -199,8 +199,10 @@ docker exec brc_site php artisan schema:audit-migrations
 
 Note: the previous `php artisan migrate --force` invocation already
 recorded `2026_02_06_222324_create_carbon_mapper_observations_table` as
-completed. A subsequent preview should list **18** (not 19) adoptable
-migrations unless other independently applied migrations changed that count.
+completed. The live audit then reported **18 adoptable** and **2 blocked**
+migrations. With both false-positive blockers resolved, the preview should
+show approximately **20 adoptable** migrations (18 + 2), unless other
+independently applied migrations changed that count.
 
 Do not rerun `schema:repair-carbon-json --apply` simply to resolve these
 false-positive audit findings. If the Carbon Mapper observation creation
