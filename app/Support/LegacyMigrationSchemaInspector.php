@@ -399,7 +399,10 @@ final class LegacyMigrationSchemaInspector
 
     public static function canonicalType(string $type): string
     {
-        return ExistingProducedWaterFluxesSchema::canonicalMySqlType($type);
+        // Laravel's SQL compiler writes DECIMAL(10, 7), while MySQL's
+        // information_schema reports decimal(10,7). Whitespace is not drift.
+        $canonical = ExistingProducedWaterFluxesSchema::canonicalMySqlType($type);
+        return preg_replace('/\s*,\s*/', ',', $canonical);
     }
 
     public static function validMariaDbJsonAlias(
