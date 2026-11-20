@@ -66,7 +66,7 @@ Clicking a User-type role's switch saves the selection through Livewire without
 reloading Role Management. The switch and any previously selected role reflect
 the committed setting in the **same response**, including turning it off.
 
-Once the update succeeds, a **top-left SweetAlert2 toast** confirms either
+Once the update succeeds, a **top-right SweetAlert2 toast** confirms either
 `<role name> is now the default user role.` or
 `Default user role cleared.` The toast closes automatically after **3000 ms**.
 An unsuccessful/unauthorized request does not fire a success toast. Other
