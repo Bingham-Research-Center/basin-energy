@@ -27,16 +27,40 @@
         success: @json($success),
         message: @json($message)
     };
+    var notified = false;
+    var channel = null;
     try {
         if (window.opener && !window.opener.closed) {
             window.opener.postMessage(result, window.location.origin);
+            notified = true;
         }
     } catch (e) {
-        // The opener may be unavailable if browser privacy settings isolate windows.
+        // COOP or privacy settings may sever window.opener.
     }
-    // This page is only returned when Google OAuth was opened with ?popup=1.
-    // Script-opened windows may close themselves even when opener access is blocked.
-    window.setTimeout(function () { window.close(); }, 500);
+
+    // Same-origin fallback when Google's Cross-Origin-Opener-Policy detaches
+    // the original window. The opener still checks Laravel's auth session.
+    if (typeof window.BroadcastChannel === 'function') {
+        try {
+            channel = new window.BroadcastChannel('basinenergy-google-oauth');
+            channel.postMessage(result);
+            notified = true;
+        } catch (e) {
+            channel = null;
+        }
+    }
+
+    // Keep the "Continue to BasinEnergy" link usable when cross-window
+    // notification is unavailable instead of silently closing this page.
+    if (notified) {
+        window.setTimeout(function () {
+            if (channel) channel.close();
+            window.close();
+        }, 1200);
+    } else {
+        var hint = document.getElementById('window-hint');
+        if (hint) hint.textContent = 'Return to BasinEnergy using the link below.';
+    }
 }());
 </script>
 </body>
