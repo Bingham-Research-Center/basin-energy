@@ -25,7 +25,9 @@ class AdminUserRegistrationNotifier
         User::query()
             ->where('type', User::TYPE_ADMIN)
             ->where('active', true)
-            ->select('id')
+            // User::can() relies on the account type as well as roles.
+            // Loading only "id" makes hydrated admins fail permission checks.
+            ->select(['id', 'type', 'active'])
             ->chunkById(200, function ($admins) use ($newUser, &$createdFor) {
                 foreach ($admins as $admin) {
                     // Match the User Management permission boundary.
