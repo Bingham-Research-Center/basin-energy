@@ -76,7 +76,7 @@
     <script src="{{ asset('frontend/plugins/slick-carousel/slick/slick.min.js') }}"></script>
     <script src="{{ asset('frontend/plugins/aos/aos.js') }}"></script>
     <script src="{{ asset('frontend/js/script.js') }}"></script>
-    <script src="{{ asset('frontend/js/google-oauth-popup.js') }}" defer></script>
+    <script src="{{ asset('frontend/js/google-oauth-popup.js') }}?v=2" defer></script>
     @if ($needsAuthPopup)
     <script src="{{ asset('frontend/js/popup-auth.js') }}"></script>
     @endif
