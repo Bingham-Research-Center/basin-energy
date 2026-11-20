@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Backend;
 
 use App\Models\ContactMessage;
 use App\Models\NewsletterAdminAlert;
+use App\Models\UserRegistrationAdminAlert;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,7 +17,7 @@ class DashboardNotificationController
     private const MAX_PAGE = 20;
 
     /**
-     * A single, bounded feed for the existing Contact and Newsletter alerts.
+     * A single, bounded feed for Contact, Newsletter and User registration alerts.
      *
      * Contact messages use their existing global read state. Newsletter
      * subscription alerts are always scoped to the current administrator.
@@ -31,6 +32,12 @@ class DashboardNotificationController
         $contactCount = ContactMessage::where('is_read', false)->count();
         $newsletterCount = NewsletterAdminAlert::where('admin_id', $adminId)
             ->whereNull('read_at')->count();
+
+        $canViewUsers = $request->user()->can('admin.access.user.list');
+        $registrationCount = $canViewUsers
+            ? UserRegistrationAdminAlert::where('admin_id', $adminId)
+                ->whereNull('read_at')->count()
+            : 0;
 
         $contacts = ContactMessage::query()->latest('created_at')->latest('id')
             ->limit($fetchLimit)->get()->map(function (ContactMessage $message) {
@@ -61,7 +68,32 @@ class DashboardNotificationController
                 ];
             })->all();
 
-        $all = array_merge($contacts, $subscriptions);
+        $registrations = $canViewUsers
+            ? UserRegistrationAdminAlert::query()
+                ->where('admin_id', $adminId)
+                ->with('user:id,name,provider')
+                ->latest('created_at')->latest('id')
+                ->limit($fetchLimit)->get()->map(function (UserRegistrationAdminAlert $alert) {
+                    $user = $alert->user;
+
+                    return [
+                        'id' => $alert->id,
+                        'type' => 'registration',
+                        'title' => ($user->name ?? __('Deleted user')).' registered',
+                        'body' => $user && $user->provider === 'google'
+                            ? __('New account registered with Google.')
+                            : __('New account registered with email.'),
+                        'created_at' => optional($alert->created_at)->toIso8601String(),
+                        'time' => optional($alert->created_at)->timestamp ?? 0,
+                        'url' => $user
+                            ? route('admin.auth.user.show', ['user' => $user->id])
+                            : route('admin.auth.user.index'),
+                        'unread' => $alert->read_at === null,
+                    ];
+                })->all()
+            : [];
+
+        $all = array_merge($contacts, $subscriptions, $registrations);
         usort($all, static function (array $a, array $b): int {
             return ($b['time'] <=> $a['time'])
                 ?: ($b['id'] <=> $a['id'])
@@ -72,9 +104,10 @@ class DashboardNotificationController
         $pageItems = array_slice($all, $offset, self::PAGE_SIZE);
 
         return response()->json([
-            'count' => $contactCount + $newsletterCount,
+            'count' => $contactCount + $newsletterCount + $registrationCount,
             'contact_count' => $contactCount,
             'newsletter_count' => $newsletterCount,
+            'registration_count' => $registrationCount,
             'items' => array_map(static function (array $item): array {
                 unset($item['time']);
                 return $item;
@@ -85,7 +118,7 @@ class DashboardNotificationController
     }
 
     /**
-     * Mark the two existing notification sources read without a redirect for
+     * Mark all notification sources read without a redirect for
      * AJAX clients. Keep POST form compatibility for older browser sessions.
      */
     public function markAllRead(Request $request)
@@ -94,8 +127,12 @@ class DashboardNotificationController
             $newsletter = NewsletterAdminAlert::where('admin_id', $request->user()->id)
                 ->whereNull('read_at')->update(['read_at' => now()]);
             $contacts = ContactMessage::where('is_read', false)->update(['is_read' => true]);
+            $registrations = $request->user()->can('admin.access.user.list')
+                ? UserRegistrationAdminAlert::where('admin_id', $request->user()->id)
+                    ->whereNull('read_at')->update(['read_at' => now()])
+                : 0;
 
-            return $newsletter + $contacts;
+            return $newsletter + $contacts + $registrations;
         });
 
         if ($request->expectsJson()) {
