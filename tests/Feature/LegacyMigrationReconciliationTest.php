@@ -43,12 +43,12 @@ SQL;
 
     public function test_legacy_two_factor_secret_storage_types_are_explicitly_supported(): void
     {
-        $this->assertTrue(\App\\Support\\ExistingTwoFactorAuthenticationSchema::isSecretStorageType('text'));
-        $this->assertTrue(\App\\Support\\ExistingTwoFactorAuthenticationSchema::isSecretStorageType('varchar'));
-        $this->assertTrue(\App\\Support\\ExistingTwoFactorAuthenticationSchema::isRecoveryStorageType('text'));
-        $this->assertTrue(\App\\Support\\ExistingTwoFactorAuthenticationSchema::isRecoveryStorageType('json'));
-        $this->assertFalse(\App\\Support\\ExistingTwoFactorAuthenticationSchema::isSecretStorageType('int'));
-        $this->assertFalse(\App\\Support\\ExistingTwoFactorAuthenticationSchema::isRecoveryStorageType('blob'));
+        $this->assertTrue(\App\Support\ExistingTwoFactorAuthenticationSchema::isSecretStorageType('text'));
+        $this->assertTrue(\App\Support\ExistingTwoFactorAuthenticationSchema::isSecretStorageType('varchar'));
+        $this->assertTrue(\App\Support\ExistingTwoFactorAuthenticationSchema::isRecoveryStorageType('text'));
+        $this->assertTrue(\App\Support\ExistingTwoFactorAuthenticationSchema::isRecoveryStorageType('json'));
+        $this->assertFalse(\App\Support\ExistingTwoFactorAuthenticationSchema::isSecretStorageType('int'));
+        $this->assertFalse(\App\Support\ExistingTwoFactorAuthenticationSchema::isRecoveryStorageType('blob'));
     }
 
     public function test_real_export_shape_without_raw_payload_json_check_is_rejected(): void
