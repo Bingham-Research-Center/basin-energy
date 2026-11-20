@@ -17,7 +17,7 @@
 
         if (window.BrcToasts && typeof window.BrcToasts.show === 'function') {
             window.BrcToasts.show(message, 'success', {
-                position: 'top-start',
+                position: 'top-end',
                 timer: 3000
             });
         }
