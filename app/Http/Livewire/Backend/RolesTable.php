@@ -10,6 +10,26 @@ use Rappasoft\LaravelLivewireTables\Views\Column;
 
 class RolesTable extends DataTableComponent
 {
+    /**
+     * Column definitions are set up before Livewire actions execute. Look up
+     * the default lazily when rendering labels, and invalidate the cached
+     * value immediately after a successful toggle so the same response
+     * renders the new selected/off state without a browser refresh.
+     */
+    private bool $defaultRoleLoadedForRender = false;
+
+    private ?int $defaultRoleIdForRender = null;
+
+    private function defaultRoleIdForRender(): ?int
+    {
+        if (! $this->defaultRoleLoadedForRender) {
+            $this->defaultRoleIdForRender = app(DefaultUserRoleService::class)->currentRoleId();
+            $this->defaultRoleLoadedForRender = true;
+        }
+
+        return $this->defaultRoleIdForRender;
+    }
+
     public function configure(): void
     {
         $this->setPrimaryKey('id');
@@ -38,13 +58,25 @@ class RolesTable extends DataTableComponent
     {
         abort_unless(auth()->user()?->hasAllAccess(), 403);
 
-        app(DefaultUserRoleService::class)->toggle($roleId);
+        $selectedRoleId = app(DefaultUserRoleService::class)->toggle($roleId);
+
+        // The columns were prepared before this action, but their labels are
+        // evaluated when the table re-renders. Update the render cache now.
+        $this->defaultRoleIdForRender = $selectedRoleId;
+        $this->defaultRoleLoadedForRender = true;
+
+        $message = $selectedRoleId === null
+            ? __('Default user role cleared.')
+            : __(':role is now the default user role.', [
+                'role' => Role::query()->whereKey($selectedRoleId)->value('name'),
+            ]);
+
+        // Scoped browser event; toast is shown only once the DB write succeeds.
+        $this->dispatch('brc-default-role-updated', message: $message);
     }
 
     public function columns(): array
     {
-        $selectedRoleId = app(DefaultUserRoleService::class)->currentRoleId();
-
         return [
             Column::make(__('Type'), 'type')
                 ->sortable()
@@ -63,7 +95,7 @@ class RolesTable extends DataTableComponent
             Column::make(__('Default User Role'))
                 ->label(fn ($row) => view('backend.auth.role.includes.default-role-toggle', [
                     'role' => $row,
-                    'selected' => $selectedRoleId !== null && $selectedRoleId === (int) $row->id,
+                    'selected' => $this->defaultRoleIdForRender() === (int) $row->id,
                 ])->render())
                 ->html()
                 ->excludeFromColumnSelect(),
