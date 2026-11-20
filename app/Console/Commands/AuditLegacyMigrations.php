@@ -69,6 +69,20 @@ class AuditLegacyMigrations extends Command
             $status = isset($ran[$name]) ? 'ran' : 'pending';
             $detail = '';
 
+            // A ledger entry is not proof that its table still exists. Check
+            // every literal CREATE TABLE target, including multi-table
+            // migrations such as the broadcast module, without executing code.
+            if ($status === 'ran') {
+                $source = file_get_contents($file);
+                preg_match_all("/Schema::create\\(\\s*'([^']+)'/", $source, $created);
+                foreach (array_unique($created[1]) as $createdTable) {
+                    if (! Schema::hasTable($createdTable)) {
+                        $status = 'BLOCKED';
+                        $detail .= 'Migration recorded as ran, but '.$createdTable.' is missing. ';
+                    }
+                }
+            }
+
             if ($status === 'pending' && isset(self::CREATES[$name])) {
                 try {
                     if (! Schema::hasTable($table)) {
