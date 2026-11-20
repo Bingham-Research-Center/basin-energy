@@ -371,11 +371,13 @@ class GoogleAuthenticationTest extends TestCase
             'provider_id' => 'google-second-factor',
             'email' => 'google-second-factor@example.test',
         ]);
-        $user->twoFactorAuth()->create([
-            'shared_secret' => 'JBSWY3DPEHPK3PXP',
-            'label' => 'BasinEnergy test',
-            'enabled_at' => now(),
-        ]);
+        // Laragear's model guards secret fields against mass assignment.
+        // Set them directly to build an enabled 2FA fixture.
+        $twoFactor = $user->twoFactorAuth()->make();
+        $twoFactor->shared_secret = 'JBSWY3DPEHPK3PXP';
+        $twoFactor->label = 'BasinEnergy test';
+        $twoFactor->enabled_at = now();
+        $twoFactor->save();
         $this->assertTrue($user->fresh()->hasTwoFactorEnabled());
         $this->mockGoogleCallback(
             $this->googleProfile('google-second-factor', $user->email)
