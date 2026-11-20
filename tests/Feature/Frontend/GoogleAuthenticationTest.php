@@ -362,4 +362,42 @@ class GoogleAuthenticationTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_google_popup_with_two_factor_enabled_stays_guest_until_challenge(): void
+    {
+        $this->enableGoogle();
+
+        $user = User::factory()->user()->create([
+            'provider' => 'google',
+            'provider_id' => 'google-second-factor',
+            'email' => 'google-second-factor@example.test',
+        ]);
+        $user->twoFactorAuth()->create([
+            'shared_secret' => 'JBSWY3DPEHPK3PXP',
+            'label' => 'BasinEnergy test',
+            'enabled_at' => now(),
+        ]);
+        $this->assertTrue($user->fresh()->hasTwoFactorEnabled());
+        $this->mockGoogleCallback(
+            $this->googleProfile('google-second-factor', $user->email)
+        );
+
+        $this->withSession(['auth.google.popup_started_at' => time()])
+            ->get('/login/google/callback')
+            ->assertRedirect(route('frontend.auth.2fa.challenge'));
+
+        $this->assertGuest();
+        $this->assertSame(
+            $user->id,
+            session('auth.pending_2fa.user_id')
+        );
+
+        $this->get('/login/google/popup/status')
+            ->assertOk()
+            ->assertJson(['complete' => false, 'redirect' => null]);
+
+        $this->get('/two-factor/challenge')
+            ->assertOk()
+            ->assertSee('Verify Your Identity');
+    }
+
 }
