@@ -82,6 +82,10 @@ jobs:
           php artisan schema:audit-migrations
           php artisan schema:repair-carbon-json
 
+      - name: Verify blog category pivot foreign key on MySQL
+        run: |
+          php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); if (! App\Support\BlogCategoryPivotSchema::exists()) { fwrite(STDERR, "Blog category pivot FK is missing on MySQL\n"); exit(1); } echo "Blog category pivot FK verified.\n";'
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
