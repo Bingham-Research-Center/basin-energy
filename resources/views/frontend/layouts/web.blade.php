@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="{{ asset('frontend/plugins/slick-carousel/slick/slick.css') }}">
     <link rel="stylesheet" href="{{ asset('frontend/plugins/slick-carousel/slick/slick-theme.css') }}">
     <link rel="stylesheet" href="{{ asset('frontend/css/style.css') }}">
-    <link rel="stylesheet" href="{{ asset('frontend/css/popup-auth.css') }}">
+    <link rel="stylesheet" href="{{ asset('frontend/css/popup-auth.css') }}?v=2">
     <link rel="stylesheet" href="{{ asset('frontend/css/google-auth.css') }}">
     @stack('after-styles')
 
@@ -78,7 +78,7 @@
     <script src="{{ asset('frontend/js/script.js') }}"></script>
     <script src="{{ asset('frontend/js/google-oauth-popup.js') }}?v=2" defer></script>
     @if ($needsAuthPopup)
-    <script src="{{ asset('frontend/js/popup-auth.js') }}"></script>
+    <script src="{{ asset('frontend/js/popup-auth.js') }}?v=2"></script>
     @endif
     <script src="{{ asset('frontend/js/invisible-captcha.js') }}"></script>
     <script
