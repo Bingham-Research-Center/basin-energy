@@ -70,7 +70,8 @@ final class ExistingProducedWaterFluxesSchema
     {
         $rows = DB::select(
             'SELECT COLUMN_NAME AS column_name, COLUMN_TYPE AS column_type, '.
-            'IS_NULLABLE AS is_nullable, EXTRA AS extra, COLUMN_DEFAULT AS column_default '.
+            'IS_NULLABLE AS is_nullable, EXTRA AS extra, COLUMN_DEFAULT AS column_default, '.
+            'COLLATION_NAME AS collation_name '.
             'FROM information_schema.COLUMNS '.
             'WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?',
             [self::TABLE]
@@ -89,8 +90,27 @@ final class ExistingProducedWaterFluxesSchema
 
             $actualType = self::canonicalMySqlType($col->column_type);
             if ($actualType !== $expectedType) {
-                self::reject($name.' type is '.$col->column_type.
-                    ' (expected '.$expectedType.')');
+                // MariaDB implements JSON as LONGTEXT utf8mb4_bin with an
+                // enforced CHECK (json_valid(column)). Accept precisely that
+                // alias, but never accept unconstrained LONGTEXT as JSON.
+                if ($name !== 'species_fluxes' || $expectedType !== 'json'
+                    || $actualType !== 'longtext') {
+                    self::reject($name.' type is '.$col->column_type.
+                        ' (expected '.$expectedType.')');
+                }
+
+                $create = DB::selectOne('SHOW CREATE TABLE `produced_water_fluxes`');
+                $ddl = (string) ($create->{'Create Table'} ?? '');
+
+                if (! self::isValidatedMariaDbJsonAlias(
+                    $actualType,
+                    (string) ($col->collation_name ?? ''),
+                    $ddl
+                )) {
+                    self::reject('species_fluxes is LONGTEXT without the expected '.
+                        'MariaDB JSON alias (utf8mb4_bin collation and '.
+                        'CHECK (json_valid(species_fluxes)))');
+                }
             }
 
             $nullable = ! in_array($name, ['id', 'unique_id', 'wind_corrected'], true);
@@ -136,6 +156,32 @@ final class ExistingProducedWaterFluxesSchema
             '$1$2',
             strtolower(trim($type))
         );
+    }
+
+    /**
+     * MariaDB's JSON alias appears as LONGTEXT in information_schema. Only
+     * the column-local JSON_VALID check plus binary UTF8MB4 collation makes
+     * it equivalent to the original Laravel json() definition.
+     *
+     * Use SHOW CREATE TABLE to ensure the constraint belongs to this
+     * column and is not merely mentioned somewhere else in the schema.
+     */
+    public static function isValidatedMariaDbJsonAlias(
+        string $type,
+        ?string $collation,
+        string $createTableSql
+    ): bool {
+        if (strtolower(trim($type)) !== 'longtext'
+            || strtolower(trim((string) $collation)) !== 'utf8mb4_bin') {
+            return false;
+        }
+
+        return preg_match(
+            '/^\\s*`species_fluxes`\\s+longtext\\b[^\\r\\n]*'.
+            '\\bcheck\\s*\\(\\s*json_valid\\s*\\(\\s*'.
+            '`?species_fluxes`?\\s*\\)\\s*\\)/im',
+            $createTableSql
+        ) === 1;
     }
 
     private static function verifySqlite(): void
