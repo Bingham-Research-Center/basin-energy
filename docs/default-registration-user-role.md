@@ -59,3 +59,20 @@ registrations; previous users remain unchanged.
 
 The change requires no new composer or npm packages and does not modify
 existing research tables.
+
+## Live role switching and toast feedback
+
+Clicking a User-type role's switch saves the selection through Livewire without
+reloading Role Management. The switch and any previously selected role reflect
+the committed setting in the **same response**, including turning it off.
+
+Once the update succeeds, a **top-left SweetAlert2 toast** confirms either
+`<role name> is now the default user role.` or
+`Default user role cleared.` The toast closes automatically after **3000 ms**.
+An unsuccessful/unauthorized request does not fire a success toast. Other
+dashboard toast positions and durations remain unchanged.
+
+The table reads the selected setting once per render instead of querying it for
+every row. Livewire's column definitions are prepared before the toggle action,
+so the label uses a lazy render-time lookup and immediately updates its
+in-request cache after a successful save.
