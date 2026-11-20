@@ -77,6 +77,11 @@ jobs:
       - name: Run database migrations
         run: php artisan migrate --force
 
+      - name: Verify schema reconciliation audit on MySQL (read-only)
+        run: |
+          php artisan schema:audit-migrations
+          php artisan schema:repair-carbon-json
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
