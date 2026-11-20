@@ -140,6 +140,16 @@ SQL;
         $this->assertTrue(Schema::hasColumn('services_page_contents', 'button_link'));
     }
 
+    public function test_final_blog_category_fk_reconciliation_is_idempotent(): void
+    {
+        $this->assertTrue(\App\Support\BlogCategoryPivotSchema::exists());
+
+        $this->migration('2026_11_23_000000_ensure_blog_category_pivot_foreign_key')->up();
+        $this->migration('2026_11_23_000000_ensure_blog_category_pivot_foreign_key')->up();
+
+        $this->assertTrue(\App\Support\BlogCategoryPivotSchema::exists());
+    }
+
     public function test_legacy_import_rollback_refuses_to_drop_table(): void
     {
         $this->expectException(RuntimeException::class);
