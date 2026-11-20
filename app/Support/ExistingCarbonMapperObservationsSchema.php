@@ -125,16 +125,11 @@ final class ExistingCarbonMapperObservationsSchema
         ?string $collation,
         string $ddl
     ): bool {
-        if (strtolower(trim($type)) !== 'longtext'
-            || strtolower(trim((string) $collation)) !== 'utf8mb4_bin') {
-            return false;
-        }
-
-        return preg_match(
-            '/^\s*`raw_payload`\s+longtext\b[^\r\n]*'.
-            '\bcheck\s*\(\s*json_valid\s*\(\s*`?raw_payload`?\s*\)\s*\)/im',
-            $ddl
-        ) === 1;
+        // A validated MariaDB JSON alias may use either an inline column
+        // CHECK (from JSON DDL) or a named table-level CHECK (safe repair).
+        return LegacyMigrationSchemaInspector::validMariaDbJsonAlias(
+            'raw_payload', strtolower(trim($type)), (string) $collation, $ddl
+        );
     }
 
     private static function verifySqlite(): void
