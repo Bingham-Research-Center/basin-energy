@@ -57,6 +57,7 @@ class UserService extends BaseService
 
         try {
             $user = $this->createUser($data);
+            $this->assignDefaultRegistrationRole($user);
         } catch (Exception $e) {
             DB::rollBack();
 
@@ -107,6 +108,7 @@ class UserService extends BaseService
                 'provider_id' => $providerId,
                 'email_verified_at' => now(),
             ]);
+            $this->assignDefaultRegistrationRole($user);
         } catch (GeneralException $e) {
             DB::rollBack();
             throw $e;
@@ -341,6 +343,19 @@ class UserService extends BaseService
         }
 
         throw new GeneralException(__('There was a problem permanently deleting this user. Please try again.'));
+    }
+
+    /**
+     * Password and first-time provider signups share the same role policy.
+     * Backend-created users keep the explicit roles chosen by the admin.
+     */
+    private function assignDefaultRegistrationRole(User $user): void
+    {
+        $role = app(DefaultUserRoleService::class)->roleForRegistration();
+
+        if ($role) {
+            $user->assignRole($role);
+        }
     }
 
     /**
