@@ -62,6 +62,61 @@ class DefaultUserRegistrationRoleTest extends TestCase
         $this->assertNull(app(DefaultUserRoleService::class)->currentRoleId());
     }
 
+    /**
+     * The Livewire HTML must reflect each committed selection in the same
+     * action response; a browser reload must not be required.
+     */
+    public function test_toggle_updates_markup_immediately_and_dispatches_toast_event(): void
+    {
+        $first = $this->userRole('Regular User');
+        $second = $this->userRole('Researcher');
+
+        $table = Livewire::actingAs($this->getMasterAdmin())
+            ->test(RolesTable::class);
+
+        $this->assertRoleSwitchState($table->html(), $first->id, false);
+        $this->assertRoleSwitchState($table->html(), $second->id, false);
+
+        $table->call('toggleDefaultRole', $first->id)
+            ->assertHasNoErrors()
+            ->assertDispatched(
+                'brc-default-role-updated',
+                message: 'Regular User is now the default user role.'
+            );
+
+        $this->assertRoleSwitchState($table->html(), $first->id, true);
+        $this->assertRoleSwitchState($table->html(), $second->id, false);
+
+        $table->call('toggleDefaultRole', $second->id)
+            ->assertHasNoErrors()
+            ->assertDispatched(
+                'brc-default-role-updated',
+                message: 'Researcher is now the default user role.'
+            );
+
+        $this->assertRoleSwitchState($table->html(), $first->id, false);
+        $this->assertRoleSwitchState($table->html(), $second->id, true);
+
+        $table->call('toggleDefaultRole', $second->id)
+            ->assertHasNoErrors()
+            ->assertDispatched(
+                'brc-default-role-updated',
+                message: 'Default user role cleared.'
+            );
+
+        $this->assertRoleSwitchState($table->html(), $second->id, false);
+        $this->assertNull(app(DefaultUserRoleService::class)->currentRoleId());
+    }
+
+    private function assertRoleSwitchState(string $html, int $roleId, bool $selected): void
+    {
+        $pattern = '/wire:key="registration-default-role-'.preg_quote((string) $roleId, '/').
+            '".*?aria-checked="(true|false)"/s';
+
+        $this->assertSame(1, preg_match($pattern, $html, $match), 'Switch not found for role '.$roleId);
+        $this->assertSame($selected ? 'true' : 'false', $match[1]);
+    }
+
     public function test_administrator_role_cannot_be_selected_by_a_tampered_request(): void
     {
         Livewire::actingAs($this->getMasterAdmin())->test(RolesTable::class)
