@@ -13,6 +13,14 @@ class CreatePortfolioCategoriesTable extends Migration
      */
     public function up()
     {
+        if (Schema::hasTable('portfolio_categories')) {
+            \App\Support\LegacyMigrationSchemaInspector::assertCompatible(
+                '2026_04_03_010040_create_portfolio_categories_table', 'portfolio_categories'
+            );
+
+            return;
+        }
+
         Schema::create('portfolio_categories', function (Blueprint $table) {
             $table->id();
             $table->string('name');
@@ -30,6 +38,9 @@ class CreatePortfolioCategoriesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('portfolio_categories');
+        throw new \RuntimeException(
+            'Refusing rollback: portfolio_categories may contain historical imported data. '.
+            'Back up and remove it only by an explicit administrator operation.'
+        );
     }
 }
