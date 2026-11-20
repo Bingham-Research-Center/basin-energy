@@ -41,7 +41,7 @@ class AdminWeatherTest extends TestCase
         ]);
         $this->loginAsAdmin();
 
-        $this->getJson(route('admin.weather.current'))
+        $response = $this->getJson(route('admin.weather.current'))
             ->assertOk()
             ->assertJsonPath('ok', true)
             ->assertJsonPath('station', 'Vernal Regional Airport (KVEL)')
@@ -50,8 +50,12 @@ class AdminWeatherTest extends TestCase
             ->assertJsonPath('wind_direction', 'W')
             ->assertJsonPath('humidity_percent', 67)
             ->assertJsonPath('conditions', 'Mostly Cloudy')
-            ->assertJsonPath('stale', false)
-            ->assertHeader('Cache-Control', 'private, no-store');
+            ->assertJsonPath('stale', false);
+
+        // Symfony may normalize Cache-Control directive order.
+        $cacheControl = $response->headers->get('Cache-Control');
+        $this->assertStringContainsString('private', $cacheControl);
+        $this->assertStringContainsString('no-store', $cacheControl);
 
         $this->getJson(route('admin.weather.current'))->assertOk();
         Http::assertSentCount(1);
