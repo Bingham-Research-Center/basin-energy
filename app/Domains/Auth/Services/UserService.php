@@ -11,6 +11,7 @@ use App\Domains\Auth\Events\User\UserUpdated;
 use App\Domains\Auth\Models\User;
 use App\Exceptions\GeneralException;
 use App\Services\BaseService;
+use App\Services\AdminUserRegistrationNotifier;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -64,6 +65,8 @@ class UserService extends BaseService
 
         DB::commit();
 
+        $this->notifySelfRegistration($user);
+
         return $user;
     }
 
@@ -113,6 +116,8 @@ class UserService extends BaseService
         }
 
         DB::commit();
+
+        $this->notifySelfRegistration($user);
 
         return $user;
     }
@@ -336,6 +341,21 @@ class UserService extends BaseService
         }
 
         throw new GeneralException(__('There was a problem permanently deleting this user. Please try again.'));
+    }
+
+    /**
+     * Alerts are generated after the account has committed, for both
+     * password registration and new Google accounts. Admin-created users
+     * use store() and never reach this path. Notification outages must not
+     * prevent a successful registration.
+     */
+    private function notifySelfRegistration(User $user): void
+    {
+        try {
+            app(AdminUserRegistrationNotifier::class)->notify($user);
+        } catch (\Throwable $exception) {
+            report($exception);
+        }
     }
 
     /**
