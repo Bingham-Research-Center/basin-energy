@@ -102,6 +102,37 @@ class DefaultUserRegistrationRoleTest extends TestCase
         $this->assertFalse($existing->fresh()->roles()->exists());
     }
 
+    public function test_public_password_signup_cannot_submit_admin_type_or_provider_identity(): void
+    {
+        config([
+            'boilerplate.access.user.registration' => true,
+            'boilerplate.access.captcha.registration' => false,
+        ]);
+        $role = $this->userRole('Regular User');
+        app(DefaultUserRoleService::class)->toggle($role->id);
+
+        $this->post('/register', [
+            'name' => 'Public Registrant',
+            'email' => 'signup-overposting@example.test',
+            'password' => 'TestPassw0rd!123',
+            'password_confirmation' => 'TestPassw0rd!123',
+            'terms' => '1',
+            'type' => User::TYPE_ADMIN,
+            'provider' => 'google',
+            'provider_id' => 'forged-google-id',
+            'email_verified_at' => now()->toDateTimeString(),
+            'active' => '0',
+        ])->assertRedirect();
+
+        $user = User::whereEmail('signup-overposting@example.test')->firstOrFail();
+        $this->assertSame(User::TYPE_USER, $user->type);
+        $this->assertNull($user->provider);
+        $this->assertNull($user->provider_id);
+        $this->assertNull($user->email_verified_at);
+        $this->assertTrue($user->active);
+        $this->assertTrue($user->hasRole($role->name));
+    }
+
     public function test_google_provider_signup_gets_the_same_selected_role(): void
     {
         $role = $this->userRole('Student');
