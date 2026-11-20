@@ -50,7 +50,6 @@ class AuditLegacyMigrations extends Command
         '2026_02_08_194941_drop_unique_observation_id_gas_index_from_carbon_mapper_observations' => 'carbon_mapper_observations',
         '2026_04_03_213620_drop_categories_column_from_portfolio_items_table' => 'portfolio_items',
         '2026_09_24_220508_add_button_fields_to_services_page_contents_table' => 'services_page_contents',
-        '2026_11_23_000000_ensure_blog_category_pivot_foreign_key' => 'blog_category_post',
     ];
 
     public function handle(LegacyMigrationSchemaInspector $inspector): int
@@ -60,6 +59,39 @@ class AuditLegacyMigrations extends Command
             return self::FAILURE;
         }
 
+        $report = $this->buildReport($inspector);
+        $counts = array_count_values(array_column($report, 'state'));
+        if ($this->option('json')) {
+            $this->line(json_encode([
+                'read_only' => true,
+                'database_driver' => DB::getDriverName(),
+                'database_name' => DB::connection()->getDatabaseName(),
+                'summary' => $counts,
+                'migrations' => $report,
+            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
+        } else {
+            $this->table(
+                ['Migration', 'Table', 'State', 'Details'],
+                array_map(static fn (array $row) => [
+                    $row['migration'], $row['table'] ?? '—', $row['state'], $row['detail'],
+                ], $report)
+            );
+            $this->line('Read-only audit. No migrations ran and no data or schema changed.');
+            $this->line('Summary: '.json_encode($counts));
+        }
+
+        return ($counts['BLOCKED'] ?? 0) > 0 || ($counts['review'] ?? 0) > 0
+            ? self::FAILURE : self::SUCCESS;
+    }
+
+    /**
+     * Produce a read-only classification of every migration filename and its
+     * current ledger/schema state. Shared by audit and explicit reconciliation.
+     *
+     * @return list<array{migration:string,table:?string,state:string,detail:string}>
+     */
+    public function buildReport(LegacyMigrationSchemaInspector $inspector): array
+    {
         $ran = array_fill_keys(DB::table('migrations')->pluck('migration')->all(), true);
         $files = glob(database_path('migrations/*.php')) ?: [];
         sort($files);
@@ -98,11 +130,28 @@ class AuditLegacyMigrations extends Command
                 }
             }
 
-            if ($status === 'ran'
-                && $name === '2026_11_23_000000_ensure_blog_category_pivot_foreign_key'
+            if ($status === 'ran' && isset(self::ALTERATIONS[$name])) {
+                try {
+                    [$applied, $reason] = $this->inspectAlteration($name, $table);
+                    if ($applied !== 'adoptable') {
+                        $status = 'BLOCKED';
+                        $detail = 'Ledger says Ran but alteration is incomplete: '.$reason;
+                    }
+                } catch (Throwable $exception) {
+                    $status = 'BLOCKED';
+                    $detail = $exception->getMessage();
+                }
+            }
+
+            // The original blog_categories migration also created the pivot
+            // foreign key. A table match alone is insufficient to adopt it.
+            if ($name === '2026_04_03_220515_create_blog_categories_table'
+                && Schema::hasTable('blog_categories')
+                && Schema::hasTable('blog_category_post')
                 && ! BlogCategoryPivotSchema::exists()) {
                 $status = 'BLOCKED';
-                $detail = 'Migration recorded as Ran but blog_category_post lacks category FK.';
+                $detail = 'blog_category_post.blog_category_id foreign key is missing; '.
+                    'original category migration also creates this constraint.';
             }
 
             if ($status === 'pending' && isset(self::CREATES[$name])) {
@@ -157,28 +206,7 @@ class AuditLegacyMigrations extends Command
             ];
         }
 
-        $counts = array_count_values(array_column($report, 'state'));
-        if ($this->option('json')) {
-            $this->line(json_encode([
-                'read_only' => true,
-                'database_driver' => DB::getDriverName(),
-                'database_name' => DB::connection()->getDatabaseName(),
-                'summary' => $counts,
-                'migrations' => $report,
-            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
-        } else {
-            $this->table(
-                ['Migration', 'Table', 'State', 'Details'],
-                array_map(static fn (array $row) => [
-                    $row['migration'], $row['table'] ?? '—', $row['state'], $row['detail'],
-                ], $report)
-            );
-            $this->line('Read-only audit. No migrations ran and no data or schema changed.');
-            $this->line('Summary: '.json_encode($counts));
-        }
-
-        return ($counts['BLOCKED'] ?? 0) > 0 || ($counts['review'] ?? 0) > 0
-            ? self::FAILURE : self::SUCCESS;
+        return $report;
     }
 
     /** @return array{string, string} */
@@ -211,19 +239,6 @@ class AuditLegacyMigrations extends Command
                 return ['BLOCKED', 'Non-null legacy categories would be lost; migrate values into pivot first.'];
             }
             return ['alter', 'Legacy categories are entirely NULL; migration may remove empty column.'];
-        }
-
-        if ($name === '2026_11_23_000000_ensure_blog_category_pivot_foreign_key') {
-            if (! Schema::hasTable('blog_categories')) {
-                return ['BLOCKED', 'blog_categories is missing.'];
-            }
-            if (BlogCategoryPivotSchema::exists()) {
-                return ['adoptable', 'Category FK already present; final migration is idempotent.'];
-            }
-            if (BlogCategoryPivotSchema::hasOrphans()) {
-                return ['BLOCKED', 'Blog pivot contains orphaned category references.'];
-            }
-            return ['alter', 'Migration will add the missing category foreign key.'];
         }
 
         if ($name === '2026_09_24_220508_add_button_fields_to_services_page_contents_table') {
