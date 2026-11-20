@@ -86,6 +86,9 @@ jobs:
         run: |
           php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); if (! App\Support\BlogCategoryPivotSchema::exists()) { fwrite(STDERR, "Blog category pivot FK is missing on MySQL\n"); exit(1); } echo "Blog category pivot FK verified.\n";'
 
+      - name: Verify safe legacy migration ledger reconciliation on MySQL
+        run: php tests/ci/reconcile_migration_ledger.php
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
