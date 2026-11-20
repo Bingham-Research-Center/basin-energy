@@ -11,13 +11,14 @@ function initialiseAdminWeather() {
     const url = root.dataset.weatherUrl;
     const button = document.getElementById('adminWeatherRefresh');
     const status = document.getElementById('adminWeatherStatus');
+    const observedAt = document.getElementById('adminWeatherObservedAt');
     const temperature = document.getElementById('adminWeatherTemperature');
     const wind = document.getElementById('adminWeatherWind');
     const direction = document.getElementById('adminWeatherWindDirection');
     const humidity = document.getElementById('adminWeatherHumidity');
     const conditions = document.getElementById('adminWeatherConditions');
 
-    if (!url || !button || !status || !temperature || !wind ||
+    if (!url || !button || !status || !observedAt || !temperature || !wind ||
         !direction || !humidity || !conditions) {
         return;
     }
@@ -49,9 +50,17 @@ function initialiseAdminWeather() {
         }) : '';
     }
 
+    // Keep the normal successful state uncluttered; only warnings are
+    // announced below the cards. Timestamp and source stay in the header.
+    function warn(message) {
+        status.textContent = message || '';
+        status.classList.toggle('d-none', !message);
+    }
+
     async function refresh() {
         button.disabled = true;
-        status.textContent = 'Fetching the latest Vernal station report...';
+        observedAt.textContent = 'Updating observation...';
+        warn('');
         try {
             const response = await fetch(url, {
                 credentials: 'same-origin',
@@ -61,20 +70,21 @@ function initialiseAdminWeather() {
 
             if (!data || data.ok !== true || !response.ok) {
                 present({});
-                status.textContent = data && data.message ?
-                    data.message : 'Weather observations are currently unavailable.';
+                observedAt.textContent = 'Observation unavailable';
+                warn(data && data.message ?
+                    data.message : 'Weather observations are currently unavailable.');
                 return;
             }
 
             present(data);
             const time = observedTime(data.observed_at);
-            status.textContent = (data.stale ? 'Older observation · ' : 'Latest station report · ') +
-                'KVEL' + (time ? ' · ' + time : '') +
-                (data.message ? ' · ' + data.message : '');
+            observedAt.textContent = time ? 'As of ' + time : 'Observation time unavailable';
+            warn(data.stale ? (data.message || 'This observation may be out of date.') : '');
         } catch (error) {
             console.warn('Admin weather:', error);
             present({});
-            status.textContent = 'Unable to load NWS weather observations. Retry later.';
+            observedAt.textContent = 'Observation unavailable';
+            warn('Unable to load NWS weather observations. Retry later.');
         } finally {
             button.disabled = false;
         }
