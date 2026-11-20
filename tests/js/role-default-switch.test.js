@@ -31,12 +31,12 @@ async function run() {
 
     load('dashboard-toasts.js', dashboard);
     await dashboard.window.BrcToasts.show('Regular User is now default', 'success', {
-        position: 'top-start',
+        position: 'top-end',
         timer: 3000
     });
 
     assert.equal(fires[0].toast, true);
-    assert.equal(fires[0].position, 'top-start');
+    assert.equal(fires[0].position, 'top-end');
     assert.equal(fires[0].timer, 3000);
     assert.equal(fires[0].titleText, 'Regular User is now default');
     assert.equal(fires[0].showConfirmButton, false);
@@ -77,7 +77,7 @@ async function run() {
     assert.equal(shown.length, 2);
     assert.equal(shown[0].message, 'Researcher is now the default user role.');
     assert.equal(shown[0].icon, 'success');
-    assert.equal(shown[0].options.position, 'top-start');
+    assert.equal(shown[0].options.position, 'top-end');
     assert.equal(shown[0].options.timer, 3000);
     assert.equal(shown[1].message, 'Default user role cleared.');
     events['livewire:init'](); // no duplicate registration
@@ -107,12 +107,12 @@ async function run() {
     };
     load('dashboard-toasts.js', noSwal);
     await noSwal.window.BrcToasts.show('Saved', 'success', {
-        position: 'top-start', timer: 3000
+        position: 'top-end', timer: 3000
     });
-    assert.match(fallback[0].style.cssText, /left:20px;/);
+    assert.match(fallback[0].style.cssText, /right:20px;/);
     assert.equal(durations[0], 3000);
 
-    console.log('Role toggle live toast and top-left timing regression checks passed.');
+    console.log('Role toggle live toast and top-right timing regression checks passed.');
 }
 
 run().catch(error => {
