@@ -38,7 +38,11 @@
             $contactUnread = \App\Models\ContactMessage::where('is_read', false)->count();
             $newsletterUnread = \App\Models\NewsletterAdminAlert::where('admin_id', $logged_in_user->id)
                 ->whereNull('read_at')->count();
-            $notificationUnread = $contactUnread + $newsletterUnread;
+            $registrationUnread = $logged_in_user->can('admin.access.user.list')
+                ? \App\Models\UserRegistrationAdminAlert::where('admin_id', $logged_in_user->id)
+                    ->whereNull('read_at')->count()
+                : 0;
+            $notificationUnread = $contactUnread + $newsletterUnread + $registrationUnread;
         @endphp
 
         <li class="c-header-nav-item dropdown brc-notification-dropdown">
