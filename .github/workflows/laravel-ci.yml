@@ -83,6 +83,11 @@ jobs:
           node-version: '20'
           cache: npm
 
+      - name: Verify Google OAuth popup session/redirect behavior
+        run: |
+          node --check public/frontend/js/google-oauth-popup.js
+          node tests/js/google-oauth-popup.test.js
+
       - name: Install frontend dependencies
         run: npm ci
 
