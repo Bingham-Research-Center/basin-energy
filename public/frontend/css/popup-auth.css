@@ -304,6 +304,50 @@ body.show-popup {
 
 
 /* =========================
+   PASSWORD RESET CONFIRMATION
+========================= */
+
+.form-popup .password-reset-confirmation[hidden] {
+    display: none;
+}
+
+.form-popup .password-reset-confirmation:not([hidden]) {
+    background: #eef4f8;
+    color: #0F2439;
+    border-left: 4px solid #0F2439;
+    border-radius: 6px;
+    padding: 20px 18px;
+    margin: 0 0 20px;
+}
+
+.form-popup .password-reset-confirmation-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: #0F2439;
+    color: #fff;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 12px;
+}
+
+.form-popup .password-reset-confirmation h3 {
+    font-size: 19px;
+    font-weight: 700;
+    color: #0F2439;
+    margin: 0 0 10px;
+}
+
+.form-popup .password-reset-confirmation p {
+    margin: 0;
+    color: #30455b;
+    font-size: 15px;
+    line-height: 1.55;
+}
+
+/* =========================
    RESPONSIVE
 ========================= */
 
