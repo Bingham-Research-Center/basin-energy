@@ -11,6 +11,14 @@ return new class extends Migration
      */
 public function up(): void
 {
+    if (Schema::hasTable('carbon_mapper_plume_outlines')) {
+        \App\Support\LegacyMigrationSchemaInspector::assertCompatible(
+            '2026_11_04_172430_create_carbon_mapper_plume_outlines_table', 'carbon_mapper_plume_outlines'
+        );
+
+        return;
+    }
+
     Schema::create('carbon_mapper_plume_outlines', function (Blueprint $table) {
         $table->id();
 
@@ -31,6 +39,9 @@ public function up(): void
      */
     public function down(): void
     {
-        Schema::dropIfExists('carbon_mapper_plume_outlines');
+        throw new \RuntimeException(
+            'Refusing rollback: carbon_mapper_plume_outlines may contain historical imported data. '.
+            'Back up and remove it only by an explicit administrator operation.'
+        );
     }
 };
