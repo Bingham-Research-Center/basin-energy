@@ -16,6 +16,19 @@ use RuntimeException;
  */
 final class LegacyMigrationSchemaInspector
 {
+    public static function assertCompatible(string $migration, string $table): void
+    {
+        $errors = (new self())->inspect($migration, $table);
+        if ($errors !== []) {
+            throw new RuntimeException(
+                'Cannot safely adopt existing '.$table.' for migration '.$migration.': '.
+                implode('; ', $errors).'. Existing schema and rows were not modified. '.
+                'Run php artisan schema:audit-migrations and compare the actual schema '.
+                'against its migration before making an explicit repair.'
+            );
+        }
+    }
+
     public function inspect(string $migration, string $table): array
     {
         if (DB::getDriverName() !== 'mysql') {
