@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Support\ExistingCarbonMapperObservationsSchema;
+use App\Support\ExistingTwoFactorAuthenticationSchema;
 use App\Support\BlogCategoryPivotSchema;
 use App\Support\LegacyMigrationSchemaInspector;
 use Illuminate\Console\Command;
@@ -182,13 +183,27 @@ class AuditLegacyMigrations extends Command
                     $detail = $exception->getMessage();
                 }
             } elseif ($status === 'pending' && $name === '2026_04_08_032957_create_two_factor_authentications_table') {
+                $table = 'two_factor_authentications';
                 try {
-                    $issues = Schema::hasTable('two_factor_authentications')
-                        ? $inspector->inspect('2021_04_05_153840_create_two_factor_authentications_table', 'two_factor_authentications')
-                        : [];
-                    $status = $issues === [] ? (Schema::hasTable('two_factor_authentications') ? 'adoptable' : 'create') : 'BLOCKED';
-                    $detail = implode('; ', $issues);
-                    $table = 'two_factor_authentications';
+                    if (! Schema::hasTable($table)) {
+                        $status = 'create';
+                        $detail = 'Original migration will create the missing two-factor table.';
+                    } else {
+                        // The 2026 Laragear migration is intentionally a no-op
+                        // when the existing 2021 two-factor table is present.
+                        // A legacy table can legitimately use TEXT to store
+                        // secrets/recovery data. Validate actual functionality,
+                        // not strict equality with the older CREATE DDL.
+                        $issues = ExistingTwoFactorAuthenticationSchema::issues();
+                        if (! isset($ran['2021_04_05_153840_create_two_factor_authentications_table'])) {
+                            $issues[] = 'Original 2021 two-factor migration is not recorded as Ran.';
+                        }
+
+                        $status = $issues === [] ? 'adoptable' : 'BLOCKED';
+                        $detail = $issues === []
+                            ? 'Existing secure two-factor table satisfies the 2026 no-op migration.'
+                            : implode('; ', $issues);
+                    }
                 } catch (Throwable $exception) {
                     $status = 'BLOCKED';
                     $detail = $exception->getMessage();
