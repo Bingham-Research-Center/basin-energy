@@ -89,6 +89,9 @@ jobs:
       - name: Verify safe legacy migration ledger reconciliation on MySQL
         run: php tests/ci/reconcile_migration_ledger.php
 
+      - name: Verify MariaDB-style two-factor storage and gas defaults
+        run: php tests/ci/verify_legacy_twofactor_audit.php
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
