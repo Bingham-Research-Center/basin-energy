@@ -83,6 +83,19 @@ class AuditLegacyMigrations extends Command
                 }
             }
 
+            if ($status === 'ran' && isset(self::CREATES[$name])) {
+                try {
+                    $issues = $inspector->inspect($name, $table);
+                    if ($issues !== []) {
+                        $status = 'BLOCKED';
+                        $detail = 'Ledger says Ran, but schema differs: '.implode('; ', $issues);
+                    }
+                } catch (Throwable $exception) {
+                    $status = 'BLOCKED';
+                    $detail = $exception->getMessage();
+                }
+            }
+
             if ($status === 'pending' && isset(self::CREATES[$name])) {
                 try {
                     if (! Schema::hasTable($table)) {
