@@ -168,7 +168,17 @@ final class LegacyMigrationSchemaInspector
         $queries = DB::connection()->pretend(static function () use ($path): void {
             // Laravel resolves named and anonymous migrations the same way
             // its own Migrator does, but does not run SQL under pretend().
-            app('migrator')->resolvePath($path)->up();
+            $source = file_get_contents($path);
+            $file = basename($path, '.php');
+            if (preg_match('/\breturn\s+new\s+class\b/', $source)) {
+                // Anonymous migrations return a new instance on each require.
+                $instance = require $path;
+            } else {
+                // A named migration declares a class and must be loaded once.
+                require_once $path;
+                $instance = app('migrator')->resolve($file);
+            }
+            $instance->up();
         });
 
         $statements = array_map(static fn (array $query): string =>
