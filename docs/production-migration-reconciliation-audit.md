@@ -1,91 +1,153 @@
-# Production migration reconciliation audit (November 2026)
+# Production schema reconciliation — structure-informed review
 
-## Scope and key findings
+Updated November 20, 2026, using the privately supplied structure-only
+`brc_database.sql` export from MariaDB 11.8.3. **The SQL export is not
+committed**, and it contains no rows in INSERT statements. Record-level
+data quality and the actual migration ledger must be checked on production.
 
-Production runs Laravel/PHP inside `brc_site` and has historically imported research and content tables before all migration names were recorded in the `migrations` ledger. The first migrations blocked by MySQL/MariaDB error 1050 were `produced_water_fluxes`, `produced_water_chemistry`, and `carbon_mapper_observations`. The first two were reconciled while preserving 398 flux and 79 chemistry records (as reported at that time); Carbon Mapper needs a separate `raw_payload` JSON constraint check.
+## Why this is a narrow PR
 
-This audit covers **all 49 migration files (including this PR's final FK reconciliation)** currently in `database/migrations`, reports the ledger state of each, and preflights every **catalogued outstanding historical creation/alteration migration** in read-only mode. It does not have access to the live production DB or the user's backup in GitHub; actual drift remains unknown until the command runs in production.
+Historically imported tables exist in production without corresponding
+Laravel migration entries. A plain `php artisan migrate` attempts to recreate
+them and fails. Earlier versions of this PR rewrote many original historical
+migration files, including their `down()` methods. This revision **restores
+all 20 altered original migration files unchanged** and removes the unnecessary
+extra blog foreign-key migration.
 
-### Architecture findings
+The final approach separates three concerns:
 
-- `2026_04_03_214557_create_blog_categories_table` **creates `blog_posts`**, not `blog_categories`. The later `2026_04_03_220515_create_blog_categories_table` actually creates `blog_categories` and attaches the category FK to `blog_category_post`. Do not delete either migration or rename their basenames: the ledger keys are meaningful.
-- `2026_11_23_000000_ensure_blog_category_pivot_foreign_key` ensures the category-side FK is present even if its original migration is already recorded as Ran and the pivot arrived later. It refuses orphaned category references rather than dropping data.
-- `2026_02_07_002933_create_sync_states_table` creates timestamps, and the next migration can add missing timestamps to older imports.
-- `2026_02_08_194941_drop_unique_observation_id_gas_index_from_carbon_mapper_observations` deliberately removes the original composite uniqueness constraint. Both earlier and later index states are accommodated.
-- `2026_04_03_213620_drop_categories_column_from_portfolio_items_table` historically discarded legacy categories. The patched migration fails safely if that column still contains non-null data.
-- `2026_09_24_220508_add_button_fields_to_services_page_contents_table` must not add existing columns twice.
-- `2026_04_08_032957_create_two_factor_authentications_table` may encounter a table already created by the 2021 migration.
-- Research and content tables with pre-existing compatible schemas now use a **read-only comparison of Laravel-compiled CREATE statements** before allowing `migrate` to adopt an existing table.
-- Historical imported-table creation migrations refuse destructive `down()` rollbacks. **Do not use `migrate:fresh` or `migrate:reset` in production**.
+1. `schema:audit-migrations` — strictly **read-only** audit of migration
+   ledger, required tables, columns/types/indexes/FKs and known alterations.
+2. `schema:repair-carbon-json` — **read-only by default**; an explicit
+   `--apply` validates every existing `raw_payload` and fixes its JSON
+   constraint only when safe.
+3. `schema:reconcile-migrations` — **read-only by default**; an explicit
+   `--apply` transactionally inserts Laravel `migrations` ledger entries
+   **only for fully verified existing schemas**. This operation never changes
+   research records or table structure.
 
-## How the preflight works
+Unresolved discrepancies block reconciliation. Later genuine migrations are
+run by ordinary Laravel commands, not recreated in a separate repair system.
 
-`LegacyMigrationSchemaInspector` compiles the *specific allowlisted* migration's SQL with Laravel `Connection::pretend()`: no SQL is executed. It compares declared columns (type, nullability, default, auto-increment), primary key, indexes and foreign keys with read-only MySQL `information_schema` queries. MariaDB's `LONGTEXT` JSON alias is accepted **only** when the column is `utf8mb4_bin` and an enforced `CHECK (json_valid(column))` applies to that column; native MySQL `JSON` also works. Historical integer display widths are normalized.
+## Findings in the SQL structure export
 
-Existing **extra** columns or indexes are tolerated so later migrations can have already been applied; missing required fields, incompatible types, missing constraints, or inconsistent data **block adoption**. The preflight does not automatically delete, rewrite, or invent research values.
+The export contains **46 tables**. It has no row data and no migration-ledger
+INSERT statements. It cannot prove record counts or valid JSON payloads.
 
-`schema:audit-migrations` reports one of these states:
+| Object | Observed state | Action |
+|---|---|---|
+| `carbon_mapper_observations.raw_payload` | `LONGTEXT utf8mb4_bin NOT NULL`, no JSON_VALID CHECK | Validate every row in production, then add the missing CHECK with explicit `schema:repair-carbon-json --apply`. The exported collation already matches the JSON alias, so no collation change should be necessary. |
+| `services_page_contents` | Both button_text and button_link are missing | **Run original** 2026-09-24 migration after adopting the table-creation migration. |
+| `carbon_mapper_plume_outlines` | Table absent | **Run original** 2026-11-04 creation migration. |
+| `blog_category_post` | Existing category/post foreign keys and unique index | Validate and preserve; do not create another FK migration. |
+| `portfolio_items` | Legacy categories column already absent | Record completed drop migration only after confirming expected state. |
+| `carbon_mapper_observations` | Historical (observation_id, gas) unique key already absent | Record completed index-drop migration only after confirming absence. |
+| `sync_states` | created_at and updated_at already exist | No column alteration necessary. |
+| `carbon_mapper_source_measurements` | Table and plume_id unique index exist | Validate and adopt if its creation migration is pending. |
 
-| State | Meaning |
-| --- | --- |
-| `ran` | Recorded in Laravel's ledger |
-| `create` | Table is absent; normal migration should create it |
-| `adoptable` | Table already matches the expected migration; `migrate` will record it normally |
-| `alter` | Known schema-change migration remains to be applied safely |
-| `BLOCKED` | Drift or possible data loss; do not run migrations blindly |
-| `review` | Future/unrecognised migration requiring explicit review |
+The misleading file `2026_04_03_214557_create_blog_categories_table.php`
+actually creates `blog_posts`, while a later file creates
+`blog_categories`. Both migration names must remain unchanged so their
+existing Laravel ledger references remain stable.
 
-**Important:** This command is read-only, unlike `migrate`. It does not alter schema, change the migration ledger, modify records, or drop tables. A failed status is useful, not a reason to skip validation.
+## How verification and adoption work
 
-## Production deployment sequence
+The schema inspector uses Laravel's SQL compiler in `Connection::pretend()`
+to generate the expected schema for **explicitly catalogued creation
+migrations**, then compares it to the actual `information_schema`. It checks
+type, precision/scale, nullability, defaults, primary/foreign keys, indexes,
+auto-increment, and the MariaDB JSON alias. Later known alterations are
+classified separately.
 
-The full database backup has already been taken. Preserve it externally and verify restore availability before performing DDL, especially on a large Carbon Mapper table. After PR CI and manual review:
+The audit reports:
+
+- `ran`: migration recorded and checked where supported.
+- `create`: table absent; let the original migration create it.
+- `adoptable`: complete existing schema or a verified already-performed alter.
+- `alter`: a known, needed pending change; let the original migration run.
+- `BLOCKED`: incompatible schema, missing dependency, or potential data loss.
+- `review`: an unrecognized pending migration; do not auto-adopt it.
+
+`schema:reconcile-migrations --apply` refuses to write anything while
+a `BLOCKED` or `review` status exists. In a single database transaction
+it locks the ledger, re-runs the audit to prevent stale assumptions, and
+records only `adoptable` migrations. This is an explicit, operator-controlled
+reconciliation, **not** automatic bypass during every Laravel deployment.
+A second run makes no duplicate entries.
+
+### Rollback caution
+
+**Never run `migrate:rollback`, `migrate:reset` or `migrate:fresh` on this
+production database** without a full impact review. We intentionally leave
+historical migration files unchanged, including their original destructive
+`down()` methods. Laravel cannot distinguish imported tables adopted through
+its ledger from tables it originally created when rolling back.
+
+## Production runbook
+
+The existing verified backup must be retained, and a restore path should be
+available before applying DDL. Do not put the full SQL export in the public
+repository.
+
+After this PR passes CI, receives approval, and is merged to master:
 
 ```bash
 cd /var/www/brc_site
 git status --short
 git pull --ff-only origin master
 
-# Read-only inspection. Save the JSON report on your server.
-docker exec brc_site php artisan schema:audit-migrations --json > /tmp/basinenergy-migration-audit.json
+# READ-ONLY: inspect the complete migration history and schema.
+docker exec brc_site php artisan schema:audit-migrations --json \
+  > /tmp/basinenergy-migration-audit.json
 
-# Read-only preview of the specific Carbon Mapper JSON repair.
+# READ-ONLY: checks the actual production JSON payloads and schema.
 docker exec brc_site php artisan schema:repair-carbon-json
 ```
 
-If Carbon Mapper `raw_payload` is ordinary LONGTEXT rather than a validated JSON alias, and the preview verifies **zero invalid or null payloads**, the guarded repair can be explicitly authorized:
+The audit may initially report Carbon Mapper JSON as `BLOCKED`, which
+is expected from the structure-only export. If the JSON preview confirms
+**zero invalid or NULL values**, that the actual column is non-null LONGTEXT
+with utf8mb4 collation, and no conflicting JSON constraint exists,
+authorize the constraint repair:
 
 ```bash
-# This command DOES execute ALTER TABLE DDL; MariaDB may lock the table.
+# WRITES DDL: explicitly authorized, may lock a large table.
 docker exec brc_site php artisan schema:repair-carbon-json --apply
 
-# Repeat the read-only audit. It should have no BLOCKED or review rows.
+# READ-ONLY: must now have no BLOCKED or review findings.
 docker exec brc_site php artisan schema:audit-migrations
-```
 
-The repair will only work for a non-null `LONGTEXT` column using a recognized `utf8mb4` collation, with no index or unrecognized JSON CHECK. It changes `raw_payload` to `utf8mb4_bin` if necessary and adds a `JSON_VALID` constraint. Existing JSON values are not rewritten. If any values are invalid, or the schema differs in another way, it refuses to modify data and instructs an explicit repair. MariaDB DDL auto-commits: a collation ALTER may succeed before a subsequent CHECK attempt fails. Rerun the read-only preview in that case.
+# READ-ONLY preview: lists exactly which ledger records would be added.
+docker exec brc_site php artisan schema:reconcile-migrations
 
-Once all blockers are resolved:
+# WRITES ONLY migration ledger entries; no DDL or research-row changes.
+docker exec brc_site php artisan schema:reconcile-migrations --apply
 
-```bash
+# Applies genuine remaining migrations using the original code.
 docker exec brc_site php artisan migrate --force
+
 docker exec brc_site php artisan migrate:status
+docker exec brc_site php artisan schema:audit-migrations
 docker exec brc_site php artisan optimize:clear
 ```
 
-Verify no migrations remain pending, that the admin dashboard loads, and the row counts for important datasets remain unchanged relative to the backup (unless legitimate imports occurred). Example:
+If any command returns a blocking error, **stop and investigate** instead of
+inserting ledger entries manually. In particular, invalid JSON rows cannot
+be repaired automatically without an explicit scientific/data decision.
 
-```php
-DB::table('produced_water_fluxes')->count();
-DB::table('produced_water_chemistry')->count();
-DB::table('carbon_mapper_observations')->count();
-DB::table('contact_messages')->count();
-```
+Verify important row counts against the actual database backup, especially
+`produced_water_fluxes`, `produced_water_chemistry`,
+`carbon_mapper_observations`, and website content tables. The provided
+structure-only export cannot provide the expected row counts.
 
-**Do not** manually insert `migrations` ledger entries, drop/recreate imported tables, run `migrate:fresh`, or force a destructive `down()`. The regular Laravel Migrator records each successful adoption after the guard passes.
+## CI
 
-## CI and limits
+GitHub Actions checks PHP syntax, Laravel routes, a clean migration on
+MySQL 8, the **read-only** audit, existing blog FK integrity, frontend builds,
+and PHPUnit. A new MySQL-only integration script on the **disposable test DB**
+temporarily removes a few migration ledger entries and demonstrates dry-run
+safety, validated reinsertion, and repeatability. The SQLite test suite
+covers parser behavior, valid/invalid JSON constraint shapes and schema drift.
 
-The new PHPUnit tests cover SQL parsing, MariaDB JSON validity checks, SQLite comparison of representative historical migrations, idempotent adoption, existing row retention, and blocking destructive category drops/rollbacks.
-
-The repository tests run with an in-memory SQLite database. Their success is important but **cannot prove compatibility with a production MariaDB schema**. Production constraints, row contents, existing FKs and indexes must be checked with the read-only audit command. The PR intentionally fails closed when incompatible; this is safer than silently marking an inconsistent DB up to date.
+Passing CI does not replace the production audit: the actual server is
+MariaDB 11.8.3 with historical imported data, not CI's clean MySQL 8.
