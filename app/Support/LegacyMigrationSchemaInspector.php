@@ -278,7 +278,7 @@ final class LegacyMigrationSchemaInspector
                 $map[$row->name] = (object) [
                     'column_type' => strtolower((string) $row->type),
                     'is_nullable' => ((int) $row->notnull === 0) ? 'YES' : 'NO',
-                    'column_default' => trim((string) $row->dflt_value, "'\\""),
+                    'column_default' => trim((string) $row->dflt_value, chr(39).chr(34)),
                     'extra' => (int) $row->pk === 1 && str_contains(strtolower($row->type), 'int')
                         ? 'auto_increment' : '',
                     'collation_name' => '',
