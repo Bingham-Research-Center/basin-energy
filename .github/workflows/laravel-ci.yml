@@ -108,6 +108,12 @@ jobs:
           node --check public/frontend/js/popup-auth.js
           node tests/js/forgot-password-popup.test.js
 
+      - name: Verify default role Livewire toast behavior
+        run: |
+          node --check public/js/dashboard-toasts.js
+          node --check public/js/role-default-switch.js
+          node tests/js/role-default-switch.test.js
+
       - name: Install frontend dependencies
         run: npm ci
 
