@@ -71,22 +71,25 @@ class UsersTable extends DataTableComponent
 
     public function filters(): array
     {
+        // Rappasoft derives a filter key from the display label unless it is
+        // passed explicitly. The builder reads type/active/verified, so keep
+        // these keys stable regardless of label wording or translations.
         return [
-            'type' => SelectFilter::make('User Type')
+            'type' => SelectFilter::make('User Type', 'type')
                 ->options([
                     '' => 'Any',
                     User::TYPE_ADMIN => 'Administrators',
                     User::TYPE_USER => 'Users',
                 ]),
 
-            'active' => SelectFilter::make('Active')
+            'active' => SelectFilter::make('Active', 'active')
                 ->options([
                     '' => 'Any',
                     'yes' => 'Yes',
                     'no' => 'No',
                 ]),
 
-            'verified' => SelectFilter::make('E-mail Verified')
+            'verified' => SelectFilter::make('E-mail Verified', 'verified')
                 ->options([
                     '' => 'Any',
                     'yes' => 'Yes',
