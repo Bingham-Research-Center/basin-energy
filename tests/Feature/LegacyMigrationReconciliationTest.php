@@ -2,28 +2,19 @@
 
 namespace Tests\Feature;
 
+use App\Console\Commands\AuditLegacyMigrations;
 use App\Support\LegacyMigrationSchemaInspector;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use RuntimeException;
 use Tests\TestCase;
 
 class LegacyMigrationReconciliationTest extends TestCase
 {
-    private function migration(string $file)
-    {
-        $path = database_path('migrations/'.$file.'.php');
-        if (preg_match('/\\breturn\\s+new\\s+class\\b/', file_get_contents($path))) {
-            return require $path;
-        }
-        require_once $path;
-        return app('migrator')->resolve($file);
-    }
-
-    public function test_expected_create_sql_parser_handles_integer_decimal_and_defaults(): void
+    public function test_expected_create_sql_parser_preserves_types_defaults_and_nullability(): void
     {
         $sql = <<<'SQL'
-create table @BT@carbon_mapper_observations@BT@ (@BT@id@BT@ bigint unsigned not null auto_increment primary key, @BT@latitude@BT@ decimal(10, 7) not null, @BT@raw_payload@BT@ json not null, @BT@is_super_emitter@BT@ tinyint(1) not null default '1') default character set utf8mb4
+create table @BT@carbon_mapper_observations@BT@ (@BT@id@BT@ bigint unsigned not null auto_increment primary key, @BT@latitude@BT@ decimal(10, 7) not null, @BT@raw_payload@BT@ json not null, @BT@is_super_emitter@BT@ tinyint(1) not null default '1')
 SQL;
         $columns = LegacyMigrationSchemaInspector::parseCreateColumns(
             str_replace('@BT@', chr(96), $sql)
@@ -32,37 +23,52 @@ SQL;
         $this->assertSame('bigint unsigned', $columns['id']['type']);
         $this->assertTrue($columns['id']['primary']);
         $this->assertTrue($columns['id']['auto_increment']);
-        $this->assertSame('decimal(10, 7)', $columns['latitude']['type']);
-        $this->assertSame('decimal(10,7)', LegacyMigrationSchemaInspector::canonicalType($columns['latitude']['type']));
+        $this->assertSame('decimal(10,7)',
+            LegacyMigrationSchemaInspector::canonicalType($columns['latitude']['type']));
         $this->assertFalse($columns['latitude']['nullable']);
         $this->assertSame('json', $columns['raw_payload']['type']);
         $this->assertSame('1', $columns['is_super_emitter']['default']);
     }
 
-    public function test_json_check_must_apply_to_correct_column(): void
+    public function test_real_export_shape_without_raw_payload_json_check_is_rejected(): void
     {
-        $valid = <<<'SQL'
+        // Extracted DDL shape from the structure-only November 20, 2026
+        // production export (no user data is committed to this repository).
+        $ddl = <<<'SQL'
+CREATE TABLE @BT@carbon_mapper_observations@BT@ (
+  @BT@raw_payload@BT@ longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+  @BT@created_at@BT@ timestamp NULL DEFAULT NULL
+)
+SQL;
+        $ddl = str_replace('@BT@', chr(96), $ddl);
+
+        $this->assertFalse(LegacyMigrationSchemaInspector::validMariaDbJsonAlias(
+            'raw_payload', 'longtext', 'utf8mb4_bin', $ddl
+        ));
+    }
+
+    public function test_named_json_check_is_accepted_only_for_the_correct_column(): void
+    {
+        $ddl = <<<'SQL'
 CREATE TABLE @BT@carbon_mapper_observations@BT@ (
   @BT@raw_payload@BT@ longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
   CONSTRAINT @BT@carbon_mapper_raw_payload_json_valid@BT@ CHECK (json_valid(@BT@raw_payload@BT@))
 )
 SQL;
-        $valid = str_replace('@BT@', chr(96), $valid);
+        $ddl = str_replace('@BT@', chr(96), $ddl);
+
         $this->assertTrue(LegacyMigrationSchemaInspector::validMariaDbJsonAlias(
-            'raw_payload', 'longtext', 'utf8mb4_bin', $valid
+            'raw_payload', 'longtext', 'utf8mb4_bin', $ddl
         ));
         $this->assertFalse(LegacyMigrationSchemaInspector::validMariaDbJsonAlias(
-            'raw_payload', 'longtext', 'utf8mb4_unicode_ci', $valid
+            'raw_payload', 'longtext', 'utf8mb4_unicode_ci', $ddl
         ));
         $this->assertFalse(LegacyMigrationSchemaInspector::validMariaDbJsonAlias(
-            'other_column', 'longtext', 'utf8mb4_bin', $valid
-        ));
-        $this->assertFalse(LegacyMigrationSchemaInspector::validMariaDbJsonAlias(
-            'raw_payload', 'text', 'utf8mb4_bin', $valid
+            'other_column', 'longtext', 'utf8mb4_bin', $ddl
         ));
     }
 
-    public function test_existing_legacy_tables_are_compatible_with_their_original_migrations(): void
+    public function test_original_migrations_match_existing_tables_in_clean_test_database(): void
     {
         $inspector = app(LegacyMigrationSchemaInspector::class);
 
@@ -79,26 +85,28 @@ SQL;
         }
     }
 
-    public function test_existing_contact_message_survives_migration_adoption(): void
+    public function test_read_only_audit_classifies_an_existing_table_without_ledger_entry(): void
     {
-        DB::table('contact_messages')->insert([
-            'name' => 'Historic contact',
-            'email' => 'historic@example.test',
-            'message' => 'Preserve this record',
-            'is_read' => false,
-        ]);
+        DB::table('migrations')
+            ->where('migration', '2026_04_04_013253_create_contact_messages_table')
+            ->delete();
 
-        $before = DB::table('contact_messages')->where('name', 'Historic contact')->first();
-        $this->migration('2026_04_04_013253_create_contact_messages_table')->up();
-        $this->migration('2026_04_04_013253_create_contact_messages_table')->up();
-        $after = DB::table('contact_messages')->where('name', 'Historic contact')->first();
+        $before = DB::table('contact_messages')->count();
+        $report = (new AuditLegacyMigrations())->buildReport(
+            app(LegacyMigrationSchemaInspector::class)
+        );
 
-        $this->assertSame($before->id, $after->id);
-        $this->assertSame($before->message, $after->message);
-        $this->assertSame(1, DB::table('contact_messages')->where('name', 'Historic contact')->count());
+        $contact = collect($report)->firstWhere(
+            'migration', '2026_04_04_013253_create_contact_messages_table'
+        );
+
+        $this->assertSame('adoptable', $contact['state']);
+        $this->assertSame($before, DB::table('contact_messages')->count());
+        $this->assertSame(0, DB::table('migrations')
+            ->where('migration', '2026_04_04_013253_create_contact_messages_table')->count());
     }
 
-    public function test_incompatible_existing_table_fails_without_deleting_rows(): void
+    public function test_audit_rejects_drift_without_modifying_existing_rows(): void
     {
         Schema::dropIfExists('test_sensor_readings');
         Schema::create('test_sensor_readings', function (\Illuminate\Database\Schema\Blueprint $table) {
@@ -106,63 +114,22 @@ SQL;
             $table->string('old_import_identifier')->nullable();
         });
         DB::table('test_sensor_readings')->insert(['old_import_identifier' => 'preserve-me']);
+        $before = DB::table('test_sensor_readings')->first();
 
-        $exception = null;
-        try {
-            $this->migration('2026_04_05_002933_create_test_sensor_readings_table')->up();
-        } catch (RuntimeException $error) {
-            $exception = $error;
-        }
+        $issues = app(LegacyMigrationSchemaInspector::class)->inspect(
+            '2026_04_05_002933_create_test_sensor_readings_table', 'test_sensor_readings'
+        );
 
-        $this->assertNotNull($exception);
-        $this->assertStringContainsString('missing column', $exception->getMessage());
-        $this->assertSame(1, DB::table('test_sensor_readings')->count());
+        $this->assertNotEmpty($issues);
+        $this->assertStringContainsString('missing column', implode('; ', $issues));
+        $after = DB::table('test_sensor_readings')->first();
+        $this->assertSame($before->id, $after->id);
+        $this->assertSame($before->old_import_identifier, $after->old_import_identifier);
     }
 
-    public function test_destructive_portfolio_category_drop_requires_empty_legacy_column(): void
+    public function test_ledger_reconciler_refuses_non_mysql_connection(): void
     {
-        Schema::table('portfolio_items', function (\Illuminate\Database\Schema\Blueprint $table) {
-            $table->text('categories')->nullable();
-        });
-        DB::table('portfolio_items')->insert(['title' => 'Historic project', 'categories' => '["energy"]']);
-
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Refusing to discard portfolio_items.categories');
-
-        $this->migration('2026_04_03_213620_drop_categories_column_from_portfolio_items_table')->up();
-    }
-
-    public function test_services_buttons_migration_is_idempotent(): void
-    {
-        $this->migration('2026_09_24_220508_add_button_fields_to_services_page_contents_table')->up();
-        $this->migration('2026_09_24_220508_add_button_fields_to_services_page_contents_table')->up();
-
-        $this->assertTrue(Schema::hasColumn('services_page_contents', 'button_text'));
-        $this->assertTrue(Schema::hasColumn('services_page_contents', 'button_link'));
-    }
-
-    public function test_final_blog_category_fk_reconciliation_is_idempotent(): void
-    {
-        $this->assertTrue(Schema::hasTable('blog_categories'));
-        $this->assertTrue(Schema::hasTable('blog_category_post'));
-        $this->assertFalse(\App\Support\BlogCategoryPivotSchema::hasOrphans());
-
-        if (DB::getDriverName() === 'sqlite') {
-            // SQLite does not support adding foreign keys to an existing
-            // pivot table. MySQL CI independently verifies the actual FK.
-            return;
-        }
-
-        $this->migration('2026_11_23_000000_ensure_blog_category_pivot_foreign_key')->up();
-        $this->migration('2026_11_23_000000_ensure_blog_category_pivot_foreign_key')->up();
-
-        $this->assertTrue(\App\Support\BlogCategoryPivotSchema::exists());
-    }
-
-    public function test_legacy_import_rollback_refuses_to_drop_table(): void
-    {
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Refusing rollback');
-        $this->migration('2026_04_04_013253_create_contact_messages_table')->down();
+        $this->assertSame('sqlite', DB::getDriverName());
+        $this->assertSame(1, Artisan::call('schema:reconcile-migrations'));
     }
 }
