@@ -98,6 +98,7 @@ async function run() {
             getElementById: () => null,
             createElement: () => ({
                 setAttribute: () => {},
+                style: {},
                 remove: () => {}
             }),
             body: {appendChild: el => fallback.push(el)}
