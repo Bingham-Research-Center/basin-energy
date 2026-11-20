@@ -82,7 +82,10 @@ final class LegacyMigrationSchemaInspector
             }
 
             if ($expected['default'] !== null
-                && strtolower((string) $column->column_default) !== strtolower($expected['default'])) {
+                && ! self::defaultsMatch(
+                    $column->column_default === null ? null : (string) $column->column_default,
+                    $expected['default']
+                )) {
                 $errors[] = $name.' default differs (expected '.$expected['default'].')';
             }
         }
@@ -395,6 +398,25 @@ final class LegacyMigrationSchemaInspector
             }
         }
         return false;
+    }
+
+    /**
+     * MariaDB may include surrounding SQL quotes in information_schema's
+     * COLUMN_DEFAULT, while MySQL and Laravel's compiler often omit them.
+     * Compare the *literal values* without masking genuinely different
+     * defaults or treating a NULL default as an empty string.
+     */
+    public static function defaultsMatch(?string $actual, string $expected): bool
+    {
+        if ($actual === null) {
+            return false;
+        }
+
+        if (strlen($actual) >= 2 && $actual[0] === "'" && substr($actual, -1) === "'") {
+            $actual = str_replace("''", "'", substr($actual, 1, -1));
+        }
+
+        return strcasecmp($actual, $expected) === 0;
     }
 
     public static function canonicalType(string $type): string
