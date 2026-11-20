@@ -33,5 +33,5 @@
 @endsection
 
 @push('after-scripts')
-    <script src="{{ asset('js/role-default-switch.js') }}?v=1"></script>
+    <script src="{{ asset('js/role-default-switch.js') }}?v=2"></script>
 @endpush
