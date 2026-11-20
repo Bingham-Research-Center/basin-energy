@@ -56,7 +56,14 @@ class UserService extends BaseService
         DB::beginTransaction();
 
         try {
-            $user = $this->createUser($data);
+            // Public registration must not accept privileged account fields
+            // supplied by the browser (type, active, provider, verified_at).
+            $user = $this->createUser([
+                'type' => User::TYPE_USER,
+                'name' => $data['name'] ?? null,
+                'email' => $data['email'] ?? null,
+                'password' => $data['password'] ?? null,
+            ]);
             $this->assignDefaultRegistrationRole($user);
         } catch (Exception $e) {
             DB::rollBack();
