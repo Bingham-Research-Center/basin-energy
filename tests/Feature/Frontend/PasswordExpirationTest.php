@@ -79,4 +79,34 @@ class PasswordExpirationTest extends TestCase
 
         $this->get('/account')->assertOk();
     }
+    public function test_passwordless_google_account_cannot_be_trapped_by_local_password_expiry(): void
+    {
+        config(['boilerplate.access.user.password_expires_days' => 30]);
+
+        $user = User::factory()->user()->passwordExpired()->create([
+            'password' => null,
+            'provider' => 'google',
+            'provider_id' => 'passwordless-google-account',
+            'email_verified_at' => now(),
+        ]);
+
+        $this->actingAs($user)
+            ->get('/dashboard')
+            ->assertOk();
+    }
+
+    public function test_google_account_with_a_local_password_still_obeys_expiration_policy(): void
+    {
+        config(['boilerplate.access.user.password_expires_days' => 30]);
+
+        $user = User::factory()->user()->passwordExpired()->create([
+            'provider' => 'google',
+            'provider_id' => 'google-with-local-password',
+        ]);
+
+        $this->actingAs($user)
+            ->get('/dashboard')
+            ->assertRedirect('/password/expired');
+    }
+
 }
