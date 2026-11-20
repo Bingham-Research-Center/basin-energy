@@ -33,6 +33,7 @@ SQL;
         $this->assertTrue($columns['id']['primary']);
         $this->assertTrue($columns['id']['auto_increment']);
         $this->assertSame('decimal(10, 7)', $columns['latitude']['type']);
+        $this->assertSame('decimal(10,7)', LegacyMigrationSchemaInspector::canonicalType($columns['latitude']['type']));
         $this->assertFalse($columns['latitude']['nullable']);
         $this->assertSame('json', $columns['raw_payload']['type']);
         $this->assertSame('1', $columns['is_super_emitter']['default']);
