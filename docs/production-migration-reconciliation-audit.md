@@ -4,11 +4,12 @@
 
 Production runs Laravel/PHP inside `brc_site` and has historically imported research and content tables before all migration names were recorded in the `migrations` ledger. The first migrations blocked by MySQL/MariaDB error 1050 were `produced_water_fluxes`, `produced_water_chemistry`, and `carbon_mapper_observations`. The first two were reconciled while preserving 398 flux and 79 chemistry records (as reported at that time); Carbon Mapper needs a separate `raw_payload` JSON constraint check.
 
-This audit covers **all 48 migration files** currently in `database/migrations`, reports the ledger state of each, and preflights every **catalogued outstanding historical creation/alteration migration** in read-only mode. It does not have access to the live production DB or the user's backup in GitHub; actual drift remains unknown until the command runs in production.
+This audit covers **all 49 migration files (including this PR's final FK reconciliation)** currently in `database/migrations`, reports the ledger state of each, and preflights every **catalogued outstanding historical creation/alteration migration** in read-only mode. It does not have access to the live production DB or the user's backup in GitHub; actual drift remains unknown until the command runs in production.
 
 ### Architecture findings
 
 - `2026_04_03_214557_create_blog_categories_table` **creates `blog_posts`**, not `blog_categories`. The later `2026_04_03_220515_create_blog_categories_table` actually creates `blog_categories` and attaches the category FK to `blog_category_post`. Do not delete either migration or rename their basenames: the ledger keys are meaningful.
+- `2026_11_23_000000_ensure_blog_category_pivot_foreign_key` ensures the category-side FK is present even if its original migration is already recorded as Ran and the pivot arrived later. It refuses orphaned category references rather than dropping data.
 - `2026_02_07_002933_create_sync_states_table` creates timestamps, and the next migration can add missing timestamps to older imports.
 - `2026_02_08_194941_drop_unique_observation_id_gas_index_from_carbon_mapper_observations` deliberately removes the original composite uniqueness constraint. Both earlier and later index states are accommodated.
 - `2026_04_03_213620_drop_categories_column_from_portfolio_items_table` historically discarded legacy categories. The patched migration fails safely if that column still contains non-null data.
