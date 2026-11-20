@@ -88,6 +88,11 @@ jobs:
           node --check public/frontend/js/google-oauth-popup.js
           node tests/js/google-oauth-popup.test.js
 
+      - name: Verify forgot-password popup success feedback
+        run: |
+          node --check public/frontend/js/popup-auth.js
+          node tests/js/forgot-password-popup.test.js
+
       - name: Install frontend dependencies
         run: npm ci
 
