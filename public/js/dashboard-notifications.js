@@ -199,6 +199,8 @@
             var adminId = panel.dataset.adminId;
             window.Echo.private('admin.newsletters.' + adminId)
                 .listen('.newsletter.subscription.created', refresh);
+            window.Echo.private('admin.registrations.' + adminId)
+                .listen('.user.registration.created', refresh);
         }
         refresh();
         setInterval(function () {
