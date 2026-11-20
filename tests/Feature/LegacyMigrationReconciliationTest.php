@@ -30,6 +30,27 @@ SQL;
         $this->assertSame('1', $columns['is_super_emitter']['default']);
     }
 
+    public function test_mariadb_quoted_defaults_are_normalized_without_hiding_drift(): void
+    {
+        $this->assertTrue(LegacyMigrationSchemaInspector::defaultsMatch("'CH4'", 'CH4'));
+        $this->assertTrue(LegacyMigrationSchemaInspector::defaultsMatch('CH4', 'CH4'));
+        $this->assertTrue(LegacyMigrationSchemaInspector::defaultsMatch("'sha1'", 'sha1'));
+        $this->assertTrue(LegacyMigrationSchemaInspector::defaultsMatch("'it''s safe'", "it's safe"));
+        $this->assertFalse(LegacyMigrationSchemaInspector::defaultsMatch(null, 'CH4'));
+        $this->assertFalse(LegacyMigrationSchemaInspector::defaultsMatch("'CO2'", 'CH4'));
+        $this->assertFalse(LegacyMigrationSchemaInspector::defaultsMatch("'sha256'", 'sha1'));
+    }
+
+    public function test_legacy_two_factor_secret_storage_types_are_explicitly_supported(): void
+    {
+        $this->assertTrue(\App\\Support\\ExistingTwoFactorAuthenticationSchema::isSecretStorageType('text'));
+        $this->assertTrue(\App\\Support\\ExistingTwoFactorAuthenticationSchema::isSecretStorageType('varchar'));
+        $this->assertTrue(\App\\Support\\ExistingTwoFactorAuthenticationSchema::isRecoveryStorageType('text'));
+        $this->assertTrue(\App\\Support\\ExistingTwoFactorAuthenticationSchema::isRecoveryStorageType('json'));
+        $this->assertFalse(\App\\Support\\ExistingTwoFactorAuthenticationSchema::isSecretStorageType('int'));
+        $this->assertFalse(\App\\Support\\ExistingTwoFactorAuthenticationSchema::isRecoveryStorageType('blob'));
+    }
+
     public function test_real_export_shape_without_raw_payload_json_check_is_rejected(): void
     {
         // Extracted DDL shape from the structure-only November 20, 2026
