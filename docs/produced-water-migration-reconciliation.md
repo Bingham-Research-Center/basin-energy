@@ -16,9 +16,16 @@ The fix uses the same **fail-closed adoption** approach as the existing
    nullability, the default on `wind_corrected`, primary key and required
    indexes. Normalize historical integer display widths, not actual schema
    differences. Do **not** change or delete table contents.
-3. Only if validation succeeds, return from the migration without
+3. For `species_fluxes`, accept either the native MySQL `json`
+   definition, or MariaDB's equivalent `longtext` **only** when the
+   column has `utf8mb4_bin` collation and a column-level
+   `CHECK (json_valid(\`species_fluxes\`))` constraint. MariaDB stores its
+   JSON alias as validated LONGTEXT; the migration must not mistake this
+   for an incompatible type. Ordinary LONGTEXT without the JSON check is
+   still rejected.
+4. Only if validation succeeds, return from the migration without
    creating anything. Laravel then records the migration as completed.
-4. If validation fails, throw an actionable exception and **do not**
+5. If validation fails, throw an actionable exception and **do not**
    mark the migration as applied. Back up and compare the actual table
    before making any explicit schema corrections.
 
@@ -48,6 +55,26 @@ DB::table('migrations')->where('migration', '2026_02_06_171501_create_produced_w
 The table inspection should match the migration definition, including
 the `unique_id` index and compound `(state, facility_id)` index. You
 should not need to change existing rows.
+
+## Production table discrepancy observed on November 20, 2026
+
+`SHOW CREATE TABLE produced_water_fluxes` returned a MariaDB JSON
+alias:
+
+```sql
+`species_fluxes` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin
+    DEFAULT NULL CHECK (json_valid(`species_fluxes`))
+```
+
+The dataset contained **398 records**. The original validator incorrectly
+compared this to the literal MySQL type `json`, rejecting a valid MariaDB
+column. The narrow fix checks the exact `species_fluxes` column type,
+collation and column-local JSON validity constraint using the real
+`SHOW CREATE TABLE` output. It does not run `ALTER TABLE`, modify rows,
+remove constraints, or bypass validation of other columns/indexes.
+
+Official MariaDB reference:
+https://mariadb.com/docs/server/reference/data-types/string-data-types/json
 
 ## Deployment after PR merge and passing CI
 
