@@ -18,7 +18,7 @@ class AdminNotificationCenterTest extends TestCase
             ->assertSee('brcNotificationMarkRead')
             ->assertSee('brcNotificationLoadMore')
             ->assertSee('Mark all as read')
-            ->assertSee('dashboard-notifications.js?v=1')
+            ->assertSee('dashboard-notifications.js?v=2')
             ->assertSee('dashboard-notifications.css?v=1');
     }
 
