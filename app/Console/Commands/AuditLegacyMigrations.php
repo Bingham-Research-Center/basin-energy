@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Support\ExistingCarbonMapperObservationsSchema;
+use App\Support\BlogCategoryPivotSchema;
 use App\Support\LegacyMigrationSchemaInspector;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -49,6 +50,7 @@ class AuditLegacyMigrations extends Command
         '2026_02_08_194941_drop_unique_observation_id_gas_index_from_carbon_mapper_observations' => 'carbon_mapper_observations',
         '2026_04_03_213620_drop_categories_column_from_portfolio_items_table' => 'portfolio_items',
         '2026_09_24_220508_add_button_fields_to_services_page_contents_table' => 'services_page_contents',
+        '2026_11_23_000000_ensure_blog_category_pivot_foreign_key' => 'blog_category_post',
     ];
 
     public function handle(LegacyMigrationSchemaInspector $inspector): int
@@ -94,6 +96,13 @@ class AuditLegacyMigrations extends Command
                     $status = 'BLOCKED';
                     $detail = $exception->getMessage();
                 }
+            }
+
+            if ($status === 'ran'
+                && $name === '2026_11_23_000000_ensure_blog_category_pivot_foreign_key'
+                && ! BlogCategoryPivotSchema::exists()) {
+                $status = 'BLOCKED';
+                $detail = 'Migration recorded as Ran but blog_category_post lacks category FK.';
             }
 
             if ($status === 'pending' && isset(self::CREATES[$name])) {
@@ -202,6 +211,19 @@ class AuditLegacyMigrations extends Command
                 return ['BLOCKED', 'Non-null legacy categories would be lost; migrate values into pivot first.'];
             }
             return ['alter', 'Legacy categories are entirely NULL; migration may remove empty column.'];
+        }
+
+        if ($name === '2026_11_23_000000_ensure_blog_category_pivot_foreign_key') {
+            if (! Schema::hasTable('blog_categories')) {
+                return ['BLOCKED', 'blog_categories is missing.'];
+            }
+            if (BlogCategoryPivotSchema::exists()) {
+                return ['adoptable', 'Category FK already present; final migration is idempotent.'];
+            }
+            if (BlogCategoryPivotSchema::hasOrphans()) {
+                return ['BLOCKED', 'Blog pivot contains orphaned category references.'];
+            }
+            return ['alter', 'Migration will add the missing category foreign key.'];
         }
 
         if ($name === '2026_09_24_220508_add_button_fields_to_services_page_contents_table') {
