@@ -8,14 +8,6 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (Schema::hasTable('about_page_contents')) {
-            \App\Support\LegacyMigrationSchemaInspector::assertCompatible(
-                '2026_04_02_230814_create_about_page_contents_table', 'about_page_contents'
-            );
-
-            return;
-        }
-
         Schema::create('about_page_contents', function (Blueprint $table) {
             $table->id();
 
@@ -45,9 +37,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        throw new \RuntimeException(
-            'Refusing rollback: about_page_contents may contain historical imported data. '.
-            'Back up and remove it only by an explicit administrator operation.'
-        );
+        Schema::dropIfExists('about_page_contents');
     }
 };

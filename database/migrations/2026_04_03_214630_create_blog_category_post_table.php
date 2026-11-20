@@ -8,14 +8,6 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (Schema::hasTable('blog_category_post')) {
-            \App\Support\LegacyMigrationSchemaInspector::assertCompatible(
-                '2026_04_03_214630_create_blog_category_post_table', 'blog_category_post'
-            );
-
-            return;
-        }
-
         Schema::create('blog_category_post', function (Blueprint $table) {
             $table->id();
 
@@ -36,9 +28,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        throw new \RuntimeException(
-            'Refusing rollback: blog_category_post may contain historical imported data. '.
-            'Back up and remove it only by an explicit administrator operation.'
-        );
+        Schema::dropIfExists('blog_category_post');
     }
 };
