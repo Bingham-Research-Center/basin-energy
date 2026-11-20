@@ -3,6 +3,7 @@
 namespace App\Http\Livewire\Backend;
 
 use App\Domains\Auth\Models\Role;
+use App\Domains\Auth\Services\DefaultUserRoleService;
 use Illuminate\Database\Eloquent\Builder;
 use Rappasoft\LaravelLivewireTables\DataTableComponent;
 use Rappasoft\LaravelLivewireTables\Views\Column;
@@ -29,8 +30,21 @@ class RolesTable extends DataTableComponent
             ->withCount('users');
     }
 
+    /**
+     * Livewire actions are not covered by the page route's role middleware.
+     * Recheck authorization server-side for every toggle request.
+     */
+    public function toggleDefaultRole(int $roleId): void
+    {
+        abort_unless(auth()->user()?->hasAllAccess(), 403);
+
+        app(DefaultUserRoleService::class)->toggle($roleId);
+    }
+
     public function columns(): array
     {
+        $selectedRoleId = app(DefaultUserRoleService::class)->currentRoleId();
+
         return [
             Column::make(__('Type'), 'type')
                 ->sortable()
@@ -45,6 +59,14 @@ class RolesTable extends DataTableComponent
 
             Column::make(__('Permissions'))
                 ->label(fn ($row) => $row->permissions->pluck('name')->join(', ') ?: '-'),
+
+            Column::make(__('Default User Role'))
+                ->label(fn ($row) => view('backend.auth.role.includes.default-role-toggle', [
+                    'role' => $row,
+                    'selected' => $selectedRoleId !== null && $selectedRoleId === (int) $row->id,
+                ])->render())
+                ->html()
+                ->excludeFromColumnSelect(),
 
             Column::make(__('Number of Users'))
                 ->label(fn ($row) => view('backend.includes.table-pill', [
