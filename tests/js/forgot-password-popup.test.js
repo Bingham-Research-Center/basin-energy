@@ -71,7 +71,13 @@ const document = {
     },
     querySelectorAll() { return []; },
     getElementById() { return null; },
-    addEventListener(name, fn) { handlers['document:' + name] = fn; }
+    addEventListener(name, fn) {
+        // DOM supports multiple listeners per event, including separate
+        // handlers for view navigation and verification-email resend.
+        const key = 'document:' + name;
+        if (!handlers[key]) handlers[key] = [];
+        handlers[key].push(fn);
+    }
 };
 const location = { href: 'https://basinenergy.info/' };
 const window = { location };
@@ -95,7 +101,7 @@ vm.runInNewContext(source, {
     console
 }, { filename: 'popup-auth.js' });
 
-handlers['document:DOMContentLoaded']();
+handlers['document:DOMContentLoaded'].forEach(listener => listener());
 
 async function submit() {
     await handlers['popup:submit']({
@@ -116,10 +122,13 @@ async function submit() {
     assert.equal(button.disabled, false, 'button is reset after processing');
 
     // Returning to the forgot-password form hides the old message.
-    handlers['document:click']({
+    const click = {
         target: { matches(selector) { return selector === '.forgot-pass-link'; } },
         preventDefault() {}
-    });
+    };
+    for (const listener of handlers['document:click']) {
+        await listener(click);
+    }
     assert.equal(form.hidden, false, 'new attempt restores form');
     assert.equal(confirmation.hidden, true, 'new attempt clears old result');
 
