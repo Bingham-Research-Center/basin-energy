@@ -13,6 +13,13 @@ class CreateCarbonMapperObservationsTable extends Migration
      */
     public function up()
     {
+        // A research import may predate the migrations ledger. Validate first.
+        if (Schema::hasTable('carbon_mapper_observations')) {
+            \App\Support\ExistingCarbonMapperObservationsSchema::assertCompatible();
+
+            return;
+        }
+
         Schema::create('carbon_mapper_observations', function (Blueprint $table) {
             $table->id();
 
@@ -54,6 +61,10 @@ class CreateCarbonMapperObservationsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('carbon_mapper_observations');
+        throw new \RuntimeException(
+            'Refusing to drop carbon_mapper_observations during rollback: '.
+            'it may hold imported research data. Back up and remove the '.
+            'table explicitly only if deletion is intended.'
+        );
     }
 }
