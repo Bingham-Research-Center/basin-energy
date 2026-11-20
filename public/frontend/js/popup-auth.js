@@ -164,7 +164,16 @@ function setView(view) {
     );
 
     if (view === "signup") popup.classList.add("show-signup");
-    if (view === "reset") popup.classList.add("show-reset");
+    if (view === "reset") {
+        popup.classList.add("show-reset");
+
+        // Starting a new reset request should show the email input again;
+        // the success screen only persists for the current reset flow.
+        const resetForm = popup.querySelector(".form-box.reset form[data-password-reset-form]");
+        const confirmation = popup.querySelector("#password-reset-confirmation");
+        if (resetForm) resetForm.hidden = false;
+        if (confirmation) confirmation.hidden = true;
+    }
     if (view === "verify") popup.classList.add("show-verify");
     if (view === "two-factor") popup.classList.add("show-two-factor");
 
@@ -312,6 +321,26 @@ function setView(view) {
 
         const view = currentView();
         if (view === "login" || view === "signup") ensureRecaptcha(view);
+        return;
+      }
+
+      if (form.hasAttribute("data-password-reset-form")) {
+        // Password reset is not a login; a successful response has no
+        // dashboard redirect. Keep the reset popup visible and show the same
+        // neutral acknowledgement whether or not an account exists.
+        const confirmation = popup.querySelector("#password-reset-confirmation");
+        if (confirmation) {
+          const message = confirmation.querySelector("[data-password-reset-message]");
+          if (message && typeof data.message === "string" && data.message.trim()) {
+            message.textContent = data.message;
+          }
+          form.hidden = true;
+          confirmation.hidden = false;
+        } else {
+          showErrors(form, { _error: ["Your request was received. Please check your email."] });
+        }
+
+        resetButton(btn);
         return;
       }
 
