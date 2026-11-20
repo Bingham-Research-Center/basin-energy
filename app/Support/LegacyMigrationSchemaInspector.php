@@ -31,7 +31,7 @@ final class LegacyMigrationSchemaInspector
 
     public function inspect(string $migration, string $table): array
     {
-        if (DB::getDriverName() !== 'mysql') {
+        if (! in_array(DB::getDriverName(), ['mysql', 'sqlite'], true)) {
             return ['Unsupported database driver for strict comparison: '.DB::getDriverName()];
         }
 
@@ -104,11 +104,16 @@ final class LegacyMigrationSchemaInspector
             // Laravel's MySQL grammar generates ALTER TABLE ADD INDEX / UNIQUE
             // statements separately from CREATE TABLE.
             if (preg_match(
-                '/\badd\s+(unique|index|primary key)\s+(?:`[^`]+`\s*)?\(([^)]+)\)/i',
-                $statement,
-                $match
+                '/\badd\s+(unique|index|primary key)\s+(?:[`\"][^`\"]+[`\"]\s*)?\(([^)]+)\)/i',
+                $statement, $match
+            ) || preg_match(
+                '/\bcreate\s+(unique\s+)?index\s+[`\"][^`\"]+[`\"]\s+on\s+[`\"][^`\"]+[`\"]\s*\(([^)]+)\)/i',
+                $statement, $match
             )) {
-                $kind = strtolower($match[1]);
+                $kind = strtolower(trim($match[1])) === 'unique' ? 'unique' : strtolower(trim($match[1]));
+                if ($kind === '') {
+                    $kind = 'index';
+                }
                 $columns = self::quotedIdentifiers($match[2]);
                 if ($kind === 'primary key') {
                     if (($indexes['PRIMARY']['columns'] ?? []) !== $columns) {
@@ -170,7 +175,7 @@ final class LegacyMigrationSchemaInspector
             (string) ($query['query'] ?? ''), $queries);
         $create = '';
         foreach ($statements as $statement) {
-            if (preg_match('/^\s*create\s+table\s+`?'.preg_quote($table, '/').'`?\s*\(/i', $statement)) {
+            if (preg_match('/^\s*create\s+table\s+[`\"]?'.preg_quote($table, '/').'[`\"]?\s*\(/i', $statement)) {
                 $create = $statement;
                 break;
             }
@@ -213,7 +218,7 @@ final class LegacyMigrationSchemaInspector
                 }
                 continue;
             }
-            if ($char === "'" || $char === '`') {
+            if ($char === "'" || $char === '`' || $char === '"') {
                 $quote = $char;
                 $piece .= $char;
             } elseif ($char === '(') {
@@ -237,7 +242,7 @@ final class LegacyMigrationSchemaInspector
         $columns = [];
         foreach ($parts as $part) {
             if (! preg_match(
-                '/^`([^`]+)`\s+([a-z][a-z0-9_]*(?:\([^)]*\))?(?: unsigned)?)/i',
+                '/^[`\"]([^`\"]+)[`\"]\s+([a-z][a-z0-9_]*(?:\([^)]*\))?(?: unsigned)?)/i',
                 $part, $match
             )) {
                 continue;
@@ -256,7 +261,7 @@ final class LegacyMigrationSchemaInspector
                 'type' => $type,
                 'nullable' => ! preg_match('/\bnot\s+null\b/i', $part),
                 'default' => $default,
-                'auto_increment' => (bool) preg_match('/\bauto_increment\b/i', $part),
+                'auto_increment' => (bool) preg_match('/\bauto_?increment\b/i', $part),
                 'primary' => (bool) preg_match('/\bprimary\s+key\b/i', $part),
             ];
         }
@@ -266,6 +271,22 @@ final class LegacyMigrationSchemaInspector
 
     private function columnMetadata(string $table): array
     {
+        if (DB::getDriverName() === 'sqlite') {
+            $map = [];
+            // Only table names in the static command allowlist reach here.
+            foreach (DB::select("PRAGMA table_info('".$table."')") as $row) {
+                $map[$row->name] = (object) [
+                    'column_type' => strtolower((string) $row->type),
+                    'is_nullable' => ((int) $row->notnull === 0) ? 'YES' : 'NO',
+                    'column_default' => trim((string) $row->dflt_value, "'\\""),
+                    'extra' => (int) $row->pk === 1 && str_contains(strtolower($row->type), 'int')
+                        ? 'auto_increment' : '',
+                    'collation_name' => '',
+                ];
+            }
+            return $map;
+        }
+
         $rows = DB::select(
             'SELECT COLUMN_NAME AS column_name, COLUMN_TYPE AS column_type, '.
             'IS_NULLABLE AS is_nullable, COLUMN_DEFAULT AS column_default, '.
@@ -291,6 +312,23 @@ final class LegacyMigrationSchemaInspector
 
     private function indexMetadata(string $table): array
     {
+        if (DB::getDriverName() === 'sqlite') {
+            $map = ['PRIMARY' => ['columns' => ['id'], 'unique' => true]];
+            // sync_states uses a string primary key instead of id.
+            if ($table === 'sync_states') {
+                $map['PRIMARY']['columns'] = ['key'];
+            }
+            foreach (DB::select("PRAGMA index_list('".$table."')") as $row) {
+                $escaped = str_replace("'", "''", $row->name);
+                $columns = DB::select("PRAGMA index_info('".$escaped."')");
+                $map[$row->name] = [
+                    'columns' => array_map(static fn ($col) => $col->name, $columns),
+                    'unique' => (int) $row->unique === 1,
+                ];
+            }
+            return $map;
+        }
+
         $rows = DB::select(
             'SELECT INDEX_NAME AS index_name, COLUMN_NAME AS column_name, '.
             'NON_UNIQUE AS non_unique, SEQ_IN_INDEX AS seq '.
@@ -309,6 +347,22 @@ final class LegacyMigrationSchemaInspector
 
     private function hasForeignKey(string $table, array $columns, string $target, array $referenced): bool
     {
+        if (DB::getDriverName() === 'sqlite') {
+            $matches = [];
+            foreach (DB::select("PRAGMA foreign_key_list('".$table."')") as $row) {
+                $matches[$row->id]['columns'][$row->seq] = $row->from;
+                $matches[$row->id]['referenced'][$row->seq] = $row->to;
+                $matches[$row->id]['table'] = $row->table;
+            }
+            foreach ($matches as $match) {
+                if (array_values($match['columns']) === $columns && $match['table'] === $target
+                    && array_values($match['referenced']) === $referenced) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         $rows = DB::select(
             'SELECT CONSTRAINT_NAME AS name, COLUMN_NAME AS source_col, '.
             'REFERENCED_TABLE_NAME AS target_table, REFERENCED_COLUMN_NAME AS target_col, '.
@@ -354,7 +408,7 @@ final class LegacyMigrationSchemaInspector
 
     private static function quotedIdentifiers(string $expression): array
     {
-        preg_match_all('/`([^`]+)`/', $expression, $matches);
+        preg_match_all('/[`\"]([^`\"]+)[`\"]/', $expression, $matches);
         return $matches[1];
     }
 }
