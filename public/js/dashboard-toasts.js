@@ -12,41 +12,50 @@
         return allowed[value] ? value : 'info';
     }
 
-    function fallbackToast(message, icon) {
+    function fallbackToast(message, icon, position, timer) {
         // If the compiled bundle failed to load, still show actionable feedback
         // rather than silently dropping all flash messages.
         var el = document.createElement('div');
         el.setAttribute('role', 'status');
         el.className = 'alert alert-' + (icon === 'error' ? 'danger' : icon);
         el.textContent = message;
-        el.style.cssText = 'position:fixed;right:20px;top:20px;max-width:min(450px,90vw);z-index:20000;';
+        el.style.cssText = 'position:fixed;' + (position === 'top-start' ? 'left:20px;' : 'right:20px;') +
+            'top:20px;max-width:min(450px,90vw);z-index:20000;';
         document.body.appendChild(el);
         return new Promise(function (resolve) {
-            setTimeout(function () { el.remove(); resolve(); }, icon === 'error' ? 5500 : 3500);
+            setTimeout(function () { el.remove(); resolve(); }, timer);
         });
     }
 
-    function showNow(message, icon) {
+    function showNow(message, icon, options) {
         if (!message || !String(message).trim()) return Promise.resolve();
         icon = iconFor(icon);
+        options = options || {};
+        // Preserve the dashboard default; the role-toggle page opts into
+        // a top-left, three-second toast without changing other notifications.
+        var position = options.position === 'top-start' ? 'top-start' : 'top-end';
+        var timer = Number(options.timer);
+        if (!Number.isInteger(timer) || timer < 1000 || timer > 10000) {
+            timer = icon === 'error' ? 5500 : 3500;
+        }
         if (!window.Swal || typeof window.Swal.fire !== 'function') {
-            return fallbackToast(String(message), icon);
+            return fallbackToast(String(message), icon, position, timer);
         }
         return window.Swal.fire({
             toast: true,
-            position: 'top-end',
+            position: position,
             icon: icon,
             titleText: String(message),
             showConfirmButton: false,
-            timer: icon === 'error' ? 5500 : 3500,
+            timer: timer,
             timerProgressBar: true
         });
     }
 
     window.BrcToasts = {
-        show: function (message, icon) {
+        show: function (message, icon, options) {
             pending = pending.catch(function () {}).then(function () {
-                return showNow(message, icon || 'success');
+                return showNow(message, icon || 'success', options);
             });
             return pending;
         },
