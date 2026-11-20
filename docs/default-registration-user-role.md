@@ -26,7 +26,10 @@ has been selected, self-registrations keep the old behavior: they are
 created with no automatically assigned role.
 
 Returning Google users, existing accounts, and users created by administrators
-retain their current/manual role assignments. Changing the selection does
+retain their current/manual role assignments.
+Public password registration now also whitelists only the name, email and password
+fields, forcing User account type and preventing browser-supplied admin type,
+OAuth provider IDs, verification flags or active status from being accepted. Changing the selection does
 **not** backfill or modify any existing user or role membership.
 
 For security the service checks the role's current type and guard before
