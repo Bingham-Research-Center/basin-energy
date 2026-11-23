@@ -470,9 +470,89 @@ class DataController extends Controller
         return view('frontend.user.data.realtime_ozone');
     }
 
-        public function realtimePandora()
+    /*
+    |--------------------------------------------------------------------------
+    | NASA Pandora
+    |--------------------------------------------------------------------------
+    */
+
+    public function realtimePandora()
     {
         return view('frontend.user.data.realtime_pandora');
+    }
+
+    public function realtimePandoraJson(
+        Request $request,
+        \App\Services\PandoraDataService $pandoraService
+    ) {
+        $validated = $request->validate([
+            'start' => ['required', 'date_format:Y-m-d'],
+            'end' => ['required', 'date_format:Y-m-d', 'after:start'],
+        ]);
+
+        $start = Carbon::createFromFormat('!Y-m-d', $validated['start']);
+        $end = Carbon::createFromFormat('!Y-m-d', $validated['end']);
+
+        if ($start->diffInDays($end) > 7) {
+            return response()->json([
+                'message' => 'Please select a date range of 7 days or less.',
+            ], 422);
+        }
+
+        try {
+            $files = $pandoraService->availableNo2Files(
+                $validated['start'],
+                $validated['end']
+            );
+
+            $observations = [];
+
+            foreach ($files as $file) {
+                $filename = $file['filename'] ?? null;
+
+                if (! is_string($filename)) {
+                    continue;
+                }
+
+foreach ($pandoraService->observationsFromFile($filename) as $row) {
+    // PGN timestamps begin with YYYYMMDD.
+    $observationDate = substr($row['timestamp'], 0, 8);
+
+    $startDate = $start->format('Ymd');
+    $endDate = $end->format('Ymd');
+
+    // Include observations on both selected dates.
+    if (
+        $observationDate < $startDate ||
+        $observationDate > $endDate
+    ) {
+        continue;
+    }
+
+    $observations[] = $row;
+}
+            }
+
+            usort(
+                $observations,
+                fn ($a, $b) => strcmp($a['timestamp'], $b['timestamp'])
+            );
+
+            return response()->json([
+                'station' => 'DinosaurUT',
+                'instrument' => 'Pandora95',
+                'gas' => 'NO2',
+                'units' => 'mol/m²',
+                'count' => count($observations),
+                'observations' => $observations,
+            ]);
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return response()->json([
+                'message' => 'Pandora observations are temporarily unavailable.',
+            ], 503);
+        }
     }
 
     public function realtimeOzoneJson(Request $request)
