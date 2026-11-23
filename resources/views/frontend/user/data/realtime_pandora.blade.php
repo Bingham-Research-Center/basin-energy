@@ -584,10 +584,18 @@ if (latestObservationElement) {
                     timestamp.substring(11, 13);
             });
 
-            chart.data.datasets[0].data = observations.map(row => row.no2);
+chart.data.datasets[0].data = observations.map(row => row.no2);
 
-            chart.update();
+// Update the legend to reflect the quality of the displayed observations.
+if (assuredCount === observations.length) {
+    chart.data.datasets[0].label = 'NO₂ (Quality-Assured)';
+} else if (assuredCount === 0) {
+    chart.data.datasets[0].label = 'NO₂ (Not Quality-Assured)';
+} else {
+    chart.data.datasets[0].label = 'NO₂ (Mixed Quality)';
+}
 
+chart.update();
             console.info(
                 'NASA Pandora: Loaded ' + observations.length +
                 ' NO₂ observations.'
