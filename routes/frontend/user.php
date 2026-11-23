@@ -89,7 +89,12 @@ Route::group(['as' => 'user.', 'middleware' => ['auth', '2fa.confirmed', 'passwo
 
 /* NASA Pandora Project - Uintah Basin */
 Route::get('realtime/pandora', [DataController::class, 'realtimePandora'])
-    ->name('realtime.pandora');
+    ->name('realtime.pandora')
+    ->breadcrumbs(function (Trail $trail) {
+        $trail->parent('frontend.user.data.data')
+            ->push(__('Real-Time Data'))
+            ->push(__('NASA Pandora'), route('frontend.user.data.realtime.pandora'));
+    });
 
 Route::get('realtime/pandora/json', [DataController::class, 'realtimePandoraJson'])
     ->name('realtime.pandora.json');
