@@ -381,7 +381,7 @@ value="{{ now('UTC')->format('Y-m-d') }}"
         }
     });
 
-async function loadPandoraData() {
+async function loadPandoraData(isInitialLoad = false) {
     const startDate = document.getElementById('pandoraStartDate').value;
     const endDate = document.getElementById('pandoraEndDate').value;
     const applyButton = document.getElementById('pandoraApplyFilters');
@@ -419,7 +419,71 @@ async function loadPandoraData() {
             }
 
             const result = await response.json();
-            const observations = result.observations || [];
+let observations = result.observations || [];
+
+// Search earlier dates only during the initial dashboard load.
+if (isInitialLoad === true && observations.length === 0) {
+    const formatUtcDate = date => date.toISOString().slice(0, 10);
+
+    for (let attempt = 1; attempt <= 4; attempt++) {
+        const fallbackEnd = new Date(
+            end.getTime() - (attempt * 7 * 86400000)
+        );
+
+        const fallbackStart = new Date(
+            fallbackEnd.getTime() - (7 * 86400000)
+        );
+
+        const fallbackStartDate = formatUtcDate(fallbackStart);
+        const fallbackEndDate = formatUtcDate(fallbackEnd);
+
+        console.info(
+            'Pandora: Checking earlier dates ' +
+            fallbackStartDate + ' to ' + fallbackEndDate
+        );
+
+        const fallbackUrl = '/data/realtime/pandora/json?' +
+            new URLSearchParams({
+                start: fallbackStartDate,
+                end: fallbackEndDate
+            });
+
+        const fallbackResponse = await fetch(fallbackUrl, {
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+
+        if (!fallbackResponse.ok) {
+            throw new Error(
+                'Pandora fallback API returned HTTP ' +
+                fallbackResponse.status
+            );
+        }
+
+        const fallbackResult = await fallbackResponse.json();
+        const fallbackObservations =
+            fallbackResult.observations || [];
+
+        if (fallbackObservations.length > 0) {
+            observations = fallbackObservations;
+
+            document.getElementById('pandoraStartDate').value =
+                fallbackStartDate;
+
+            document.getElementById('pandoraEndDate').value =
+                fallbackEndDate;
+
+            console.info(
+                'Pandora: Found ' + observations.length +
+                ' observations in an earlier date range.'
+            );
+
+            break;
+        }
+    }
+}
+
 // Update the NASA Pandora data connection status.
 const dataStatusElement = document.getElementById('pandoraDataStatus');
 const dataStatusNoteElement = document.getElementById('pandoraDataStatusNote');
@@ -584,9 +648,9 @@ if (qualityElement) {
     }
 
 document.getElementById('pandoraApplyFilters')
-    .addEventListener('click', loadPandoraData);
+    .addEventListener('click', () => loadPandoraData(false));
 
-loadPandoraData();
+loadPandoraData(true);
 
 })();
 </script>
