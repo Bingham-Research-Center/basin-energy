@@ -1,10 +1,5 @@
 require('../bootstrap');
 require('../plugins');
-require('./emission-trends');
-require('./produced-water');
-require('./carbon-mapper-map.js');
-require('./subsurface-natural-gas-leaks.js');
-require('./oil-well-pad-emissions.js');
 
 import Vue from 'vue';
 

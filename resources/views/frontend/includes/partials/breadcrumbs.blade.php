@@ -1,15 +1,16 @@
 @if (Breadcrumbs::has() && !Route::is('frontend.index'))
-    <ol class="breadcrumb border-0 m-0">
+    <ol class="breadcrumb border-0 m-0" aria-label="Breadcrumb">
         @foreach (Breadcrumbs::current() as $crumb)
-            @if ($crumb->url() && !$loop->last)
-                <li class="breadcrumb-item">
+            <li class="breadcrumb-item {{ $loop->last ? 'active' : '' }}"
+                @if ($loop->last)
+                    aria-current="page"
+                @endif>
+                @if ($crumb->url() && ! $loop->last)
                     <x-utils.link :href="$crumb->url()" :text="$crumb->title()" />
-                </li>
-            @else
-                <li class="breadcrumb-item active">
+                @else
                     {{ $crumb->title() }}
-                </li>
-            @endif
+                @endif
+            </li>
         @endforeach
     </ol>
 @endif

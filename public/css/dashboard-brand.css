@@ -1,0 +1,119 @@
+/* BRC / Utah State University dashboard branding.
+ * The supplied PNG has genuine transparency: never place a white tile
+ * behind it. Use white on dark sidebar/header surfaces and Aggie Blue
+ * on the light mobile header. The alpha channel remains transparent.
+ */
+.brc-sidebar-brand {
+    min-height: 70px;
+    padding: 6px 8px;
+}
+
+.brc-dashboard-brand-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    max-width: 100%;
+    min-width: 0;
+    padding: 5px 7px;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    text-decoration: none;
+    line-height: 1;
+}
+
+.brc-dashboard-brand-link:focus-visible {
+    outline: 2px solid #59a8fa;
+    outline-offset: 2px;
+}
+
+.brc-dashboard-brand-full {
+    display: block;
+    min-width: 0;
+    line-height: 0;
+}
+
+.brc-dashboard-brand-full .brc-brand-image {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-width: 233px;
+}
+
+/* Both dashboard sidebars use CoreUI's dark surface even in Light mode.
+ * Render the transparent logo white for readable contrast at all times. */
+.brc-sidebar-brand .brc-brand-image {
+    filter: brightness(0) invert(1);
+}
+
+.brc-sidebar-brand .brc-dashboard-brand-minimized {
+    display: none;
+}
+
+.c-sidebar-minimized .brc-sidebar-brand {
+    padding: 6px 3px;
+    min-height: 58px;
+}
+
+.c-sidebar-minimized .brc-sidebar-brand .brc-dashboard-brand-full {
+    display: none;
+}
+
+.c-sidebar-minimized .brc-sidebar-brand .brc-dashboard-brand-minimized {
+    display: block;
+}
+
+.c-sidebar-minimized .brc-dashboard-brand-link {
+    padding: 4px 3px;
+}
+
+.brc-brand-symbol-crop {
+    display: block;
+    width: 47px;
+    height: 36px;
+    overflow: hidden;
+}
+
+.brc-brand-symbol-crop .brc-brand-image {
+    display: block;
+    width: 194px;
+    min-width: 194px;
+    max-width: none;
+    height: auto;
+}
+
+/* The mobile header changes from light to dark with the resolved theme.
+ * Aggie Blue on white, then white on the dark header. Auto is covered by
+ * the same resolved-theme attribute set by dashboard-theme.js. */
+.brc-mobile-brand {
+    padding: 0 5px;
+}
+
+.brc-mobile-brand .brc-dashboard-brand-link {
+    padding: 3px 5px;
+}
+
+.brc-mobile-brand .brc-dashboard-brand-full .brc-brand-image {
+    width: 165px;
+    max-width: 100%;
+}
+
+html[data-brc-resolved-theme="dark"] .brc-mobile-brand .brc-brand-image {
+    filter: brightness(0) invert(1);
+}
+
+html.brc-theme-changing .brc-mobile-brand .brc-brand-image {
+    transition: filter 240ms ease;
+}
+
+@media (max-width: 440px) {
+    .brc-mobile-brand .brc-dashboard-brand-full .brc-brand-image {
+        width: 132px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html.brc-theme-changing .brc-mobile-brand .brc-brand-image {
+        transition: none;
+    }
+}

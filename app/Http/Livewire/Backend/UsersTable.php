@@ -47,7 +47,7 @@ class UsersTable extends DataTableComponent
     public function builder(): Builder
     {
         $query = User::query()
-            ->with(['roles:id,name', 'permissions:id,name']);
+            ->with(['roles:id,name', 'permissions:id,name', 'twoFactorAuth']);
 
         if ($this->status === 'deleted') {
             $query->onlyTrashed();
@@ -71,22 +71,25 @@ class UsersTable extends DataTableComponent
 
     public function filters(): array
     {
+        // Rappasoft derives a filter key from the display label unless it is
+        // passed explicitly. The builder reads type/active/verified, so keep
+        // these keys stable regardless of label wording or translations.
         return [
-            'type' => SelectFilter::make('User Type')
+            'type' => SelectFilter::make('User Type', 'type')
                 ->options([
                     '' => 'Any',
                     User::TYPE_ADMIN => 'Administrators',
                     User::TYPE_USER => 'Users',
                 ]),
 
-            'active' => SelectFilter::make('Active')
+            'active' => SelectFilter::make('Active', 'active')
                 ->options([
                     '' => 'Any',
                     'yes' => 'Yes',
                     'no' => 'No',
                 ]),
 
-            'verified' => SelectFilter::make('E-mail Verified')
+            'verified' => SelectFilter::make('E-mail Verified', 'verified')
                 ->options([
                     '' => 'Any',
                     'yes' => 'Yes',
@@ -99,19 +102,44 @@ class UsersTable extends DataTableComponent
     {
         return [
             Column::make(__('Type'), 'type')
-                ->sortable(),
+                ->sortable()
+                ->label(fn ($row) => view('backend.includes.table-pill', [
+                    'text' => ucfirst((string) $row->type),
+                    'tone' => $row->type === User::TYPE_ADMIN ? 'admin' : 'neutral',
+                ])->render())->html(),
 
             Column::make(__('Name'), 'name')
                 ->searchable()
-                ->sortable(),
+                ->sortable()
+                ->label(fn ($row) => view('backend.auth.user.includes.table-name', [
+                    'user' => $row,
+                ])->render())->html(),
 
             Column::make(__('E-mail'), 'email')
                 ->searchable()
                 ->sortable(),
 
+            Column::make(__('Active'), 'active')
+                ->sortable()
+                ->label(fn ($row) => view('backend.includes.table-pill', [
+                    'text' => $row->active ? __('Yes') : __('No'),
+                    'tone' => $row->active ? 'success' : 'danger',
+                ])->render())->html(),
+
             Column::make(__('Verified'), 'email_verified_at')
                 ->sortable()
-                ->label(fn ($row) => $row->email_verified_at ? $row->email_verified_at->format('Y-m-d H:i:s') : '-'),
+                ->label(fn ($row) => view('backend.includes.table-pill', [
+                    'text' => $row->email_verified_at ? __('Yes') : __('No'),
+                    'tone' => $row->email_verified_at ? 'success' : 'danger',
+                    'title' => $row->email_verified_at
+                        ? $row->email_verified_at->format('Y-m-d H:i:s') : null,
+                ])->render())->html(),
+
+            Column::make(__('2FA'))
+                ->label(fn ($row) => view('backend.includes.table-pill', [
+                    'text' => $row->hasTwoFactorEnabled() ? __('Enabled') : __('Disabled'),
+                    'tone' => $row->hasTwoFactorEnabled() ? 'success' : 'danger',
+                ])->render())->html(),
 
             Column::make(__('Roles'))
                 ->label(fn ($row) => $row->roles->pluck('name')->join(', ') ?: '-'),
@@ -243,7 +271,8 @@ class UsersTable extends DataTableComponent
 
         return implode(' ', $buttons);
     })
-    ->html(),
+    ->html()
+    ->excludeFromColumnSelect(),
         ];
     }
 }

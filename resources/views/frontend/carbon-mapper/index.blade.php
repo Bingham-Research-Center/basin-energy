@@ -1,11 +1,14 @@
-@extends('frontend.layouts.app')
+@extends(request()->routeIs('admin.data.*') ? 'backend.layouts.app' : 'frontend.layouts.app')
+
+@php
+    $carbonRoutePrefix = request()->routeIs('admin.data.*')
+        ? 'admin.data.carbon-mapper.' : 'frontend.user.carbon-mapper.';
+@endphp
 
 @section('title', __('Methane Emissions'))
 
 @push('after-styles')
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+    {{-- Leaflet and MarkerCluster styles are bundled in the dashboard CSS. --}}
 
     <style>
         /* Carbon Mapper page styling */
@@ -424,6 +427,10 @@
     <div
     id="map"
     class="dashboard-leaflet-map"
+    data-json-url="{{ route($carbonRoutePrefix.'utah.json') }}"
+    data-boundary-url="{{ route($carbonRoutePrefix.'utah.boundary') }}"
+    data-sources-url="{{ route($carbonRoutePrefix.'utah.sources') }}"
+    data-plume-url-template="{{ route($carbonRoutePrefix.'utah.plume', ['observationId' => '__OBSERVATION_ID__']) }}"
     role="region"
     aria-label="Interactive Carbon Mapper gas emissions map of Utah"
 ></div>
@@ -441,7 +448,4 @@
 </div>
 @endsection
 
-@push('after-scripts')
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-@endpush
+

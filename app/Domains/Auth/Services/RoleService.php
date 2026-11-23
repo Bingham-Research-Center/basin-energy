@@ -66,6 +66,12 @@ class RoleService extends BaseService
         DB::beginTransaction();
 
         try {
+            // A default registration role must never become an admin role.
+            // Clear it before changing type, using the same transaction.
+            if ($data['type'] === \App\Domains\Auth\Models\User::TYPE_ADMIN) {
+                app(DefaultUserRoleService::class)->clearIfCurrent($role->id);
+            }
+
             $role->update(['type' => $data['type'], 'name' => $data['name']]);
             $role->syncPermissions($data['permissions'] ?? []);
         } catch (Exception $e) {

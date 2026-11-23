@@ -1,10 +1,17 @@
-@extends('frontend.layouts.app')
+@extends(request()->routeIs('admin.data.*') ? 'backend.layouts.app' : 'frontend.layouts.app')
+
+@php
+    // Render the same dataset in the matching dashboard and fetch from
+    // that dashboard's protected JSON routes (no User-only URL bypass).
+    $dataRoutePrefix = request()->routeIs('admin.data.*') ? 'admin.data.' : 'frontend.user.data.';
+@endphp
 
 @section('title', __('Emission Trends'))
 
 @section('content')
 <div class="dashboard-page dashboard-page-pro dashboard-fill-page" id="emissionTrendsChartRoot"
-     data-json-url="{{ route('frontend.user.data.emission-trends.json') }}">
+     data-json-url="{{ route($dataRoutePrefix.'emission-trends.json') }}"
+     data-ai-summary-url="{{ route($dataRoutePrefix.'ai-summary.emission-trends') }}">
 
     <div class="card dashboard-chart-card dashboard-fill-card mb-4">
         <div class="card-header">

@@ -1,0 +1,433 @@
+<?php
+
+namespace App\Http\Controllers\Backend;
+
+use App\Domains\Auth\Models\Role;
+use App\Domains\Auth\Models\User;
+use App\Models\BroadcastAnnouncement;
+use App\Models\BroadcastAnnouncementDelivery;
+use App\Models\BroadcastNewsletter;
+use App\Services\BroadcastRichText;
+use App\Services\BroadcastDeliveryService;
+use App\Services\BroadcastDraftMediaCleanup;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+
+class BroadcastController
+{
+    private const TIMEZONE = 'America/Denver';
+
+    public function newsletters()
+    {
+        return view('backend.broadcast.newsletters.index');
+    }
+
+    public function createNewsletter()
+    {
+        return view('backend.broadcast.newsletters.form', ['newsletter' => new BroadcastNewsletter()]);
+    }
+
+    public function storeNewsletter(Request $request, BroadcastRichText $richText)
+    {
+        $data = $this->validateNewsletter($request, $richText);
+        $month = Carbon::parse($data['issue_month'].'-01', self::TIMEZONE)->startOfMonth();
+        // Saving an unfinished issue is safe regardless of its month.
+        // Only the explicit Schedule action is time-restricted.
+        BroadcastNewsletter::create([
+            'title' => $data['title'],
+            'body' => $data['body'],
+            'body_format' => 'html',
+            'issue_month' => $month->toDateString(),
+            // Saving a draft never authorizes email delivery.
+            'status' => BroadcastNewsletter::DRAFT,
+            'created_by' => $request->user()->id,
+        ]);
+
+        return redirect()->route('admin.broadcast.newsletters.index')
+            ->with('broadcast_toast', __('Newsletter draft saved. You can continue editing later.'));
+    }
+
+    public function editNewsletter(Request $request, BroadcastNewsletter $newsletter, BroadcastRichText $richText)
+    {
+        if ($request->wantsJson()) {
+            return response()->json([
+                'id' => $newsletter->id,
+                'updated_at' => optional($newsletter->updated_at)->toIso8601String(),
+                'title' => $newsletter->title,
+                'body_html' => $richText->render($newsletter->body, $newsletter->body_format),
+                'issue_month' => $newsletter->issue_month->format('Y-m'),
+                'status' => $newsletter->status,
+                'editable' => $newsletter->isEditable(),
+                'update_url' => route('admin.broadcast.newsletters.update', $newsletter),
+                'schedule_url' => $newsletter->isEditable()
+                    ? route('admin.broadcast.newsletters.schedule', $newsletter) : null,
+                'delete_url' => $newsletter->status === BroadcastNewsletter::DRAFT
+                    ? route('admin.broadcast.newsletters.delete', $newsletter) : null,
+            ])->header('Cache-Control', 'private, no-store');
+        }
+
+        return view('backend.broadcast.newsletters.form', compact('newsletter'));
+    }
+
+    public function updateNewsletter(Request $request, BroadcastNewsletter $newsletter, BroadcastRichText $richText)
+    {
+        abort_unless($newsletter->isEditable(), 403);
+        $data = $this->validateNewsletter($request, $richText, $newsletter);
+        $month = Carbon::parse($data['issue_month'].'-01', self::TIMEZONE)->startOfMonth();
+        // Keep historical drafts editable; scheduling remains restricted.
+        DB::transaction(function () use ($newsletter, $data, $month) {
+            $locked = BroadcastNewsletter::whereKey($newsletter->id)->lockForUpdate()->firstOrFail();
+            abort_unless($locked->isEditable(), 403);
+            $locked->update([
+                'title' => $data['title'],
+                'body' => $data['body'],
+                'body_format' => 'html',
+                'issue_month' => $month->toDateString(),
+                // Editing an approved newsletter revokes that approval.
+                'status' => BroadcastNewsletter::DRAFT,
+                'scheduled_at' => null,
+            ]);
+        });
+
+        return redirect()->route('admin.broadcast.newsletters.index')
+            ->with('broadcast_toast', __('Newsletter draft saved. Schedule again when ready.'));
+    }
+
+    public function scheduleNewsletter(BroadcastNewsletter $newsletter, BroadcastRichText $richText)
+    {
+        DB::transaction(function () use ($newsletter, $richText) {
+            $locked = BroadcastNewsletter::whereKey($newsletter->id)->lockForUpdate()->firstOrFail();
+            abort_unless($locked->isEditable(), 403);
+
+            if ($locked->title === 'Untitled newsletter' || ! $richText->hasText($locked->body)) {
+                throw ValidationException::withMessages([
+                    'body' => __('Complete the newsletter title and content before scheduling.'),
+                ]);
+            }
+
+            $endOfMonth = Carbon::parse($locked->issue_month->format('Y-m').'-01', self::TIMEZONE)
+                ->endOfMonth()->setTime(18, 0, 0);
+            abort_if($endOfMonth->isPast(), 422, 'Cannot schedule an issue for a past month.');
+
+            $locked->update([
+                'status' => BroadcastNewsletter::SCHEDULED,
+                'scheduled_at' => $endOfMonth->utc(),
+            ]);
+        });
+
+        return redirect()->route('admin.broadcast.newsletters.index')
+            ->withFlashSuccess(__('Newsletter scheduled for the last day of the month at 6 PM Mountain time.'));
+    }
+
+    public function deleteNewsletter(
+        Request $request,
+        BroadcastNewsletter $newsletter,
+        BroadcastDraftMediaCleanup $media
+    ) {
+        $body = DB::transaction(function () use ($newsletter) {
+            $locked = BroadcastNewsletter::whereKey($newsletter->id)->lockForUpdate()->firstOrFail();
+            abort_unless($locked->isEditable(), 403);
+
+            $body = $locked->body;
+            $locked->delete();
+
+            return $body;
+        });
+
+        // Images referenced by another announcement or newsletter must
+        // remain available, especially when included in delivered emails.
+        $media->deleteUnreferenced($body);
+
+        if ($request->expectsJson()) {
+            return response()->json(['deleted' => true, 'id' => $newsletter->id])
+                ->header('Cache-Control', 'no-store');
+        }
+
+        return redirect()->route('admin.broadcast.newsletters.index')
+            ->with('broadcast_toast', __('Newsletter draft discarded.'));
+    }
+
+    private function validateNewsletter(
+        Request $request,
+        BroadcastRichText $richText,
+        ?BroadcastNewsletter $newsletter = null
+    ): array {
+        $unique = Rule::unique('broadcast_newsletters', 'issue_month');
+        if ($newsletter) {
+            $unique->ignore($newsletter->id);
+        }
+
+        $data = $request->validate([
+            'title' => ['nullable', 'string', 'max:180'],
+            'body' => ['nullable', 'string', 'max:30000'],
+            'issue_month' => ['required', 'date_format:Y-m'],
+        ]);
+
+        validator(['issue_month' => $data['issue_month'].'-01'], [
+            'issue_month' => [$unique],
+        ])->validate();
+
+        $data['title'] = trim($data['title'] ?? '') ?: 'Untitled newsletter';
+        $data['body'] = $richText->sanitize($data['body'] ?? '');
+
+        return $data;
+    }
+
+    public function announcements()
+    {
+        return view('backend.broadcast.announcements.index', [
+            'roles' => $this->userRoles(),
+        ]);
+    }
+
+    private function userRoles()
+    {
+        return Role::where('type', User::TYPE_USER)->orderBy('name')->get();
+    }
+
+    public function createAnnouncement()
+    {
+        return view('backend.broadcast.announcements.create', [
+            'roles' => $this->userRoles(),
+            'announcement' => new BroadcastAnnouncement(),
+        ]);
+    }
+
+    public function editAnnouncement(Request $request, BroadcastAnnouncement $announcement, BroadcastRichText $richText)
+    {
+        if ($request->wantsJson()) {
+            return response()->json([
+                'id' => $announcement->id,
+                'updated_at' => optional($announcement->updated_at)->toIso8601String(),
+                'title' => $announcement->title,
+                'body_html' => $richText->render($announcement->body, $announcement->body_format),
+                'audience' => $announcement->audience,
+                'role_ids' => $announcement->role_ids ?? [],
+                'status' => $announcement->status,
+                'editable' => $announcement->isEditable(),
+                'update_url' => route('admin.broadcast.announcements.update', $announcement),
+                'publish_url' => $announcement->isEditable()
+                    ? route('admin.broadcast.announcements.publish', $announcement) : null,
+                'delete_url' => $announcement->isEditable()
+                    ? route('admin.broadcast.announcements.delete', $announcement) : null,
+            ])->header('Cache-Control', 'private, no-store');
+        }
+
+        return view('backend.broadcast.announcements.create', [
+            'roles' => $this->userRoles(),
+            'announcement' => $announcement,
+        ]);
+    }
+
+    public function storeAnnouncement(Request $request, BroadcastRichText $richText)
+    {
+        $publish = $request->input('intent', 'publish') === 'publish';
+        $data = $this->validateAnnouncement($request, $richText, $publish);
+
+        $announcementId = DB::transaction(function () use ($data, $publish, $request, $richText) {
+            $announcement = BroadcastAnnouncement::create([
+                'title' => $data['title'],
+                'body' => $data['body'],
+                'body_format' => 'html',
+                'audience' => $data['audience'],
+                'role_ids' => $data['role_ids'],
+                'status' => BroadcastAnnouncement::DRAFT,
+                // Historical published_at is NOT NULL. Draft status is the
+                // authoritative publication flag; publish resets this time.
+                'published_at' => now(),
+                'created_by' => $request->user()->id,
+            ]);
+
+            if ($publish) {
+                $this->publishDraft($announcement, $richText);
+            }
+
+            return $announcement->id;
+        });
+
+        if ($publish) {
+            app(BroadcastDeliveryService::class)->dispatchAnnouncement($announcementId);
+        }
+
+        return redirect()->route('admin.broadcast.announcements.index')
+            ->with('broadcast_toast', $publish
+                ? __('Announcement published.')
+                : __('Announcement draft saved. You can finish and publish it later.'));
+    }
+
+    public function updateAnnouncement(
+        Request $request,
+        BroadcastAnnouncement $announcement,
+        BroadcastRichText $richText
+    ) {
+        abort_unless($announcement->isEditable(), 403);
+        $publish = $request->input('intent', 'draft') === 'publish';
+        $data = $this->validateAnnouncement($request, $richText, $publish);
+
+        DB::transaction(function () use ($announcement, $data, $publish, $richText) {
+            $locked = BroadcastAnnouncement::whereKey($announcement->id)
+                ->lockForUpdate()->firstOrFail();
+            abort_unless($locked->isEditable(), 403);
+
+            $locked->update([
+                'title' => $data['title'],
+                'body' => $data['body'],
+                'body_format' => 'html',
+                'audience' => $data['audience'],
+                'role_ids' => $data['role_ids'],
+            ]);
+
+            if ($publish) {
+                $this->publishDraft($locked, $richText);
+            }
+        });
+
+        if ($publish) {
+            app(BroadcastDeliveryService::class)->dispatchAnnouncement($announcement->id);
+        }
+
+        return redirect()->route('admin.broadcast.announcements.index')
+            ->with('broadcast_toast', $publish
+                ? __('Announcement published to the selected User groups.')
+                : __('Announcement draft saved.'));
+    }
+
+    public function publishAnnouncement(BroadcastAnnouncement $announcement, BroadcastRichText $richText)
+    {
+        DB::transaction(function () use ($announcement, $richText) {
+            $locked = BroadcastAnnouncement::whereKey($announcement->id)
+                ->lockForUpdate()->firstOrFail();
+            abort_unless($locked->isEditable(), 403);
+            $this->publishDraft($locked, $richText);
+        });
+
+        app(BroadcastDeliveryService::class)->dispatchAnnouncement($announcement->id);
+
+        return redirect()->route('admin.broadcast.announcements.index')
+            ->withFlashSuccess(__('Announcement published to the selected User groups.'));
+    }
+
+    public function deleteAnnouncement(
+        Request $request,
+        BroadcastAnnouncement $announcement,
+        BroadcastDraftMediaCleanup $media
+    ) {
+        $body = DB::transaction(function () use ($announcement) {
+            $locked = BroadcastAnnouncement::whereKey($announcement->id)
+                ->lockForUpdate()->firstOrFail();
+            abort_unless($locked->isEditable(), 403);
+
+            $body = $locked->body;
+            $locked->delete();
+
+            return $body;
+        });
+
+        $media->deleteUnreferenced($body);
+
+        if ($request->expectsJson()) {
+            return response()->json(['deleted' => true, 'id' => $announcement->id])
+                ->header('Cache-Control', 'no-store');
+        }
+
+        return redirect()->route('admin.broadcast.announcements.index')
+            ->with('broadcast_toast', __('Announcement draft discarded.'));
+    }
+
+    private function validateAnnouncement(
+        Request $request,
+        BroadcastRichText $richText,
+        bool $publish
+    ): array {
+        $data = $request->validate([
+            'intent' => ['nullable', Rule::in(['draft', 'publish'])],
+            'title' => [$publish ? 'required' : 'nullable', 'string', 'max:180'],
+            'body' => [$publish ? 'required' : 'nullable', 'string', 'max:10000'],
+            'audience' => ['required', Rule::in(['all_users', 'roles'])],
+            'role_ids' => ['nullable', 'array'],
+            'role_ids.*' => [
+                'integer',
+                Rule::exists('roles', 'id')->where('type', User::TYPE_USER),
+            ],
+        ]);
+
+        $ids = array_values(array_unique(array_map('intval', $data['role_ids'] ?? [])));
+        if ($publish && $data['audience'] === 'roles' && $ids === []) {
+            throw ValidationException::withMessages([
+                'role_ids' => __('Select at least one User role before publishing.'),
+            ]);
+        }
+
+        $data['role_ids'] = $data['audience'] === 'roles' ? $ids : [];
+        $data['title'] = trim($data['title'] ?? '') ?: 'Untitled announcement';
+        $data['body'] = $richText->sanitize($data['body'] ?? '');
+
+        if ($publish && ! $richText->hasText($data['body'])) {
+            throw ValidationException::withMessages([
+                'body' => __('Write announcement content before publishing.'),
+            ]);
+        }
+
+        return $data;
+    }
+
+    /**
+     * Called inside a transaction after the draft is locked. The recipient
+     * snapshot and published status become visible atomically at commit.
+     */
+    private function publishDraft(BroadcastAnnouncement $announcement, BroadcastRichText $richText): void
+    {
+        abort_unless($announcement->isEditable(), 403);
+
+        if ($announcement->title === 'Untitled announcement'
+            || ! $richText->hasText($announcement->body)) {
+            throw ValidationException::withMessages([
+                'body' => __('Complete the announcement before publishing.'),
+            ]);
+        }
+
+        $ids = $announcement->role_ids ?? [];
+        if ($announcement->audience === 'roles') {
+            if ($ids === [] || Role::query()->where('type', User::TYPE_USER)
+                ->whereIn('id', $ids)->count() !== count($ids)) {
+                throw ValidationException::withMessages([
+                    'role_ids' => __('Select valid User roles before publishing.'),
+                ]);
+            }
+        }
+
+        User::query()->where('type', User::TYPE_USER)
+            ->where('active', true)->whereNotNull('email')
+            ->whereNotNull('email_verified_at')
+            ->when($announcement->audience === 'roles', function ($query) use ($ids) {
+                $query->whereHas('roles', fn ($roles) => $roles->whereIn('roles.id', $ids));
+            })
+            ->select('id', 'email')->chunkById(200, function ($users) use ($announcement) {
+                foreach ($users as $user) {
+                    BroadcastAnnouncementDelivery::firstOrCreate(
+                        ['announcement_id' => $announcement->id, 'user_id' => $user->id],
+                        ['email' => $user->email, 'status' => 'pending']
+                    );
+                }
+            });
+
+        // Announcements freeze their audience at publication time. If no
+        // active, verified User matches, no delivery jobs can be created
+        // later, even after users join the selected role. Do not silently
+        // publish a broadcast that can never reach a recipient.
+        if (! $announcement->deliveries()->exists()) {
+            throw ValidationException::withMessages([
+                'audience' => __('No active, email-verified User accounts match the selected audience. Add eligible users or choose another audience before publishing.'),
+            ]);
+        }
+
+        $announcement->update([
+            'status' => BroadcastAnnouncement::PUBLISHED,
+            'published_at' => now(),
+        ]);
+    }
+
+}

@@ -31,6 +31,14 @@
                         </p>
                     </div>
 
+                    {{-- Standalone OAuth failures must be visible in the login card.
+                         This also covers full-page OAuth fallback when popups are blocked. --}}
+                    @if (session('flash_danger'))
+                        <div class="notification is-danger" role="alert">
+                            {{ session('flash_danger') }}
+                        </div>
+                    @endif
+
                     <x-forms.post :action="route('frontend.auth.login')">
                         <div class="field">
                             <label for="email" class="label">@lang('E-mail Address')</label>

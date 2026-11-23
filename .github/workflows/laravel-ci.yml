@@ -77,11 +77,42 @@ jobs:
       - name: Run database migrations
         run: php artisan migrate --force
 
+      - name: Verify schema reconciliation audit on MySQL (read-only)
+        run: |
+          php artisan schema:audit-migrations
+          php artisan schema:repair-carbon-json
+
+      - name: Verify blog category pivot foreign key on MySQL
+        run: |
+          php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); if (! App\Support\BlogCategoryPivotSchema::exists()) { fwrite(STDERR, "Blog category pivot FK is missing on MySQL\n"); exit(1); } echo "Blog category pivot FK verified.\n";'
+
+      - name: Verify safe legacy migration ledger reconciliation on MySQL
+        run: php tests/ci/reconcile_migration_ledger.php
+
+      - name: Verify MariaDB-style two-factor storage and gas defaults
+        run: php tests/ci/verify_legacy_twofactor_audit.php
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: npm
+
+      - name: Verify Google OAuth popup session/redirect behavior
+        run: |
+          node --check public/frontend/js/google-oauth-popup.js
+          node tests/js/google-oauth-popup.test.js
+
+      - name: Verify forgot-password popup success feedback
+        run: |
+          node --check public/frontend/js/popup-auth.js
+          node tests/js/forgot-password-popup.test.js
+
+      - name: Verify default role Livewire toast behavior
+        run: |
+          node --check public/js/dashboard-toasts.js
+          node --check public/js/role-default-switch.js
+          node tests/js/role-default-switch.test.js
 
       - name: Install frontend dependencies
         run: npm ci
@@ -89,11 +120,46 @@ jobs:
       - name: Build frontend assets
         run: npm run production
 
+      - name: Verify compiled research chart modules
+        run: |
+          test -s public/js/research-data.js
+          node --check public/js/research-data.js
+          grep -q 'emissionTrendsChartRoot' public/js/research-data.js
+          grep -q 'producedWaterFluxRoot' public/js/research-data.js
+          grep -q 'subsurfaceLeakDashboard' public/js/research-data.js
+          grep -q 'oilWellPadDashboard' public/js/research-data.js
+
+      - name: Verify admin overview and bundled Carbon Mapper assets
+        run: |
+          test -s public/js/backend.js
+          test -s public/js/research-data.js
+          grep -q 'adminOzoneTrend' public/js/backend.js
+          grep -q 'adminWeatherSummary' public/js/backend.js
+          grep -q 'markerClusterGroup' public/js/research-data.js
+          grep -q 'leaflet-container' public/css/backend.css
+
+      - name: Verify full-width dashboard visualization CSS
+        run: |
+          grep -Fq '.dashboard-page-pro.dashboard-fill-page' public/css/backend.css
+          grep -Fq '.dashboard-page-pro.dashboard-fill-page' public/css/frontend.css
+
       - name: Check shared dashboard theme script
         run: node --check public/js/dashboard-theme.js
+
+      - name: Check Broadcast editor syntax
+        run: |
+          node --check public/js/broadcast-editor.js
+          node --check public/js/broadcast-delivery-progress.js
 
       - name: Verify Laravel Mix manifest
         run: test -f public/mix-manifest.json
 
       - name: Run PHPUnit tests
         run: ./vendor/bin/phpunit
+
+      # CI normally installs dev packages for PHPUnit, whereas production
+      # often uses --no-dev. Verify critical runtime libraries remain present.
+      - name: Verify production Composer dependency availability
+        run: |
+          composer install --no-dev --no-interaction --prefer-dist --no-progress --optimize-autoloader
+          php -r 'require "vendor/autoload.php"; if (!class_exists("HTMLPurifier_Config") || !class_exists("HTMLPurifier")) { fwrite(STDERR, "HTMLPurifier is missing from production Composer dependencies\\n"); exit(1); }'

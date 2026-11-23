@@ -98,6 +98,15 @@ return [
         'token' => env('SYNOPTIC_TOKEN'),
     ],
 
+    // Public, read-only National Weather Service API. Identify the app as
+    // requested by NWS; set NWS_USER_AGENT with your operations contact email.
+    'weather_gov' => [
+        'user_agent' => env(
+            'NWS_USER_AGENT',
+            'BasinEnergy.info ('.(config('mail.from.address') ?: 'https://basinenergy.info/contact').')'
+        ),
+    ],
+
 
     'other_monitoring_sites' => [
         'dinosaur-nm' => [

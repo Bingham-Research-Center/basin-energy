@@ -1,4 +1,10 @@
-@extends('frontend.layouts.app')
+@extends(request()->routeIs('admin.data.*') ? 'backend.layouts.app' : 'frontend.layouts.app')
+
+@php
+    // Render the same dataset in the matching dashboard and fetch from
+    // that dashboard's protected JSON routes (no User-only URL bypass).
+    $dataRoutePrefix = request()->routeIs('admin.data.*') ? 'admin.data.' : 'frontend.user.data.';
+@endphp
 
 @section('title', __('Oil Well Pad Emissions'))
 
@@ -6,10 +12,10 @@
 <div
     id="oilWellPadDashboard"
     class="container-fluid"
-    data-overview-url="{{ route('frontend.user.data.oil-well-pad-emissions.overview.json') }}"
-    data-samples-url="{{ route('frontend.user.data.oil-well-pad-emissions.samples.json') }}"
-    data-composition-url="{{ route('frontend.user.data.oil-well-pad-emissions.composition.json') }}"
-    data-options-url="{{ route('frontend.user.data.oil-well-pad-emissions.options.json') }}">
+    data-overview-url="{{ route($dataRoutePrefix.'oil-well-pad-emissions.overview.json') }}"
+    data-samples-url="{{ route($dataRoutePrefix.'oil-well-pad-emissions.samples.json') }}"
+    data-composition-url="{{ route($dataRoutePrefix.'oil-well-pad-emissions.composition.json') }}"
+    data-options-url="{{ route($dataRoutePrefix.'oil-well-pad-emissions.options.json') }}">
 
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>

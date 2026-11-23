@@ -4,6 +4,33 @@
 
 @section('content')
 <div class="dashboard-page dashboard-page-pro">
+    @if($logged_in_user->isUser())
+    @php
+        $newsletterSubscription = $logged_in_user->newsletterSubscription;
+        $subscribed = $newsletterSubscription && $newsletterSubscription->is_subscribed;
+    @endphp
+    <section class="card dashboard-panel-card mb-4" aria-labelledby="newsletter-subscription-title">
+        <div class="card-header"><strong id="newsletter-subscription-title">BasinEnergy Monthly Newsletter</strong></div>
+        <div class="card-body">
+            <p>Get a monthly research and energy-data update at the end of each month. You can unsubscribe at any time.</p>
+            <p class="small text-muted">Delivered to {{ $logged_in_user->email }}.</p>
+            @if($subscribed)
+                <span class="badge badge-success mr-2">Subscribed</span>
+                <form method="POST" class="d-inline" action="{{ route('frontend.broadcast.newsletter.unsubscribe') }}">
+                    @csrf @method('DELETE')
+                    <button type="submit" class="btn btn-outline-secondary btn-sm">Unsubscribe</button>
+                </form>
+            @else
+                <form method="POST" action="{{ route('frontend.broadcast.newsletter.subscribe') }}">
+                    @csrf
+                    <button type="submit" class="btn btn-primary">Subscribe to Newsletter</button>
+                </form>
+            @endif
+            <a href="{{ route('frontend.broadcast.announcements') }}" class="btn btn-link">My announcements</a>
+        </div>
+    </section>
+    @endif
+
     <div class="row">
         <div class="col-sm-6 col-xl-3 mb-4">
             <a href="{{ route('frontend.user.data.emission-trends') }}" class="card dashboard-stat-card dashboard-stat-bg-primary text-reset text-decoration-none">

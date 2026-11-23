@@ -3,11 +3,12 @@
         <i class="c-icon c-icon-lg cil-menu"></i>
     </button>
 
-    <a class="c-header-brand d-lg-none" href="#">
-        <svg width="118" height="46" alt="CoreUI Logo">
-            <use xlink:href="{{ asset('img/brand/coreui.svg#full') }}"></use>
-        </svg>
-    </a>
+    <div class="c-header-brand d-lg-none brc-mobile-brand">
+        @include('includes.partials.dashboard-brand', [
+            'destination' => route('admin.dashboard'),
+            'compact' => false,
+        ])
+    </div>
 
     <button class="c-header-toggler c-class-toggler mfs-3 d-md-down-none" type="button" data-target="#sidebar" data-class="c-sidebar-lg-show" responsive="true">
         <i class="c-icon c-icon-lg cil-menu"></i>
@@ -34,42 +35,51 @@
     <ul class="c-header-nav ml-auto mr-4">
         @include('includes.partials.dashboard-theme-switcher')
         @php
-            $unreadContactMessages = \App\Models\ContactMessage::where('is_read', false)
-                ->latest()
-                ->take(5)
-                ->get();
-
-            $unreadContactCount = \App\Models\ContactMessage::where('is_read', false)->count();
+            $contactUnread = \App\Models\ContactMessage::where('is_read', false)->count();
+            $newsletterUnread = \App\Models\NewsletterAdminAlert::where('admin_id', $logged_in_user->id)
+                ->whereNull('read_at')->count();
+            $registrationUnread = $logged_in_user->can('admin.access.user.list')
+                ? \App\Models\UserRegistrationAdminAlert::where('admin_id', $logged_in_user->id)
+                    ->whereNull('read_at')->count()
+                : 0;
+            $notificationUnread = $contactUnread + $newsletterUnread + $registrationUnread;
         @endphp
 
-        <li class="c-header-nav-item dropdown">
-            <a class="c-header-nav-link" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
-                <i class="c-icon c-icon-lg cil-bell"></i>
-                <span id="contactNotificationBadge"
-                    class="badge badge-danger"
-                    style="{{ $unreadContactCount ? '' : 'display:none;' }}">
-                    {{ $unreadContactCount }}
-                </span>
-            </a>
+        <li class="c-header-nav-item dropdown brc-notification-dropdown">
+            <button type="button" class="c-header-nav-link brc-notification-trigger"
+                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+                id="brcNotificationTrigger" aria-label="Open notifications">
+                <i class="c-icon c-icon-lg cil-bell" aria-hidden="true"></i>
+                <span id="contactNotificationBadge" class="brc-notification-badge"
+                    aria-label="{{ $notificationUnread }} unread notifications"
+                    @if(!$notificationUnread) hidden @endif>{{ $notificationUnread > 99 ? '99+' : $notificationUnread }}</span>
+            </button>
 
-            <div class="dropdown-menu dropdown-menu-right pt-0" style="min-width: 360px;">
-                <div class="dropdown-header bg-light py-2 d-flex justify-content-between align-items-center">
-                    <strong>Notifications</strong>
-                    <a href="{{ route('admin.website-update.contact') }}" class="small">View all</a>
+            <div class="dropdown-menu dropdown-menu-right brc-notification-panel"
+                id="brcNotificationPanel" aria-labelledby="brcNotificationTrigger"
+                data-feed-url="{{ route('admin.broadcast.alerts') }}"
+                data-mark-url="{{ route('admin.broadcast.alerts.read') }}"
+                data-admin-id="{{ $logged_in_user->id }}">
+                <div class="brc-notification-heading">
+                    <div class="d-flex align-items-center">
+                        <strong>Notifications</strong>
+                        <span class="brc-notification-unread-count ml-2"
+                            id="brcNotificationUnreadCount">{{ $notificationUnread }}</span>
+                    </div>
+                    <button type="button" id="brcNotificationMarkRead"
+                        class="brc-notification-mark-read"
+                        @if(!$notificationUnread) disabled @endif>
+                        <i class="c-icon cil-check" aria-hidden="true"></i>
+                        Mark all as read
+                    </button>
                 </div>
-
-                <div id="contactNotificationList">
-                    @forelse($unreadContactMessages as $message)
-                        <a href="{{ route('admin.website-update.contact') }}" class="dropdown-item border-bottom">
-                            <div class="font-weight-bold">{{ $message->name }}</div>
-                            <div class="small">&nbsp;:&nbsp;{{ \Illuminate\Support\Str::limit($message->message, 20) }}</div>
-                            <div class="small text-muted">{{ optional($message->created_at)->format('Y-m-d H:i') }}</div>
-                        </a>
-                    @empty
-                        <div id="noContactNotifications" class="dropdown-item text-muted">
-                            No new contact messages
-                        </div>
-                    @endforelse
+                <div id="brcNotificationList" class="brc-notification-items"
+                    aria-live="polite" aria-label="Recent notifications">
+                    <div class="brc-notification-empty">Loading notifications…</div>
+                </div>
+                <div class="brc-notification-footer">
+                    <button type="button" id="brcNotificationLoadMore"
+                        class="brc-notification-load-more" hidden>Load More</button>
                 </div>
             </div>
         </li>
@@ -108,46 +118,3 @@
         </div>
     </div><!--c-subheader-->
 </header>
-@push('after-scripts')
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        if (!window.Echo) {
-            console.error('Echo is not loaded in backend header.');
-            return;
-        }
-
-        const badge = document.getElementById('contactNotificationBadge');
-        const list = document.getElementById('contactNotificationList');
-
-        window.Echo.channel('admin.notifications.contacts')
-            .listen('.contact.message.submitted', function (e) {
-                console.log('New contact notification received:', e);
-
-                const emptyState = document.getElementById('noContactNotifications');
-                if (emptyState) {
-                    emptyState.remove();
-                }
-
-                let count = parseInt(badge.textContent || '0', 10);
-                count += 1;
-                badge.textContent = count;
-                badge.style.display = 'inline-block';
-
-                const item = document.createElement('a');
-                item.href = e.url;
-                item.className = 'dropdown-item border-bottom';
-                item.innerHTML = `
-                    <div class="font-weight-bold">${e.name}</div>
-                    <div class="small">&nbsp;:&nbsp; ${e.message}</div>
-                    <div class="small text-muted">${e.created_at}</div>
-                `;
-
-                list.prepend(item);
-
-                while (list.children.length > 5) {
-                    list.removeChild(list.lastElementChild);
-                }
-            });
-    });
-</script>
-@endpush

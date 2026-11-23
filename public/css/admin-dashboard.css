@@ -1,0 +1,139 @@
+/* Admin home: small metrics, responsive ozone visualization and user roster. */
+.brc-admin-overview {
+    --admin-panel-border: #dde5ef;
+    --admin-panel-surface: #fff;
+    --admin-panel-muted: #697a90;
+    --admin-panel-link: #174f86;
+    width: 100%;
+}
+
+body.c-dark-theme .brc-admin-overview {
+    --admin-panel-border: #374356;
+    --admin-panel-surface: #252f3d;
+    --admin-panel-muted: #afc0d4;
+    --admin-panel-link: #b4d7ff;
+}
+
+.brc-admin-overview .dashboard-muted,
+.brc-admin-overview .dashboard-chart-subtitle {
+    color: var(--admin-panel-muted);
+}
+
+.brc-admin-overview .brc-overview-metric {
+    height: 100%;
+    min-height: 118px;
+    border: 1px solid var(--admin-panel-border);
+    border-radius: .6rem;
+    background: var(--admin-panel-surface);
+    padding: 1rem 1.15rem;
+    box-shadow: 0 5px 18px rgba(0, 0, 21, .04);
+}
+
+.brc-admin-overview .brc-overview-metric-label {
+    font-size: .84rem;
+    font-weight: 600;
+    color: var(--admin-panel-muted);
+}
+
+.brc-admin-overview .brc-overview-metric-number {
+    font-weight: 750;
+    font-size: 2rem;
+    line-height: 1.35;
+    margin-top: .12rem;
+}
+
+.brc-admin-overview .brc-overview-metric-note {
+    font-size: .76rem;
+    color: var(--admin-panel-muted);
+}
+
+.brc-admin-overview .brc-admin-ozone-chart {
+    min-height: 335px;
+    height: min(42vh, 480px);
+    position: relative;
+}
+
+.brc-admin-overview .brc-admin-ozone-chart canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.brc-admin-overview .brc-overview-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .4rem;
+    margin-top: .3rem;
+}
+
+.brc-admin-overview .brc-overview-user-table {
+    font-size: .84rem;
+    margin-bottom: 0;
+}
+
+.brc-admin-overview .brc-overview-user-table th {
+    white-space: nowrap;
+}
+
+.brc-admin-overview .brc-overview-shortcuts {
+    display: grid;
+    gap: .7rem;
+}
+
+.brc-admin-overview .brc-overview-shortcuts a {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    padding: .8rem .9rem;
+    border: 1px solid var(--admin-panel-border);
+    border-radius: .45rem;
+    color: var(--admin-panel-link);
+    text-decoration: none;
+}
+
+.brc-admin-overview .brc-overview-shortcuts a:hover,
+.brc-admin-overview .brc-overview-shortcuts a:focus-visible {
+    background: rgba(75, 139, 201, .11);
+    border-color: var(--admin-panel-link);
+}
+
+@media (max-width: 767.98px) {
+    .brc-admin-overview .brc-admin-ozone-chart {
+        min-height: 275px;
+        height: 340px;
+    }
+    .brc-admin-overview .brc-overview-metric {
+        padding: .75rem;
+        min-height: 110px;
+    }
+    .brc-admin-overview .brc-overview-metric-number {
+        font-size: 1.55rem;
+    }
+}
+
+/* NWS Vernal weather cards replace the old administrative KPI strip. */
+.brc-admin-overview .brc-weather-section {
+    min-width: 0;
+}
+
+.brc-admin-overview .brc-weather-card-grid .brc-overview-metric {
+    min-height: 122px;
+}
+
+.brc-admin-overview .brc-weather-conditions .brc-overview-metric-number {
+    font-size: clamp(1.2rem, 1.6vw, 1.75rem);
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+}
+
+.brc-admin-overview #adminWeatherStatus {
+    min-height: 1.2em;
+    font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 767.98px) {
+    .brc-admin-overview .brc-weather-conditions .brc-overview-metric-number {
+        font-size: 1.2rem;
+    }
+}

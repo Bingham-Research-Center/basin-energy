@@ -14,6 +14,9 @@
     <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-bs4.min.css" rel="stylesheet">
     <link href="{{ mix('css/backend.css') }}" rel="stylesheet">
     <link href="{{ asset('css/dashboard-theme.css') }}?v=2" rel="stylesheet">
+    <link href="{{ asset('css/dashboard-brand.css') }}?v=2" rel="stylesheet">
+    <link href="{{ asset('css/dashboard-tables.css') }}?v=1" rel="stylesheet">
+    <link href="{{ asset('css/dashboard-notifications.css') }}?v=1" rel="stylesheet">
     <livewire:styles />
     @stack('after-styles')
 </head>
@@ -46,8 +49,11 @@
     <script src="{{ mix('js/vendor.js') }}"></script>
     <script src="{{ mix('js/backend.js') }}"></script>
     <script src="{{ asset('js/dashboard-theme.js') }}" defer></script>
+    <script src="{{ asset('js/dashboard-toasts.js') }}?v=2"></script>
+    <script src="{{ asset('js/dashboard-notifications.js') }}?v=2" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-bs4.min.js"></script>
     <livewire:scripts />
     @stack('after-scripts')
+    @include('includes.partials.research-data-assets')
 </body>
 </html>

@@ -441,6 +441,23 @@ body.c-dark-theme {
 }
 
 
+/*
+ * Full-height research and real-time dashboards should use the entire
+ * available CoreUI content area, even on wide/zoomed-out displays.
+ * Keep the 1320px limit above for compact pages such as the User home
+ * dashboard; only the visualization pages opt into full width.
+ *
+ * Bootstrap/CoreUI's main .container-fluid already provides the
+ * appropriate gutter, so do not add competing horizontal padding.
+ */
+.dashboard-page-pro.dashboard-fill-page {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    margin-left: 0;
+    margin-right: 0;
+}
+
 /* Full-height data visualization pages */
 .dashboard-fill-page {
     min-height: calc(100vh - 170px);

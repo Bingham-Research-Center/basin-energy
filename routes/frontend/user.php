@@ -34,17 +34,29 @@ Route::group(['as' => 'user.', 'middleware' => ['auth', '2fa.confirmed', 'passwo
 
         Route::get('/', function () {
             return redirect()->route('frontend.user.data.emission-trends');
-        })->name('data');
+        })->name('data')
+        ->breadcrumbs(function (Trail $trail) {
+            $trail->parent('frontend.user.dashboard')
+                ->push(__('Data'), route('frontend.user.data.data'));
+        });
 
 
         Route::get('emission-trends', [DataController::class, 'emissionTrends'])
-            ->name('emission-trends');
+            ->name('emission-trends')
+            ->breadcrumbs(function (Trail $trail) {
+                $trail->parent('frontend.user.data.data')
+                    ->push(__('Emission Trends'), route('frontend.user.data.emission-trends'));
+            });
 
         Route::get('emission-trends/json', [DataController::class, 'emissionTrendsJson'])
             ->name('emission-trends.json');
 
         Route::get('produced-water', [DataController::class, 'producedWater'])
-            ->name('produced-water');
+            ->name('produced-water')
+            ->breadcrumbs(function (Trail $trail) {
+                $trail->parent('frontend.user.data.data')
+                    ->push(__('Produced Water'), route('frontend.user.data.produced-water'));
+            });
 
         Route::prefix('produced-water')->group(function () {
             Route::get('flux/columns', [DataController::class, 'producedWaterFluxColumns'])
@@ -58,7 +70,11 @@ Route::group(['as' => 'user.', 'middleware' => ['auth', '2fa.confirmed', 'passwo
         });
 
         Route::get('subsurface-natural-gas-leaks', [DataController::class, 'subsurfaceNaturalGasLeaks'])
-            ->name('subsurface-natural-gas-leaks');
+            ->name('subsurface-natural-gas-leaks')
+            ->breadcrumbs(function (Trail $trail) {
+                $trail->parent('frontend.user.data.data')
+                    ->push(__('Subsurface Natural Gas Leaks'), route('frontend.user.data.subsurface-natural-gas-leaks'));
+            });
 
         Route::get('subsurface-natural-gas-leaks/overview/json', [DataController::class, 'subsurfaceNaturalGasLeaksOverviewJson'])
             ->name('subsurface-natural-gas-leaks.overview.json');
@@ -73,7 +89,11 @@ Route::group(['as' => 'user.', 'middleware' => ['auth', '2fa.confirmed', 'passwo
             ->name('subsurface-natural-gas-leaks.options.json');
 
         Route::get('oil-well-pad-emissions', [DataController::class, 'oilWellPadEmissions'])
-            ->name('oil-well-pad-emissions');
+            ->name('oil-well-pad-emissions')
+            ->breadcrumbs(function (Trail $trail) {
+                $trail->parent('frontend.user.data.data')
+                    ->push(__('Oil Well Pad Emissions'), route('frontend.user.data.oil-well-pad-emissions'));
+            });
 
         Route::get('oil-well-pad-emissions/overview/json', [DataController::class, 'oilWellPadEmissionsOverviewJson'])
             ->name('oil-well-pad-emissions.overview.json');
@@ -101,17 +121,38 @@ Route::get('realtime/pandora/json', [DataController::class, 'realtimePandoraJson
 
         /* Realtime Data */
         Route::get('realtime/ozone', [DataController::class, 'realtimeOzone'])
-            ->name('realtime.ozone');
+            ->name('realtime.ozone')
+            ->breadcrumbs(function (Trail $trail) {
+                $trail->parent('frontend.user.data.data')
+                    ->push(__('Real-Time Data'))
+                    ->push(__('Uinta Ozone'), route('frontend.user.data.realtime.ozone'));
+            });
 
         Route::get('realtime/ozone/json', [DataController::class, 'realtimeOzoneJson'])
             ->name('realtime.ozone.json');
 
         /* Other Monitoring Sites */
         Route::get('realtime/other/{site}', [DataController::class, 'otherMonitoringSite'])
-            ->name('realtime.other');
+            ->name('realtime.other')
+            ->breadcrumbs(function (Trail $trail) {
+                $site = (string) request()->route('site');
+                $name = config('services.other_monitoring_sites.'.$site.'.name')
+                    ?? \Illuminate\Support\Str::headline($site);
+                $trail->parent('frontend.user.data.data')
+                    ->push(__('Real-Time Data'))
+                    ->push((string) $name, route('frontend.user.data.realtime.other', ['site' => $site]));
+            });
 
         Route::get('realtime/logger/{site}', [DataController::class, 'campbellLogger'])
-            ->name('realtime.logger');
+            ->name('realtime.logger')
+            ->breadcrumbs(function (Trail $trail) {
+                $site = (string) request()->route('site');
+                $name = config('services.campbell_sites.'.$site.'.name')
+                    ?? \Illuminate\Support\Str::headline($site);
+                $trail->parent('frontend.user.data.data')
+                    ->push(__('Real-Time Data'))
+                    ->push((string) $name, route('frontend.user.data.realtime.logger', ['site' => $site]));
+            });
 
         Route::get('realtime/logger/{site}/json', [DataController::class, 'campbellLoggerJson'])
             ->name('realtime.logger.json');
@@ -140,7 +181,12 @@ Route::get('realtime/pandora/json', [DataController::class, 'realtimePandoraJson
     ], function () {
 
         Route::get('/utah', [CarbonMapperController::class, 'utah'])
-            ->name('utah');
+            ->name('utah')
+            ->breadcrumbs(function (Trail $trail) {
+                $trail->parent('frontend.user.dashboard')
+                    ->push(__('Carbon Mapper'))
+                    ->push(__('Utah Super-Emitters'), route('frontend.user.carbon-mapper.utah'));
+            });
 
         Route::get('/utah/json', [CarbonMapperController::class, 'utahJson'])
             ->name('utah.json');
@@ -151,8 +197,10 @@ Route::get('realtime/pandora/json', [DataController::class, 'realtimePandoraJson
             Route::get('/utah/boundary', [CarbonMapperController::class, 'utahBoundary'])
     ->name('utah.boundary');
 
-        Route::get('/utah/detections', [CarbonMapperController::class, 'utahDetections']);
-        Route::get('/utah/sources', [CarbonMapperController::class, 'utahSources']);
+        Route::get('/utah/detections', [CarbonMapperController::class, 'utahDetections'])
+            ->name('utah.detections');
+        Route::get('/utah/sources', [CarbonMapperController::class, 'utahSources'])
+            ->name('utah.sources');
 
 
     });

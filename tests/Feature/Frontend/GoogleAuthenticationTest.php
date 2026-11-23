@@ -274,4 +274,132 @@ class GoogleAuthenticationTest extends TestCase
         $this->get('/login/google/popup/status')->assertNotFound();
     }
 
+    public function test_google_consent_denial_redirects_to_login_with_visible_explanation(): void
+    {
+        $this->enableGoogle();
+
+        // A cancelled consent has no authorization code, so Socialite must
+        // not attempt a token exchange or create an account.
+        $this->get('/login/google/callback?error=access_denied')
+            ->assertRedirect(route('frontend.auth.login'));
+
+        $this->assertGuest();
+        $this->get('/login')
+            ->assertOk()
+            ->assertSee('Google authorization was cancelled. Please try again.')
+            ->assertSee('role="alert"', false);
+    }
+
+    public function test_google_consent_denial_in_popup_shows_failure_result(): void
+    {
+        $this->enableGoogle();
+
+        $this->withSession(['auth.google.popup_started_at' => time()])
+            ->get('/login/google/callback?error=access_denied')
+            ->assertOk()
+            ->assertSee('basinenergy.google.oauth.result')
+            ->assertSee('Google authorization was cancelled. Please try again.');
+
+        $this->assertGuest();
+    }
+
+    public function test_google_accepts_a_truthy_verified_claim_but_not_an_unverified_email(): void
+    {
+        $this->enableGoogle();
+
+        $profile = $this->googleProfile('google-string-verified', 'verified-string@example.test');
+        $profile->setRaw(array_replace($profile->user, [
+            'email_verified' => 'true',
+        ]));
+
+        $this->mockGoogleCallback($profile);
+
+        $this->get('/login/google/callback')
+            ->assertRedirect(route('frontend.auth.social.signup'));
+        $this->assertGuest();
+
+        $this->get('/signup/google/complete')
+            ->assertOk()
+            ->assertSee('verified-string@example.test');
+    }
+
+    public function test_google_admin_account_redirects_to_admin_dashboard(): void
+    {
+        $this->enableGoogle();
+        $admin = User::factory()->admin()->create([
+            'provider' => 'google',
+            'provider_id' => 'google-admin-redirect',
+            'email' => 'admin-google@example.test',
+        ]);
+        $this->mockGoogleCallback($this->googleProfile(
+            'google-admin-redirect', 'admin-google@example.test'
+        ));
+
+        $this->get('/login/google/callback')
+            ->assertRedirect(route('admin.dashboard'));
+
+        $this->assertAuthenticatedAs($admin);
+    }
+
+    public function test_google_callback_failure_reports_error_in_standalone_login_card(): void
+    {
+        $this->enableGoogle();
+
+        $provider = Mockery::mock();
+        $provider->shouldReceive('user')->once()
+            ->andThrow(new \RuntimeException('Simulated OAuth state mismatch'));
+        Socialite::shouldReceive('driver')->with('google')->once()
+            ->andReturn($provider);
+
+        $this->get('/login/google/callback')
+            ->assertRedirect(route('frontend.auth.login'));
+
+        $this->get('/login')
+            ->assertOk()
+            ->assertSee('Google sign-in could not be completed. Please try again.')
+            ->assertSee('notification is-danger', false);
+
+        $this->assertGuest();
+    }
+
+    public function test_google_popup_with_two_factor_enabled_stays_guest_until_challenge(): void
+    {
+        $this->enableGoogle();
+
+        $user = User::factory()->user()->create([
+            'provider' => 'google',
+            'provider_id' => 'google-second-factor',
+            'email' => 'google-second-factor@example.test',
+        ]);
+        // Laragear's model guards secret fields against mass assignment.
+        // Set them directly to build an enabled 2FA fixture.
+        $twoFactor = $user->twoFactorAuth()->make();
+        $twoFactor->shared_secret = 'JBSWY3DPEHPK3PXP';
+        $twoFactor->label = 'BasinEnergy test';
+        $twoFactor->enabled_at = now();
+        $twoFactor->save();
+        $this->assertTrue($user->fresh()->hasTwoFactorEnabled());
+        $this->mockGoogleCallback(
+            $this->googleProfile('google-second-factor', $user->email)
+        );
+
+        $this->withSession(['auth.google.popup_started_at' => time()])
+            ->get('/login/google/callback')
+            ->assertRedirect(route('frontend.auth.2fa.challenge'));
+
+        $this->assertGuest();
+        $this->assertSame(
+            $user->id,
+            session('auth.pending_2fa.user_id')
+        );
+
+        $this->get('/login/google/popup/status')
+            ->assertOk()
+            ->assertJson(['complete' => false, 'redirect' => null]);
+
+        $this->get('/two-factor/challenge')
+            ->assertOk()
+            ->assertSee('Verify Your Identity');
+    }
+
 }

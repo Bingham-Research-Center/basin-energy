@@ -1,0 +1,328 @@
+/*
+ * BasinEnergy | Rappasoft Livewire Tables v3 / Bootstrap 4
+ *
+ * Scope every rule to the existing .brc-admin-data-table wrapper.
+ * Both CoreUI light/dark modes use paired surfaces + foreground colors
+ * to prevent Bootstrap striped cells from inheriting invisible text.
+ * The vendor views and Livewire component behaviour are not overridden.
+ */
+.brc-admin-data-table {
+    --brc-grid-surface: #ffffff;
+    --brc-grid-heading: #f3f6fa;
+    --brc-grid-stripe: #f7f9fc;
+    --brc-grid-hover: #eaf1fa;
+    --brc-grid-border: #dce4ed;
+    --brc-grid-text: #26364a;
+    --brc-grid-muted: #62758d;
+    --brc-grid-control: #ffffff;
+    --brc-grid-control-hover: #eef3f9;
+    --brc-grid-focus: #315c87;
+    --brc-grid-shadow: 0 3px 14px rgba(15, 36, 57, .05);
+    color: var(--brc-grid-text);
+    font-size: .875rem;
+    min-width: 0;
+}
+
+body.c-app.c-dark-theme .brc-admin-data-table {
+    --brc-grid-surface: #202a39;
+    --brc-grid-heading: #182230;
+    --brc-grid-stripe: #303d4f;
+    --brc-grid-hover: #3b4b60;
+    --brc-grid-border: #3a485b;
+    --brc-grid-text: #eef4fc;
+    --brc-grid-muted: #b5c3d4;
+    --brc-grid-control: #334154;
+    --brc-grid-control-hover: #425269;
+    --brc-grid-focus: #a5c9f3;
+    --brc-grid-shadow: 0 6px 20px rgba(0, 0, 0, .18);
+}
+
+/* Toolbar: Rappasoft's built-in Bootstrap controls, not custom JS. */
+.brc-admin-data-table .form-control,
+.brc-admin-data-table .custom-select,
+.brc-admin-data-table input[type="search"],
+.brc-admin-data-table select.form-control {
+    color: var(--brc-grid-text) !important;
+    background-color: var(--brc-grid-control) !important;
+    border: 1px solid var(--brc-grid-border) !important;
+    border-radius: .4rem;
+    min-height: 36px;
+    box-shadow: none !important;
+}
+
+.brc-admin-data-table .form-control::placeholder,
+.brc-admin-data-table input::placeholder {
+    color: var(--brc-grid-muted);
+    opacity: .9;
+}
+
+.brc-admin-data-table .form-control:focus,
+.brc-admin-data-table .custom-select:focus,
+.brc-admin-data-table input:focus-visible,
+.brc-admin-data-table button:focus-visible,
+.brc-admin-data-table a:focus-visible {
+    outline: 2px solid var(--brc-grid-focus);
+    outline-offset: 2px;
+}
+
+.brc-admin-data-table button.btn:not(.btn-primary):not(.btn-danger):not(.btn-success):not(.btn-warning):not(.btn-info):not(.btn-outline-danger),
+.brc-admin-data-table .btn-group > .btn:not(.btn-primary):not(.btn-danger):not(.btn-info) {
+    color: var(--brc-grid-text);
+    background: var(--brc-grid-control);
+    border: 1px solid var(--brc-grid-border);
+    border-radius: .4rem;
+    min-height: 36px;
+}
+
+.brc-admin-data-table button.btn:not(.btn-primary):not(.btn-danger):not(.btn-success):not(.btn-warning):not(.btn-info):hover {
+    color: var(--brc-grid-text);
+    background: var(--brc-grid-control-hover);
+}
+
+.brc-admin-data-table .dropdown-menu {
+    color: var(--brc-grid-text);
+    background: var(--brc-grid-surface);
+    border: 1px solid var(--brc-grid-border);
+    border-radius: .55rem;
+    box-shadow: var(--brc-grid-shadow);
+    z-index: 1060;
+}
+.brc-admin-data-table .dropdown-item,
+.brc-admin-data-table .dropdown-menu label {
+    color: var(--brc-grid-text);
+}
+.brc-admin-data-table .dropdown-item:hover,
+.brc-admin-data-table .dropdown-item:focus,
+.brc-admin-data-table .dropdown-menu label:hover {
+    color: var(--brc-grid-text);
+    background: var(--brc-grid-hover);
+}
+.brc-admin-data-table .dropdown-divider {
+    border-color: var(--brc-grid-border);
+}
+
+/* Table shell, header, rows, responsive horizontal scrolling. */
+.brc-admin-data-table .table-responsive {
+    background: var(--brc-grid-surface);
+    border: 1px solid var(--brc-grid-border);
+    border-radius: .5rem;
+    box-shadow: var(--brc-grid-shadow);
+    overflow-x: auto;
+}
+.brc-admin-data-table table.laravel-livewire-table {
+    width: 100%;
+    min-width: 730px;
+    margin-bottom: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+    color: var(--brc-grid-text);
+}
+.brc-admin-data-table table > thead > tr > th {
+    color: var(--brc-grid-muted) !important;
+    background: var(--brc-grid-heading) !important;
+    border-top: 0 !important;
+    border-bottom: 1px solid var(--brc-grid-border) !important;
+    padding: .85rem 1rem;
+    text-transform: uppercase;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .045em;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+.brc-admin-data-table table > thead > tr > th button,
+.brc-admin-data-table table > thead > tr > th .laravel-livewire-tables-cursor {
+    color: inherit;
+}
+.brc-admin-data-table table > tbody > tr > td,
+.brc-admin-data-table table > tbody > tr > th {
+    color: var(--brc-grid-text) !important;
+    background: var(--brc-grid-surface) !important;
+    border-top: 0 !important;
+    border-bottom: 1px solid var(--brc-grid-border) !important;
+    padding: .83rem 1rem;
+    vertical-align: middle;
+    transition: background-color .16s ease, border-color .16s ease;
+}
+.brc-admin-data-table table > tbody > tr:nth-child(odd) > td,
+.brc-admin-data-table table > tbody > tr:nth-child(odd) > th {
+    background: var(--brc-grid-stripe) !important;
+}
+.brc-admin-data-table table > tbody > tr:hover > td,
+.brc-admin-data-table table > tbody > tr:hover > th,
+.brc-admin-data-table table > tbody > tr:focus-within > td,
+.brc-admin-data-table table > tbody > tr:focus-within > th {
+    background: var(--brc-grid-hover) !important;
+}
+.brc-admin-data-table table > tbody > tr:last-child > td,
+.brc-admin-data-table table > tbody > tr:last-child > th {
+    border-bottom: 0 !important;
+}
+.brc-admin-data-table table > tbody > tr > td a:not(.btn):not(.dropdown-item) {
+    color: #2462a3;
+}
+body.c-dark-theme .brc-admin-data-table table > tbody > tr > td a:not(.btn):not(.dropdown-item) {
+    color: #b3d3ff;
+}
+
+/* Neutral checkboxes share the same accent as the application. */
+.brc-admin-data-table input[type="checkbox"] {
+    accent-color: #0f2439;
+}
+
+/* User name + initials presentation; falls back gracefully for short names. */
+.brc-admin-data-table .brc-table-person {
+    display: inline-flex;
+    align-items: center;
+    gap: .65rem;
+    min-width: 130px;
+}
+.brc-admin-data-table .brc-table-avatar {
+    width: 35px;
+    height: 35px;
+    flex: 0 0 35px;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    background: #e7f0fe;
+    color: #315b99;
+    font-weight: 700;
+    font-size: .8rem;
+    line-height: 1;
+}
+body.c-dark-theme .brc-admin-data-table .brc-table-avatar {
+    background: #dceaff;
+    color: #274673;
+}
+.brc-admin-data-table .brc-table-person__details {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.brc-admin-data-table .brc-table-person__name {
+    font-weight: 600;
+    color: var(--brc-grid-text);
+    overflow-wrap: anywhere;
+}
+.brc-admin-data-table .brc-table-person__meta {
+    color: var(--brc-grid-muted);
+    font-size: .75rem;
+}
+
+/* Status indicators mirror the screenshot, with readable text in both modes. */
+.brc-admin-data-table .brc-table-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .74rem;
+    font-weight: 650;
+    line-height: 1.3;
+    padding: .18rem .56rem;
+    border-radius: 999px;
+    background: #e7edf4;
+    color: #314155;
+    white-space: nowrap;
+}
+.brc-admin-data-table .brc-table-pill--success,
+.brc-admin-data-table .brc-table-pill--admin {
+    background: #b9f1d8;
+    color: #114b34;
+}
+.brc-admin-data-table .brc-table-pill--danger {
+    background: #ffd3d6;
+    color: #81252c;
+}
+.brc-admin-data-table .brc-table-pill--warning {
+    background: #ffedb7;
+    color: #6a4409;
+}
+.brc-admin-data-table .brc-table-pill--info {
+    background: #d8e9ff;
+    color: #1b4c83;
+}
+
+/* Bottom: result count at left, page numbers at right. */
+.brc-admin-data-table .row.mt-3 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .6rem;
+    margin-left: 0;
+    margin-right: 0;
+}
+.brc-admin-data-table .row.mt-3 > .col-12:first-child {
+    order: 2;
+    flex: 1 1 auto;
+    width: auto;
+    max-width: none;
+}
+.brc-admin-data-table .row.mt-3 > .col-12:last-child {
+    order: 1;
+    flex: 0 1 auto;
+    width: auto;
+    max-width: none;
+    text-align: left !important;
+    color: var(--brc-grid-muted) !important;
+    padding-left: 0;
+}
+.brc-admin-data-table .pagination {
+    justify-content: flex-end !important;
+    margin: 0;
+    gap: .15rem;
+}
+.brc-admin-data-table .page-item .page-link,
+.brc-admin-data-table .page-item.disabled .page-link {
+    background: var(--brc-grid-control);
+    color: var(--brc-grid-text);
+    border: 1px solid var(--brc-grid-border);
+    border-radius: .3rem;
+    min-width: 32px;
+    text-align: center;
+}
+.brc-admin-data-table .page-item:not(.disabled):not(.active) .page-link:hover {
+    background: var(--brc-grid-control-hover);
+}
+.brc-admin-data-table .page-item.active .page-link {
+    color: #fff;
+    background: #0f2439;
+    border-color: #0f2439;
+}
+body.c-dark-theme .brc-admin-data-table .page-item.active .page-link {
+    color: #0f2439;
+    background: #dbeafe;
+    border-color: #dbeafe;
+}
+
+/* Keep toolbar and pagination usable on phones and narrow browser windows. */
+@media (max-width: 767.98px) {
+    .brc-admin-data-table .d-md-flex.justify-content-between {
+        gap: .6rem;
+    }
+    .brc-admin-data-table .row.mt-3 {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .brc-admin-data-table .row.mt-3 > .col-12 {
+        width: 100% !important;
+        max-width: 100%;
+        flex: 0 0 100%;
+        padding-left: 0;
+        padding-right: 0;
+    }
+    .brc-admin-data-table .pagination {
+        justify-content: flex-start !important;
+    }
+}
+
+html.brc-theme-changing .brc-admin-data-table table > thead > tr > th,
+html.brc-theme-changing .brc-admin-data-table table > tbody > tr > td,
+html.brc-theme-changing .brc-admin-data-table .form-control {
+    transition: color 240ms ease, background-color 240ms ease, border-color 240ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+    .brc-admin-data-table *,
+    html.brc-theme-changing .brc-admin-data-table * {
+        transition: none !important;
+    }
+}

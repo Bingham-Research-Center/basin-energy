@@ -8,15 +8,23 @@ class DropUniqueObservationIdGasIndexFromCarbonMapperObservations extends Migrat
 {
     public function up()
     {
-        Schema::table('carbon_mapper_observations', function (Blueprint $table) {
-            $table->dropUnique('carbon_mapper_observations_observation_id_gas_unique');
-        });
+        // An imported table may already reflect this historical index drop.
+        // Only remove the original named, matching unique constraint.
+        if (\App\Support\ExistingCarbonMapperObservationsSchema::hasLegacyUniqueIndex()) {
+            Schema::table('carbon_mapper_observations', function (Blueprint $table) {
+                $table->dropUnique('carbon_mapper_observations_observation_id_gas_unique');
+            });
+        }
     }
 
     public function down()
     {
-        Schema::table('carbon_mapper_observations', function (Blueprint $table) {
-            $table->unique(['observation_id', 'gas']);
-        });
+        // Restoring a uniqueness constraint on imported observations may fail
+        // for genuine duplicate identifiers. Never mutate historical data
+        // during rollback without an explicit operator decision.
+        throw new \RuntimeException(
+            'Refusing to re-create Carbon Mapper observation unique index '.
+            'during rollback: imported research data may contain duplicates.'
+        );
     }
 }

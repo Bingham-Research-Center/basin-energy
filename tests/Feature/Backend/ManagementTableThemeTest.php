@@ -22,7 +22,7 @@ class ManagementTableThemeTest extends TestCase
             $this->get($url)
                 ->assertOk()
                 ->assertSee('brc-admin-data-table')
-                ->assertSee('dashboard-theme.css?v=2');
+                ->assertSee('dashboard-tables.css?v=1');
         }
     }
 
@@ -35,19 +35,20 @@ class ManagementTableThemeTest extends TestCase
             ->assertSee('brc-admin-data-table');
     }
 
-    public function test_dashboard_theme_css_provides_explicit_light_and_dark_grid_contrast(): void
+    public function test_scoped_livewire_table_css_has_light_dark_and_responsive_contrast(): void
     {
-        $css = file_get_contents(public_path('css/dashboard-theme.css'));
+        $css = file_get_contents(public_path('css/dashboard-tables.css'));
 
         $this->assertNotFalse($css);
-        $this->assertStringContainsString(
-            'body.c-app:not(.c-dark-theme) .brc-admin-data-table table > tbody > tr > td',
-            $css
-        );
-        $this->assertStringContainsString(
-            'body.c-app.c-dark-theme .brc-admin-data-table table > tbody > tr > td',
-            $css
-        );
+        $this->assertStringContainsString('.brc-admin-data-table {', $css);
+        $this->assertStringContainsString('body.c-app.c-dark-theme .brc-admin-data-table', $css);
+        $this->assertStringContainsString('--brc-grid-surface:', $css);
+        $this->assertStringContainsString('--brc-grid-text:', $css);
+        $this->assertStringContainsString('max-width: 767.98px', $css);
         $this->assertStringContainsString('prefers-reduced-motion: reduce', $css);
+
+        $layout = file_get_contents(resource_path('views/backend/layouts/app.blade.php'));
+        $this->assertStringContainsString('css/dashboard-tables.css', $layout);
+        $this->assertStringNotContainsString('tailwind', $layout);
     }
 }

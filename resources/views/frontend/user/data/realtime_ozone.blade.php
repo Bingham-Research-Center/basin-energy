@@ -1,4 +1,10 @@
-@extends('frontend.layouts.app')
+@extends(request()->routeIs('admin.data.*') ? 'backend.layouts.app' : 'frontend.layouts.app')
+
+@php
+    // Render the same dataset in the matching dashboard and fetch from
+    // that dashboard's protected JSON routes (no User-only URL bypass).
+    $dataRoutePrefix = request()->routeIs('admin.data.*') ? 'admin.data.' : 'frontend.user.data.';
+@endphp
 
 @section('title', __('Realtime Ozone'))
 
@@ -10,7 +16,9 @@
 <div
     class="dashboard-page dashboard-page-pro dashboard-fill-page"
     id="realtimeOzoneRoot"
-    data-json-url="{{ route('frontend.user.data.realtime.ozone.json') }}"
+    data-json-url="{{ route($dataRoutePrefix.'realtime.ozone.json') }}"
+    data-logger-json-template="{{ route($dataRoutePrefix.'realtime.logger.json', ['site' => '__STATION__']) }}"
+    data-logger-history-template="{{ route($dataRoutePrefix.'realtime.logger.history.json', ['site' => '__STATION__']) }}"
 >
     <div class="card dashboard-chart-card dashboard-fill-card mb-4">
         <div class="card-header">
@@ -485,7 +493,7 @@
         await Promise.all(sites.map(async site => {
             try {
                 const response = await fetch(
-                    `/data/realtime/logger/${site}/history/json`,
+                    root.dataset.loggerHistoryTemplate.replace('__STATION__', encodeURIComponent(site)),
                     { headers: { 'Accept': 'application/json' } }
                 );
 
@@ -929,7 +937,7 @@
 
             try {
                 const response = await fetch(
-                    `/data/realtime/logger/${site}/json`,
+                    root.dataset.loggerJsonTemplate.replace('__STATION__', encodeURIComponent(site)),
                     { headers: { 'Accept': 'application/json' } }
                 );
 

@@ -13,7 +13,15 @@ class CreateProducedWaterFluxesTable extends Migration
      */
     public function up()
     {
-          Schema::create('produced_water_fluxes', function (Blueprint $table) {
+        // Preserve historical imports if the table already exists but the
+        // migration row is absent. Adopt it only after a strict schema check.
+        if (Schema::hasTable('produced_water_fluxes')) {
+            \App\Support\ExistingProducedWaterFluxesSchema::assertCompatible();
+
+            return;
+        }
+
+        Schema::create('produced_water_fluxes', function (Blueprint $table) {
             $table->id();
 
             // Identifiers
@@ -64,6 +72,13 @@ class CreateProducedWaterFluxesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('produced_water_fluxes');
+        // Historical data can have existed before this migration. Dropping it
+        // on rollback could delete a production research dataset we did not
+        // create. Require a deliberate, backed-up operator decision.
+        throw new \RuntimeException(
+            'Refusing to drop produced_water_fluxes during rollback: '.
+            'it may contain imported research data. Back up and remove the '.
+            'table explicitly only if you intend to delete the dataset.'
+        );
     }
 }

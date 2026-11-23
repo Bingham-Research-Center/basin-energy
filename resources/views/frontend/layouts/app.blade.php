@@ -11,6 +11,7 @@
     @stack('before-styles')
     <link href="{{ mix('css/backend.css') }}" rel="stylesheet">
     <link href="{{ asset('css/dashboard-theme.css') }}?v=2" rel="stylesheet">
+    <link href="{{ asset('css/dashboard-brand.css') }}?v=2" rel="stylesheet">
     <livewire:styles />
     @stack('after-styles')
 </head>
@@ -44,8 +45,10 @@
     <script src="{{ mix('js/frontend.js') }}"></script>
     <script src="{{ mix('js/backend.js') }}"></script>
     <script src="{{ asset('js/dashboard-theme.js') }}" defer></script>
+    <script src="{{ asset('js/dashboard-toasts.js') }}?v=1"></script>
     <livewire:scripts />
     @stack('after-scripts')
+    @include('includes.partials.research-data-assets')
 
 
 </body>

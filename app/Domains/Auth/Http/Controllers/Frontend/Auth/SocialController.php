@@ -47,6 +47,12 @@ class SocialController
     {
         abort_unless($provider === 'google' && $this->googleAvailable(), 404);
 
+        // Google reports declined access as ?error=access_denied (no code).
+        // Do not attempt a token exchange for a declined authorization.
+        if ($request->query('error') === 'access_denied') {
+            return $this->failedLogin($request, __('Google authorization was cancelled. Please try again.'));
+        }
+
         try {
             $profile = Socialite::driver('google')->user();
         } catch (Throwable $e) {
@@ -55,7 +61,11 @@ class SocialController
             return $this->failedLogin($request, __('Google sign-in could not be completed. Please try again.'));
         }
 
-        $verified = ($profile->user['email_verified'] ?? $profile->user['verified_email'] ?? false) === true;
+        // Google's userinfo typically returns a JSON boolean, but some
+        // Socialite-compatible responses represent it as "true" or "1".
+        // Keep requiring an affirmative claim; never infer it from an email.
+        $verifiedClaim = $profile->user['email_verified'] ?? $profile->user['verified_email'] ?? false;
+        $verified = filter_var($verifiedClaim, FILTER_VALIDATE_BOOLEAN);
         $email = mb_strtolower(trim((string) $profile->getEmail()));
         $providerId = (string) $profile->getId();
 
@@ -162,6 +172,12 @@ class SocialController
 
     private function completeLogin(Request $request, User $user)
     {
+        // Re-check here as the pending Terms flow is separate from the
+        // callback and the account may have been disabled in the meantime.
+        if (! $user->isActive()) {
+            return $this->failedLogin($request, __('Your account has been deactivated.'));
+        }
+
         if ($user->hasTwoFactorEnabled()) {
             $request->session()->put('auth.pending_2fa.user_id', $user->id);
             $request->session()->put('auth.pending_2fa.remember', false);

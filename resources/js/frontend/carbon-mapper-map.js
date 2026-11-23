@@ -1,14 +1,38 @@
-document.addEventListener('DOMContentLoaded', async function () {
+import L from 'leaflet';
+import 'leaflet.markercluster';
+
+// Leaflet and MarkerCluster are installed in package-lock.json and now
+// bundled locally instead of relying on unpkg on the Admin dashboard.
+async function initialiseCarbonMapperMap() {
     const mapElement = document.getElementById('map');
 
-    if (!mapElement) {
+    if (!mapElement || mapElement.dataset.brcMapInitialized === 'true') {
         return;
     }
 
-    if (typeof L === 'undefined') {
-        console.error('Carbon Mapper: Leaflet has not loaded.');
+    const status = document.getElementById('carbonMapperFilterStatus');
+
+    // The view supplies the correct admin or User-scoped endpoints.
+    // Avoid absolute /carbon-mapper URLs: those are User-only.
+    const api = {
+        observations: mapElement.dataset.jsonUrl,
+        boundary: mapElement.dataset.boundaryUrl,
+        sources: mapElement.dataset.sourcesUrl,
+        plumeTemplate: mapElement.dataset.plumeUrlTemplate
+    };
+
+    if (!api.observations || !api.boundary || !api.sources || !api.plumeTemplate) {
+        if (status) status.textContent = 'Carbon Mapper endpoints are not configured.';
         return;
     }
+
+    if (typeof L.markerClusterGroup !== 'function') {
+        if (status) status.textContent = 'Carbon Mapper map library is unavailable.';
+        console.error('Carbon Mapper: local MarkerCluster dependency has not initialized.');
+        return;
+    }
+
+    mapElement.dataset.brcMapInitialized = 'true';
 
     // Initialize the map.
     const map = L.map('map').setView([40.15, -110.2], 8);
@@ -50,7 +74,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     // Load the Uintah Basin coverage boundary.
     try {
         const boundaryResponse = await fetch(
-            '/carbon-mapper/utah/boundary'
+            api.boundary
         );
 
         if (!boundaryResponse.ok) {
@@ -136,7 +160,7 @@ async function showObservationPlume(point) {
 
     try {
         const response = await fetch(
-            `/carbon-mapper/utah/plume/${encodeURIComponent(point.observation_id)}`,
+            api.plumeTemplate.replace('__OBSERVATION_ID__', encodeURIComponent(point.observation_id)),
             {
                 signal: controller.signal,
                 headers: {
@@ -542,7 +566,7 @@ detectionLayer.addLayer(marker);
 
         try {
             const url = new URL(
-                '/carbon-mapper/utah/json',
+                api.observations,
                 window.location.origin
             );
 
@@ -645,7 +669,7 @@ if (detections.length === 0) {
     // Load the initial observations.
     try {
         const initialResponse = await fetch(
-            '/carbon-mapper/utah/json',
+            api.observations,
             {
                 headers: {
                     'Accept': 'application/json'
@@ -830,7 +854,7 @@ if (detections.length === 0) {
     // Load locations that have repeated methane observations.
     try {
         const sourcesResponse = await fetch(
-            '/carbon-mapper/utah/sources'
+            api.sources
         );
 
         if (!sourcesResponse.ok) {
@@ -888,4 +912,12 @@ if (detections.length === 0) {
     window.setTimeout(function () {
         map.invalidateSize();
     }, 200);
-});
+}
+
+// Robust to this bundle loading after DOMContentLoaded, including
+// Livewire navigation, while preventing a second map on the same element.
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialiseCarbonMapperMap, { once: true });
+} else {
+    initialiseCarbonMapperMap();
+}

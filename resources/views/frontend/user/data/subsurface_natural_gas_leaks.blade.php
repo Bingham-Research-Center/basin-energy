@@ -1,4 +1,10 @@
-@extends('frontend.layouts.app')
+@extends(request()->routeIs('admin.data.*') ? 'backend.layouts.app' : 'frontend.layouts.app')
+
+@php
+    // Render the same dataset in the matching dashboard and fetch from
+    // that dashboard's protected JSON routes (no User-only URL bypass).
+    $dataRoutePrefix = request()->routeIs('admin.data.*') ? 'admin.data.' : 'frontend.user.data.';
+@endphp
 
 @section('title', __('Subsurface Natural Gas Leaks'))
 
@@ -523,21 +529,19 @@
 @endsection
 
 @push('after-scripts')
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-
     <script>
         window.subsurfaceLeakUrls = {
             overview: @json(route(
-                'frontend.user.data.subsurface-natural-gas-leaks.overview.json'
+                $dataRoutePrefix.'subsurface-natural-gas-leaks.overview.json'
             )),
             survey: @json(route(
-                'frontend.user.data.subsurface-natural-gas-leaks.survey.json'
+                $dataRoutePrefix.'subsurface-natural-gas-leaks.survey.json'
             )),
             temporal: @json(route(
-                'frontend.user.data.subsurface-natural-gas-leaks.temporal.json'
+                $dataRoutePrefix.'subsurface-natural-gas-leaks.temporal.json'
             )),
             options: @json(route(
-                'frontend.user.data.subsurface-natural-gas-leaks.options.json'
+                $dataRoutePrefix.'subsurface-natural-gas-leaks.options.json'
             ))
         };
     </script>
