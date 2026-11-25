@@ -362,6 +362,36 @@
 ></span>
     </div>
 
+    {{-- Search for a Carbon Mapper site or observation --}}
+    <div class="mt-3 mb-3">
+        <label for="carbonMapperSiteSearch">
+            Search for Site
+        </label>
+
+        <input
+            type="search"
+            id="carbonMapperSiteSearch"
+            class="form-control"
+            placeholder="Enter a city, location, site name, or observation ID"
+            autocomplete="off"
+            aria-controls="carbonMapperSiteResults"
+        >
+
+        <select
+            id="carbonMapperSiteResults"
+            class="form-control mt-2"
+            aria-label="Matching Carbon Mapper sites"
+            size="5"
+            hidden
+        ></select>
+
+     <small class="form-text text-muted">
+    Search by city, town, location, site name, or observation ID.
+    Observation results follow your selected map filters.
+</small>
+
+    </div>
+
     {{-- Carbon Mapper source data refresh information --}}
     <div class="small mt-2" style="color: #a8b3c7;">
         <strong>Source measurements last updated:</strong>

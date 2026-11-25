@@ -285,10 +285,11 @@ $manualSourceUncertainty = $properties['source_emission_uncertainty'] ?? null;
 $manualSourceUnit = $properties['source_emission_unit'] ?? null;
 
             return [
-            'observation_id' => $observation->observation_id,
-            'latitude' => $observation->latitude,
-            'longitude' => $observation->longitude,
-            'observed_at' => $observation->observed_at,
+                'observation_number' => $observation->id,
+                'observation_id' => $observation->observation_id,
+                'latitude' => $observation->latitude,
+                'longitude' => $observation->longitude,
+                'observed_at' => $observation->observed_at,
             'published_at' => $properties['cm:published_at'] ?? null,
             'gas' => $observation->gas,
             'source_name' => $source['source_name'] ?? null,
