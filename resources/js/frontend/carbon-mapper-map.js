@@ -37,6 +37,162 @@ async function initialiseCarbonMapperMap() {
     // Initialize the map.
     const map = L.map('map').setView([40.15, -110.2], 8);
 
+// Searchable geographic locations for Carbon Mapper observations.
+// These locations are maintained manually because Carbon Mapper
+// observations do not include nearby city or town names.
+const searchLocations = [
+    {
+        name: 'Roosevelt, Utah',
+        searchTerms: ['roosevelt'],
+        latitude: 40.2994,
+        longitude: -109.9888,
+        radiusKm: 15,
+        zoom: 11
+    },
+    {
+        name: 'Vernal, Utah',
+        searchTerms: ['vernal'],
+        latitude: 40.4555,
+        longitude: -109.5287,
+        radiusKm: 15,
+        zoom: 11
+    },
+    {
+        name: 'Duchesne, Utah',
+        searchTerms: ['duchesne'],
+        latitude: 40.1633,
+        longitude: -110.4029,
+        radiusKm: 15,
+        zoom: 11
+    },
+    {
+        name: 'Myton, Utah',
+        searchTerms: ['myton'],
+        latitude: 40.1944,
+        longitude: -110.0618,
+        radiusKm: 15,
+        zoom: 11
+    },
+    {
+        name: 'Ballard, Utah',
+        searchTerms: ['ballard'],
+        latitude: 40.2894,
+        longitude: -109.9432,
+        radiusKm: 15,
+        zoom: 11
+    },
+    {
+        name: 'Fort Duchesne, Utah',
+        searchTerms: ['fort duchesne'],
+        latitude: 40.2880,
+        longitude: -109.8590,
+        radiusKm: 15,
+        zoom: 11
+    },
+    {
+        name: 'Naples, Utah',
+        searchTerms: ['naples'],
+        latitude: 40.4269,
+        longitude: -109.4993,
+        radiusKm: 15,
+        zoom: 11
+    },
+    {
+        name: 'Jensen, Utah',
+        searchTerms: ['jensen'],
+        latitude: 40.3683,
+        longitude: -109.3507,
+        radiusKm: 15,
+        zoom: 11
+    },
+    {
+        name: 'Altamont, Utah',
+        searchTerms: ['altamont'],
+        latitude: 40.3591,
+        longitude: -110.2874,
+        radiusKm: 15,
+        zoom: 11
+    },
+    {
+        name: 'Tabiona, Utah',
+        searchTerms: ['tabiona'],
+        latitude: 40.3538,
+        longitude: -110.7104,
+        radiusKm: 15,
+        zoom: 11
+    },
+    {
+        name: 'Lapoint, Utah',
+        searchTerms: ['lapoint'],
+        latitude: 40.4027,
+        longitude: -109.7932,
+        radiusKm: 15,
+        zoom: 11
+    },
+    {
+        name: 'Maeser, Utah',
+        searchTerms: ['maeser'],
+        latitude: 40.4772,
+        longitude: -109.5857,
+        radiusKm: 15,
+        zoom: 11
+    },
+    {
+        name: 'Gusher, Utah',
+        searchTerms: ['gusher'],
+        latitude: 40.2850,
+        longitude: -109.6150,
+        radiusKm: 15,
+        zoom: 11
+    },
+    {
+        name: 'Randlett, Utah',
+        searchTerms: ['randlett'],
+        latitude: 40.2330,
+        longitude: -109.8180,
+        radiusKm: 15,
+        zoom: 11
+    },
+    {
+        name: 'Ouray, Utah',
+        searchTerms: ['ouray'],
+        latitude: 40.0900,
+        longitude: -109.6800,
+        radiusKm: 15,
+        zoom: 11
+    },
+    {
+        name: 'Price, Utah',
+        searchTerms: ['price'],
+        latitude: 39.5994,
+        longitude: -110.8107,
+        radiusKm: 15,
+        zoom: 11
+    },
+    {
+        name: 'Bonanza Power Plant, Utah',
+        searchTerms: ['bonanza', 'bonanza power plant'],
+        latitude: 40.0860,
+        longitude: -109.2840,
+        radiusKm: 15,
+        zoom: 12
+    },
+    {
+        name: 'Uintah and Ouray Indian Reservation',
+        searchTerms: [
+            'uintah and ouray',
+            'uintah reservation',
+            'ouray reservation',
+            'ute reservation',
+            'reservation'
+        ],
+        latitude: 40.1500,
+        longitude: -109.6500,
+        radiusKm: 50,
+        zoom: 10
+    }
+];
+
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 19
@@ -220,6 +376,15 @@ function clearObservationPlume() {
 }
 
     // Find the filter controls on the page.
+    // Search for Carbon Mapper sites and observations.
+    const siteSearchInput = document.getElementById(
+        'carbonMapperSiteSearch'
+    );
+
+    const siteResultsSelect = document.getElementById(
+        'carbonMapperSiteResults'
+    );
+
     const gasInput = document.getElementById('carbonMapperGas');
     const fromInput = document.getElementById('carbonMapperFrom');
     const toInput = document.getElementById('carbonMapperTo');
@@ -243,8 +408,237 @@ function clearObservationPlume() {
 // Store observations from the most recent successful map update.
 let displayedObservations = [];
 
+// Store Leaflet markers by their Carbon Mapper observation ID.
+const observationMarkers = new Map();
+
+// Calculate the distance in kilometers between two geographic points.
+// Uses the Haversine formula.
+function calculateDistanceKm(lat1, lon1, lat2, lon2) {
+    const earthRadiusKm = 6371;
+
+    const toRadians = function (degrees) {
+        return degrees * Math.PI / 180;
+    };
+
+    const latitudeDifference = toRadians(lat2 - lat1);
+    const longitudeDifference = toRadians(lon2 - lon1);
+
+    const a =
+        Math.sin(latitudeDifference / 2) ** 2 +
+        Math.cos(toRadians(lat1)) *
+        Math.cos(toRadians(lat2)) *
+        Math.sin(longitudeDifference / 2) ** 2;
+
+    const c = 2 * Math.atan2(
+        Math.sqrt(a),
+        Math.sqrt(1 - a)
+    );
+
+    return earthRadiusKm * c;
+}
+
+// Find sites and observations in the currently loaded map data.
+function updateSiteSearchResults() {
+    if (!siteSearchInput || !siteResultsSelect) {
+        return;
+    }
+
+    const searchTerm = siteSearchInput.value.trim().toLowerCase();
+
+    siteResultsSelect.replaceChildren();
+    siteResultsSelect.hidden = true;
+
+    if (!searchTerm) {
+        return;
+    }
+
+    // Find geographic locations matching the user's search.
+    const matchingLocations = searchLocations.filter(function (location) {
+        return location.searchTerms.some(function (term) {
+            return term.includes(searchTerm);
+        });
+    });
+
+    // Add matching locations and their nearby observations.
+    matchingLocations.forEach(function (location) {
+        const locationOption = document.createElement('option');
+
+        locationOption.value =
+            `location:${searchLocations.indexOf(location)}`;
+
+        locationOption.textContent =
+            `${location.name} — View area`;
+
+        siteResultsSelect.appendChild(locationOption);
+
+        // Find observations within the location's search radius.
+        const nearbyObservations = displayedObservations
+            .map(function (point) {
+                const latitude = Number(point.latitude);
+                const longitude = Number(point.longitude);
+
+                if (
+                    point.latitude == null ||
+                    point.longitude == null ||
+                    !Number.isFinite(latitude) ||
+                    !Number.isFinite(longitude)
+                ) {
+                    return null;
+                }
+
+                const distanceKm = calculateDistanceKm(
+                    location.latitude,
+                    location.longitude,
+                    latitude,
+                    longitude
+                );
+
+                return {
+                    point: point,
+                    distanceKm: distanceKm
+                };
+            })
+            .filter(function (result) {
+                return result !== null &&
+                    result.distanceKm <= location.radiusKm &&
+                    observationMarkers.has(
+                        String(result.point.observation_id)
+                    );
+            })
+            .sort(function (a, b) {
+                return a.distanceKm - b.distanceKm;
+            })
+            .slice(0, 20);
+
+        // Add nearby observations below the location result.
+        nearbyObservations.forEach(function (result) {
+            const option = document.createElement('option');
+
+            option.value = String(result.point.observation_id);
+
+            const observationNumber = String(
+                result.point.observation_number
+            ).padStart(4, '0');
+
+            option.textContent =
+                `Observation #${observationNumber} — ${result.distanceKm.toFixed(1)} km away`;
+            siteResultsSelect.appendChild(option);
+        });
+    });
+
+    const matches = displayedObservations
+        .filter(function (point) {
+            const sourceName = String(point.source_name ?? '');
+            const observationId = String(point.observation_id ?? '');
+
+            const observationNumber = String(
+                point.observation_number ?? ''
+            );
+
+            const formattedNumber = observationNumber.padStart(4, '0');
+
+            // Accept numbers with or without "Observation" and "#".
+            const normalizedSearch = searchTerm
+                .replace(/^observation\s*#?\s*/i, '')
+                .replace(/^#/, '')
+                .trim();
+
+            const numberMatches =
+                observationNumber !== '' &&
+                /^\d+$/.test(normalizedSearch) &&
+                Number(normalizedSearch) === Number(observationNumber);
+
+            return numberMatches ||
+                sourceName.toLowerCase().includes(searchTerm) ||
+                observationId.toLowerCase().includes(searchTerm) ||
+                (
+                    observationNumber !== '' &&
+                    formattedNumber.includes(searchTerm)
+                );
+        })
+        .slice(0, 50);
+
+    matches.forEach(function (point) {
+        const option = document.createElement('option');
+
+        // Keep the original ID for selecting the correct map marker.
+        option.value = String(point.observation_id ?? '');
+
+        // Display a short, easy-to-remember observation number.
+        const observationNumber = String(
+            point.observation_number
+        ).padStart(4, '0');
+
+        option.textContent = `Observation #${observationNumber}`;
+
+        siteResultsSelect.appendChild(option);
+    });
+    siteResultsSelect.hidden =
+        matches.length === 0 && matchingLocations.length === 0;
+}
+
+// Update search results whenever the user types.
+if (siteSearchInput) {
+    siteSearchInput.addEventListener(
+        'input',
+        updateSiteSearchResults
+    );
+}
+
+// Zoom to a selected location or Carbon Mapper observation.
+if (siteResultsSelect) {
+    siteResultsSelect.addEventListener('change', function () {
+        const selectedValue = siteResultsSelect.value;
+
+        // Handle geographic location selections.
+        if (selectedValue.startsWith('location:')) {
+            const locationIndex = Number(
+                selectedValue.replace('location:', '')
+            );
+
+            const location = searchLocations[locationIndex];
+
+            if (!location) {
+                return;
+            }
+
+            // Center the map on the selected location.
+            map.setView(
+                [location.latitude, location.longitude],
+                location.zoom
+            );
+
+            return;
+        }
+
+        // Handle existing observation selections.
+        const observationId = selectedValue;
+        const marker = observationMarkers.get(observationId);
+
+        if (!marker) {
+            return;
+        }
+
+        // Individual observations are hidden below zoom level 8.
+        if (map.getZoom() < 8) {
+            map.setZoom(8);
+        }
+
+        if (!map.hasLayer(detectionLayer)) {
+            map.addLayer(detectionLayer);
+        }
+
+        // Reveal the marker even when it belongs to a cluster.
+        detectionLayer.zoomToShowLayer(marker, function () {
+            map.panTo(marker.getLatLng());
+            marker.openPopup();
+        });
+    });
+}
+
 function updateExportData(detections) {
     displayedObservations = detections;
+    updateSiteSearchResults();
 
     if (downloadCsvButton) {
         downloadCsvButton.disabled = detections.length === 0;
@@ -480,12 +874,12 @@ function updateStatistics(detections) {
     }
 }
     // Draw the observations returned by the server.
-   function renderDetections(detections) {
-    updateExportData(detections);
+    function renderDetections(detections) {
     updateStatistics(detections);
 
     clearObservationPlume();
     detectionLayer.clearLayers();
+    observationMarkers.clear();
 
 
         detections.forEach(function (point) {
@@ -545,11 +939,18 @@ marker.on('popupclose', function () {
     clearObservationPlume();
 });
 
+if (point.observation_id) {
+    observationMarkers.set(String(point.observation_id), marker);
+}
+
 detectionLayer.addLayer(marker);
 
         });
 
         updateDetectionVisibility();
+
+        // Refresh search results after rebuilding all map markers.
+        updateExportData(detections);
 
         console.info(
             `Carbon Mapper: Displaying ${detections.length} observations.`
